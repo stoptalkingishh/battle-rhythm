@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Battle Rhythm — H2F-inspired workout planning and tracking for Army units. Build sessions and circuits grounded in FM 7-22 doctrine." />
+  <meta name="theme-color" content="#0B0C0F" />
+  <title>Battle Rhythm — H2F Workout Planning &amp; Tracking</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230B0C0F'/%3E%3Cpath d='M9 7l5 5-5 5 4 4 5-5 5 5 4-4-5-5 5-5-4-4-5 5-5-5z' fill='%23D4A644'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#home" data-view-link="home" aria-label="Battle Rhythm home">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect width="32" height="32" rx="6" fill="#0B0C0F" stroke="#D4A644" stroke-width="1.5"/>
+        <path d="M9 7l5 5-5 5 4 4 5-5 5 5 4-4-5-5 5-5-4-4-5 5-5-5z" fill="#D4A644"/>
+      </svg>
+      <span>
+        <span class="brand-name">Battle Rhythm</span>
+        <span class="brand-tag">H2F Workout Planner</span>
+      </span>
+    </a>
+    <nav class="nav" id="main-nav" aria-label="Primary">
+      <button class="nav-btn active" data-view="home">Home</button>
+      <button class="nav-btn" data-view="library">Library</button>
+      <button class="nav-btn" data-view="builder">Builder</button>
+      <button class="nav-btn" data-view="tracker">Tracker</button>
+      <button class="nav-btn" data-view="doctrine">Doctrine</button>
+    </nav>
+  </header>
+
+  <main class="container">
+
+    <!-- ============ HOME ============ -->
+    <section class="view active" data-view="home">
+      <div class="hero">
+        <p class="hero-kicker">Holistic Health &amp; Fitness</p>
+        <h1 class="hero-title">Train the whole Soldier.</h1>
+        <p class="hero-sub" id="home-hero-sub"></p>
+        <blockquote class="hero-quote" id="home-hero-quote"></blockquote>
+        <div class="chip-row" style="justify-content:center; margin-top:22px;">
+          <button class="btn btn-gold" data-view="builder">Build a Session</button>
+          <button class="btn btn-ghost" data-view="library">Browse the Library</button>
+        </div>
+      </div>
+
+      <div class="stat-grid" id="home-stats"></div>
+
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">The Five Domains</h2>
+          <p class="section-sub">Readiness is built across the whole Soldier — body, mind, spirit, and sleep.</p>
+        </div>
+      </div>
+      <div class="card-grid" id="home-domains"></div>
+
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Principles of Training</h2>
+          <p class="section-sub">How H2F says we should train.</p>
+        </div>
+      </div>
+      <div class="card-grid" id="home-principles"></div>
+
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">The Three Elements of a Session</h2>
+          <p class="section-sub">Every training session is built from preparation, activity, and recovery.</p>
+        </div>
+      </div>
+      <div class="card card-accent" id="home-session"></div>
+    </section>
+
+    <!-- ============ LIBRARY ============ -->
+    <section class="view" data-view="library">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Exercise Library</h2>
+          <p class="section-sub">FM 7-22 &amp; ATP 7-22.02 exercises and activities, mapped to physical components.</p>
+        </div>
+        <span class="tags" id="lib-count"></span>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label" for="search-input">Search</label>
+            <div class="search-field">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input id="search-input" type="search" placeholder="e.g. deadlift, plank, ruck" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="filter-component">Physical Component</label>
+            <select id="filter-component" class="select"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="filter-aft">AFT Event</label>
+            <select id="filter-aft" class="select"></select>
+          </div>
+          <div class="field">
+            <label class="field-label" for="filter-equipment">Equipment</label>
+            <select id="filter-equipment" class="select"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="chip-row" id="component-chips"></div>
+
+      <div class="card-grid" id="exercise-grid"></div>
+      <div class="empty-state hidden" id="library-empty">
+        <p>No exercises match your filters.</p>
+      </div>
+    </section>
+
+    <!-- ============ BUILDER ============ -->
+    <section class="view" data-view="builder">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Session Builder</h2>
+          <p class="section-sub">Compose a training session — preparation, activity, recovery — from the library. Group sessions into a regiment.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="new-session-btn">+ New Session</button>
+      </div>
+
+      <div class="builder-layout">
+        <!-- Session editor -->
+        <div class="card card-accent hidden" id="session-editor">
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-label" for="session-name">Session Name</label>
+              <input class="input" id="session-name" type="text" placeholder="e.g. AFT MDL Block 2" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="session-duration">Duration (min)</label>
+              <input class="input" id="session-duration" type="number" min="10" max="180" value="60" />
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label class="field-label" for="session-focus">Primary Focus</label>
+              <select class="select" id="session-focus"></select>
+            </div>
+            <div class="field">
+              <label class="field-label" for="session-rpe">Target RPE</label>
+              <select class="select" id="session-rpe"></select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="session-notes">Notes / Brief</label>
+            <textarea class="input" id="session-notes" rows="2" placeholder="Equipment layout, safety brief, accountability..."></textarea>
+          </div>
+
+          <div class="divider"></div>
+
+          <h3 class="section-title" style="font-size:1.05rem;">Session Structure</h3>
+          <div id="session-structure"></div>
+
+          <div class="divider"></div>
+          <div class="field">
+            <label class="field-label">Add Exercise or Drill</label>
+            <div class="chip-row" id="structure-adder"></div>
+          </div>
+
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+            <button class="btn btn-ghost" id="session-cancel">Cancel</button>
+            <button class="btn btn-gold" id="session-save">Save Session</button>
+          </div>
+        </div>
+
+        <!-- Saved sessions list -->
+        <div id="saved-sessions">
+          <h3 class="section-title" style="font-size:1rem;">Saved Sessions</h3>
+          <div class="list" id="sessions-list"></div>
+          <div class="empty-state hidden" id="sessions-empty">
+            <p>No saved sessions yet. Start building one.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regiments (grouped sessions) -->
+      <div class="divider"></div>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Regiments</h2>
+          <p class="section-sub">Group saved sessions into a periodized regiment for a week or block.</p>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="new-regiment-btn">+ New Regiment</button>
+      </div>
+      <div class="card card-accent hidden" id="regiment-editor">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label" for="regiment-name">Regiment Name</label>
+            <input class="input" id="regiment-name" type="text" placeholder="e.g. Ruck Program — Build Phase" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="regiment-period">Period</label>
+            <select class="select" id="regiment-period"></select>
+          </div>
+        </div>
+        <div class="field">
+          <label class="field-label">Schedule</label>
+          <div id="regiment-schedule"></div>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+          <button class="btn btn-ghost" id="regiment-cancel">Cancel</button>
+          <button class="btn btn-gold" id="regiment-save">Save Regiment</button>
+        </div>
+      </div>
+      <div class="card-grid" id="regiments-list"></div>
+      <div class="empty-state hidden" id="regiments-empty"><p>No regiments yet. Group your sessions into a plan.</p></div>
+    </section>
+
+    <!-- ============ TRACKER ============ -->
+    <section class="view" data-view="tracker">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Tracker</h2>
+          <p class="section-sub">Log what you ran. Check off exercises, mark sessions complete, copy your session to your notes.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="form-grid">
+          <div class="field">
+            <label class="field-label" for="track-date">Date</label>
+            <input class="input" id="track-date" type="date" />
+          </div>
+          <div class="field">
+            <label class="field-label" for="track-session">Session</label>
+            <select class="select" id="track-session"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="tracker-active"></div>
+
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Training Log</h2>
+          <p class="section-sub">History of completed sessions.</p>
+        </div>
+      </div>
+      <div class="list" id="tracker-log"></div>
+      <div class="empty-state hidden" id="tracker-empty"><p>Nothing logged yet.</p></div>
+    </section>
+
+    <!-- ============ DOCTRINE ============ -->
+    <section class="view" data-view="doctrine">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Doctrine</h2>
+          <p class="section-sub">The authoritative source behind Battle Rhythm — quoted from FM 7-22 and companion publications.</p>
+        </div>
+      </div>
+
+      <div class="card card-accent">
+        <h3 class="section-title" style="font-size:1.1rem;">Army Fitness Test (AFT)</h3>
+        <p class="card-muted" id="aft-summary"></p>
+        <div class="table-wrap" style="margin-top:16px;">
+          <table class="table">
+            <thead><tr><th>Event</th><th>Component</th><th>Secondary</th></tr></thead>
+            <tbody id="aft-table"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Session Structure</h2></div>
+      </div>
+      <div class="card card-accent">
+        <ul class="timeline" id="doctrine-session"></ul>
+      </div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Drills &amp; Activities</h2></div>
+      </div>
+      <div class="card-grid" id="doctrine-drills"></div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Programming</h2></div>
+      </div>
+      <div class="card" id="doctrine-programming"></div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Training Strategies</h2></div>
+      </div>
+      <div class="card-grid" id="doctrine-strategies"></div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Safety &amp; Compliance</h2></div>
+      </div>
+      <div class="card" id="doctrine-safety"></div>
+
+      <div class="section-head">
+        <div><h2 class="section-title">Sources</h2></div>
+      </div>
+      <div class="card" id="doctrine-sources"></div>
+
+      <div class="card" style="border-color: var(--warn);">
+        <p id="doctrine-disclaimer" style="font-size:.85rem; color: var(--text-muted); line-height:1.6; margin:0;"></p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Battle Rhythm — an unofficial H2F workout planning and tracking tool for Army units.</p>
+      <p id="footer-disclaimer"></p>
+      <p>Quotations are from <a href="https://armypubs.army.mil/epubs/DR_pubs/DR_a/ARN44522-FM_7-22-002-WEB-7.pdf" target="_blank" rel="noopener">FM 7-22</a> and companion publications. Not an official Department of the Army product.</p>
+    </div>
+  </footer>
+
+  <!-- Exercise detail modal -->
+  <div class="modal hidden" id="ex-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="ex-modal-name" style="font-family:var(--font-display); text-transform:uppercase; letter-spacing:.05em; margin:0;"></h3>
+          <div class="tag-row" id="ex-modal-tags" style="margin-top:8px;"></div>
+        </div>
+        <button class="btn-icon" id="ex-modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="ex-modal-body"></div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost btn-sm" id="ex-modal-copy">Copy to Notes</button>
+        <button class="btn btn-gold btn-sm" id="ex-modal-add">Add to Session</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Session preview modal (copy to notes) -->
+  <div class="modal hidden" id="copy-modal" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 style="font-family:var(--font-display); text-transform:uppercase; letter-spacing:.05em; margin:0;">Copy to Notes</h3>
+          <p class="card-muted" style="margin:4px 0 0;">Ready to paste into your notes app.</p>
+        </div>
+        <button class="btn-icon" id="copy-modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre class="copy-area" id="copy-area"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-gold btn-sm" id="copy-btn">Copy to Clipboard</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/data/exercises.js"></script>
+  <script src="js/data/doctrine.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
