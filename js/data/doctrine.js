@@ -315,8 +315,8 @@ window.BR_DOCTRINE = {
       status: "Current test of record since June 1, 2025 per Army Directive 2025-06. Replaces the Army Combat Fitness Test (ACFT), which was retired May 31, 2025.",
       events: "5 events",
       maxScore: "500 points",
-      standards: "Combat specialties (21 MOSs): one sex-neutral, age-normed standard, total score of 350 with a minimum of 60 points per event. Combat-enabling specialties: sex- and age-normed scoring, total score of 300. No administrative action taken regarding the AFT until January 1, 2026.",
-      note: "The Standing Power Throw (SPT) was eliminated from the AFT due to its technical nature and injury risk (supported by RAND analysis). Event order: MDL \u2192 HRP \u2192 SDC \u2192 PLK \u2192 2MR."
+      standards: "Designated combat specialties use an age-normed, sex-neutral standard: total score of 350 with a minimum of 60 points per event. Combat-enabling specialties use sex- and age-normed scoring with a total score of 300. See Army Directive 2025-06 and the current AFT page for applicability and scoring tables.",
+      note: "The historic ACFT Standing Power Throw was removed when the AFT replaced the ACFT. It is not a current AFT event. Event order: MDL \u2192 HRP \u2192 SDC \u2192 PLK \u2192 2MR."
     },
     events: [
       {
@@ -363,8 +363,8 @@ window.BR_DOCTRINE = {
         code: "cft",
         name: "Combat Field Test (CFT)",
         component: "",
-        secondary: "Combat MOSs only",
-        description: "[PAR] Announced 2026 per Army Directive 2026-07. Additional requirement for combat specialty Soldiers: a continuous sequence of seven events performed in ACUs and combat boots (one-mile run, 30 dead-stop push-ups, 100-meter sprint, 16 x 40-pound sandbag lifts, 50-meter water can carry, 50-meter movement drill, one-mile run). Pass/fail scoring. For-record testing begins April 2027.",
+        secondary: "24 designated combat MOSs",
+        description: "[PAR] Implemented April 2026 per Army Directive 2026-07. An annual, continuous seven-event, total-time-scored test for designated combat specialty Soldiers: one-mile run; 30 dead-stop push-ups; 100-meter sprint; 16 lifts of a 40-pound sandbag onto a 65-inch platform; 50-meter carry of two 40-pound Army water cans; 50-meter movement drill; one-mile run. The standard is 30 minutes. The initial 365-day period is diagnostic: no adverse administrative action for CFT failure.",
         citation: "Army Directive 2026-07; army.mil article 291880"
       }
     ]
@@ -572,7 +572,7 @@ window.BR_DOCTRINE = {
   disclaimer: "This app is an unofficial tool that provides workout-planning content informed by FM 7-22, Holistic Health and Fitness, and its companion ATPs, for use by qualified H2F Instructors and unit leaders in support of physical readiness training per AR 350-1. It is not medical advice. Soldiers should train in accordance with their current profile (DA Form 3349 / DD Form 689) and unit policy; exercises not authorized by a Soldier's profile are not authorized. Leaders will apply risk management per ATP 5-19 and AR 385-10, supervise all training, and account for environmental conditions\u2014including WBGT-index heat guidance in TB MED 507, cold-weather guidance in TB MED 508, and hydration needs of 2\u201316 liters per day depending on workload and heat stress. Before beginning or resuming physical training after illness, injury, or prolonged inactivity, consult a healthcare provider or your unit's H2F performance team. This product is not an official Department of the Army publication.",
   sources: [
     { id: "fm-7-22", title: "FM 7-22, Holistic Health and Fitness", publisher: "HQDA", year: "2020 (INC C2, 2025)", url: "https://armypubs.army.mil/epubs/DR_pubs/DR_a/ARN44522-FM_7-22-002-WEB-7.pdf" },
-    { id: "atp-7-22-01", title: "ATP 7-22.01, Holistic Health and Fitness Testing", publisher: "HQDA", year: "2020", url: "https://armypubs.army.mil/ProductMaps/PubForm/Details.aspx?PUB_ID=1020966" },
+    { id: "atp-7-22-01", title: "ATP 7-22.01, Holistic Health and Fitness Testing", publisher: "HQDA", year: "2026", url: "https://armypubs.army.mil/ProductMaps/PubForm/Details.aspx?PUB_ID=1032672" },
     { id: "atp-7-22-02", title: "ATP 7-22.02, Holistic Health and Fitness Drills and Exercises", publisher: "HQDA", year: "2020", url: "https://armypubs.army.mil/ProductMaps/PubForm/Details.aspx?PUB_ID=1020967" },
     { id: "army-mil-aft", title: "Army Fitness Test (AFT) \u2014 official events, standards, and resources", publisher: "army.mil", year: "2025", url: "https://www.army.mil/aft" },
     { id: "ad-2025-06", title: "Army Directive 2025-06: Army Fitness Test", publisher: "HQDA", year: "2025", url: "https://armypubs.army.mil/ProductMaps/PubForm/Details.aspx?PUB_ID=1030941" },

@@ -385,7 +385,7 @@ window.BR_EXERCISES = [
     programming: "Hold to standard (max hold for test); 2-3 x 45-90 sec",
     safety: "Stop if hips sag or back aches",
     source: "QUOTE: AFT event",
-    aft: ["PLK"]
+    aft: []
   },
   {
     id: "m4-v-up",
@@ -424,7 +424,7 @@ window.BR_EXERCISES = [
     safety: "Modify with flexed-arm hang/knee raise",
     source: "QUOTE: CL1 Ex 4",
     drill: "Climbing Drill 1",
-    aft: ["PLK"]
+    aft: []
   },
   {
     id: "m7-rower",

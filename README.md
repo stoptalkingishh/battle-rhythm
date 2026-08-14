@@ -15,7 +15,7 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 
 ## Current doctrine
 
-The AFT (**Army Fitness Test**) replaced the Army Combat Fitness Test on **1 June 2025** per Army Directive 2025-06. It has **five events** — MDL, HRP, SDC, PLK, 2MR — the Standing Power Throw was eliminated. The Combat Field Test (CFT) is announced for combat MOSs (AD 2026-07, for-record April 2027).
+The AFT (**Army Fitness Test**) replaced the historic Army Combat Fitness Test on **1 June 2025** per Army Directive 2025-06. It has **five events** — MDL, HRP, SDC, PLK, 2MR — the Standing Power Throw is not a current AFT event. The Combat Field Test (CFT) is in its initial implementation period for designated combat specialties under AD 2026-07; consult current Army policy for applicability and standards.
 
 ## Run locally
 

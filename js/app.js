@@ -3,6 +3,7 @@
 (function () {
   var EX = window.BR_EXERCISES || [];
   var DOC = window.BR_DOCTRINE || {};
+  var GUIDES = window.BR_MOVEMENT_GUIDES || {};
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -106,7 +107,11 @@
   function nav(name) {
     STATE.view = name;
     $$(".view").forEach(function (v) { v.classList.toggle("active", v.dataset.view === name); });
-    $$(".nav-btn").forEach(function (b) { b.classList.toggle("active", b.dataset.view === name); });
+    $$(".nav-btn").forEach(function (b) {
+      var active = b.dataset.view === name;
+      b.classList.toggle("active", active);
+      if (active) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
     window.scrollTo(0, 0);
     if (name === "home") renderHome();
     else if (name === "library") renderLibrary();
@@ -124,13 +129,26 @@
   /* ==================== COPY TO NOTES ==================== */
 
   var copyModalText = "";
+  var lastModalFocus = null;
+
+  function hasOpenModal() {
+    return $$(".modal").some(function (modal) { return !modal.classList.contains("hidden"); });
+  }
+  function rememberModalFocus() {
+    if (!hasOpenModal()) lastModalFocus = document.activeElement;
+  }
 
   function openCopyModal(text) {
+    rememberModalFocus();
     copyModalText = text;
     $("#copy-area").textContent = text;
     $("#copy-modal").classList.remove("hidden");
+    $("#copy-btn").focus();
   }
-  function closeCopyModal() { $("#copy-modal").classList.add("hidden"); }
+  function closeCopyModal() {
+    $("#copy-modal").classList.add("hidden");
+    if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
+  }
 
   function doCopy(text) {
     function fallback() {
@@ -184,6 +202,9 @@
     if (dateLabel) lines.push("Date: " + dateLabel);
     lines.push(s.name.toUpperCase());
     lines.push(s.duration + " min  |  Focus: " + componentLabel(s.focus) + "  |  RPE " + s.rpe);
+    if (s.format === "circuit") {
+      lines.push("Format: Active-Recovery Circuit | " + s.circuit.rounds + " rounds | " + s.circuit.work + " work | " + s.circuit.rest + " transition/rest");
+    }
     if (s.notes) { lines.push("Notes: " + s.notes); }
     lines.push("------------------------------------");
     PHASE_ORDER.forEach(function (key) {
@@ -202,8 +223,25 @@
       });
     });
     lines.push("");
+    lines.push("Safety confirmation: profile, supervision, risk controls, and environmental conditions reviewed.");
     lines.push("Sourced from FM 7-22 and ATP 7-22.02 (H2F doctrine).");
     lines.push("Safety: apply risk management (ATP 5-19); respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).");
+    return lines.join("\n");
+  }
+
+  function trackedSessionPlainText(s, date, entry) {
+    var lines = sessionPlainText(s, fmtDate(date)).split("\n");
+    var done = entry && entry.done || {};
+    lines.splice(4, 0, "Tracker status: " + (entry && entry.complete ? "Completed" : "In progress"));
+    lines.push("");
+    lines.push("TRACKED RESULTS:");
+    PHASE_ORDER.forEach(function (key) {
+      var phase = s.phases[key];
+      if (!phase || !phase.items.length) return;
+      phase.items.forEach(function (item) {
+        lines.push((done[item.id] ? "[x] " : "[ ] ") + item.label + (itemText(item) ? " - " + itemText(item) : ""));
+      });
+    });
     return lines.join("\n");
   }
 
@@ -345,7 +383,6 @@
         el("button", { class: "btn btn-gold btn-sm", text: "+ Session", onclick: function (e) { e.stopPropagation(); addToSession(ex.id); } })
       ])
     ]);
-    card.addEventListener("click", function () { openExerciseModal(ex.id); });
     return card;
   }
 
@@ -356,6 +393,7 @@
     var addChip = function (label, val) {
       var chip = el("button", {
         class: "chip" + (STATE.filter.component === val ? " active" : ""),
+        "aria-pressed": String(STATE.filter.component === val),
         text: label,
         onclick: function () { STATE.filter.component = val; renderLibrary(); }
       });
@@ -375,6 +413,7 @@
   function openExerciseModal(id) {
     var ex = EX.find(function (e) { return e.id === id; });
     if (!ex) return;
+    rememberModalFocus();
     $("#ex-modal-name").textContent = ex.name;
     var tags = $("#ex-modal-tags");
     tags.innerHTML = "";
@@ -397,9 +436,13 @@
     row("Muscles", ex.muscles);
     row("Safety", ex.safety);
     row("Source", ex.source + "  [" + sourceLabel(ex) + "]");
+    if (window.BRExerciseCoach && window.BRExerciseCoach.render) {
+      body.appendChild(window.BRExerciseCoach.render(ex, GUIDES[ex.id]));
+    }
     $("#ex-modal-add").onclick = function () { addToSession(ex.id); $("#ex-modal").classList.add("hidden"); };
     $("#ex-modal-copy").onclick = function () { openCopyModal(exercisePlainText(ex)); $("#ex-modal").classList.add("hidden"); };
     $("#ex-modal").classList.remove("hidden");
+    $("#ex-modal-close").focus();
   }
 
   /* ==================== BUILDER ==================== */
@@ -416,11 +459,14 @@
       duration: 60,
       focus: "muscular-strength",
       rpe: 7,
+      format: "session",
+      circuit: { rounds: 3, work: "45 sec", rest: "30 sec" },
       notes: "",
+      safetyConfirmed: false,
       phases: {
-        prep: { name: "Preparation", items: [] },
+        prep: { name: "Preparation", items: [newItemFromDrill("pd", "prep")] },
         activity: { name: "Activity", items: [] },
-        recovery: { name: "Recovery", items: [] }
+        recovery: { name: "Recovery", items: [newItemFromDrill("rd", "recovery"), newItemFromDrill("pmcs", "recovery")] }
       }
     };
   }
@@ -437,11 +483,21 @@
     };
   }
 
+  function newItemFromDrill(drillId, phase) {
+    var drill = (DOC.drills || []).find(function (d) { return d.id === drillId; });
+    var duration = phase === "recovery" ? "20-30 sec" : phase === "prep" ? "5-10 reps" : "Per drill";
+    return {
+      id: uid(), type: "drill", ref: drillId,
+      label: drill ? drill.name : "Doctrine Drill",
+      sets: "", reps: "", duration: duration, rest: ""
+    };
+  }
+
   function addToSession(exId) {
     var ex = EX.find(function (e) { return e.id === exId; });
     if (!ex) return;
     if (!STATE.session) STATE.session = blankSession();
-    var key = ex.component === "mobility-stability" ? "prep" : "activity";
+    var key = ex.id === "mb8-recovery-drill-stretches" ? "recovery" : ex.component === "mobility-stability" ? "prep" : "activity";
     addItemToPhase(STATE.session, key, newItemFromExercise(ex));
     nav("builder");
     renderSessionEditor();
@@ -496,7 +552,7 @@
       var block = el("div", { class: "phase-item" }, [
         el("div", { class: "phase-item-row" }, [
           el("p", { class: "phase-item-name", text: item.label }),
-          el("button", { class: "btn-icon", text: "x", title: "Remove", onclick: function () {
+          el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
             phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
             renderSessionEditor();
           } })
@@ -504,6 +560,7 @@
         el("div", { class: "phase-item-grid" }, [
           itemField(item, "sets", "Sets"),
           itemField(item, "reps", "Reps/Time"),
+          itemField(item, "duration", "Duration"),
           itemField(item, "rest", "Rest")
         ])
       ]);
@@ -527,7 +584,7 @@
       if (!v) { toast("Pick an exercise or drill"); return; }
       if (v.indexOf("drill:") === 0) {
         var d = (DOC.drills || []).find(function (x) { return x.id === v.split(":")[1]; });
-        if (d) addItemToPhase(STATE.session, key, { id: uid(), type: "drill", ref: d.id, label: d.name, sets: "", reps: "", duration: "", rest: "" });
+        if (d) addItemToPhase(STATE.session, key, newItemFromDrill(d.id, key));
       } else {
         var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
         if (ex) addItemToPhase(STATE.session, key, newItemFromExercise(ex));
@@ -548,7 +605,15 @@
     $("#session-duration").value = s.duration;
     $("#session-focus").value = s.focus;
     $("#session-rpe").value = s.rpe;
+    s.format = s.format || "session";
+    s.circuit = s.circuit || { rounds: 3, work: "45 sec", rest: "30 sec" };
+    $("#session-format").value = s.format;
+    $("#circuit-rounds").value = s.circuit.rounds;
+    $("#circuit-work").value = s.circuit.work;
+    $("#circuit-rest").value = s.circuit.rest;
+    $("#circuit-fields").classList.toggle("hidden", s.format !== "circuit");
     $("#session-notes").value = s.notes;
+    $("#session-safety-confirm").checked = !!s.safetyConfirmed;
     var exists = getSessions().some(function (x) { return x.id === s.id; });
     $("#session-save").textContent = exists ? "Update Session" : "Save Session";
 
@@ -584,8 +649,14 @@
         [
           el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; renderBuilder(); } }),
           el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } }),
-          el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", onclick: function () {
+          el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", "aria-label": "Delete " + s.name, onclick: function () {
             saveSessions(getSessions().filter(function (x) { return x.id !== s.id; }));
+            saveRegiments(getRegiments().map(function (regiment) {
+              regiment.days.forEach(function (day) {
+                day.sessions = day.sessions.filter(function (sessionId) { return sessionId !== s.id; });
+              });
+              return regiment;
+            }));
             renderBuilder();
           } })
         ]
@@ -642,6 +713,7 @@
         var active = day.sessions.indexOf(s.id) !== -1;
         var chip = el("button", {
           class: "chip" + (active ? " active" : ""),
+          "aria-pressed": String(active),
           text: s.name,
           onclick: function () {
             var i = day.sessions.indexOf(s.id);
@@ -690,6 +762,15 @@
 
   function getLogs() { return load(KEYS.logs, {}); }
   function saveLogs(logs) { store(KEYS.logs, logs); }
+  function snapshotSession(session) { return JSON.parse(JSON.stringify(session)); }
+  function ensureLogEntry(date, session) {
+    var logs = getLogs();
+    if (!logs[date]) logs[date] = { sessions: {} };
+    if (!logs[date].sessions[session.id]) {
+      logs[date].sessions[session.id] = { done: {}, complete: false, snapshot: snapshotSession(session) };
+    }
+    return { logs: logs, entry: logs[date].sessions[session.id] };
+  }
 
   function renderTracker() {
     var dateInput = $("#track-date");
@@ -715,10 +796,7 @@
     if (!s) { host.innerHTML = ""; return; }
     var date = $("#track-date").value || STATE.date;
     var logs = getLogs();
-    if (!logs[date]) logs[date] = { sessions: {} };
-    if (!logs[date].sessions[s.id]) logs[date].sessions[s.id] = { done: {}, complete: false };
-    var entry = logs[date].sessions[s.id];
-    saveLogs(logs);
+    var entry = logs[date] && logs[date].sessions && logs[date].sessions[s.id] || { done: {}, complete: false };
 
     host.innerHTML = "";
     var header = el("div", { style: "display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;" }, [
@@ -730,9 +808,11 @@
         class: "btn " + (entry.complete ? "btn-gold" : "btn-ghost") + " btn-sm",
         text: entry.complete ? "Completed" : "Mark Complete",
         onclick: function () {
-          entry.complete = !entry.complete;
-          saveLogs(logs);
+          var saved = ensureLogEntry(date, s);
+          saved.entry.complete = !saved.entry.complete;
+          saveLogs(saved.logs);
           renderTrackerActive();
+          renderTrackerLog();
         }
       })
     ]);
@@ -748,7 +828,7 @@
         progressTotal++;
         var done = !!entry.done[item.id];
         if (done) progressDone++;
-        var row = el("div", { class: "list-item" + (done ? " done" : ""), style: "cursor:pointer;" }, [
+        var row = el("button", { class: "list-item tracker-item" + (done ? " done" : ""), type: "button", "aria-pressed": String(done) }, [
           el("span", { style: "font-size:1.05rem;width:20px;text-align:center;color:" + (done ? "var(--ok)" : "var(--text-muted)") + ";", text: done ? "\u2713" : "\u25CB" }),
           el("div", { class: "content" }, [
             el("h4", { style: "margin:0;", text: item.label }),
@@ -756,8 +836,9 @@
           ])
         ]);
         row.addEventListener("click", function () {
-          entry.done[item.id] = !entry.done[item.id];
-          saveLogs(logs);
+          var saved = ensureLogEntry(date, s);
+          saved.entry.done[item.id] = !saved.entry.done[item.id];
+          saveLogs(saved.logs);
           renderTrackerActive();
         });
         host.appendChild(row);
@@ -770,9 +851,9 @@
         el("span", { text: progressDone + "/" + progressTotal + " completed" }),
         el("span", { text: pct + "%" })
       ]),
-      el("div", { class: "progress" }, [el("div", { class: "progress-bar", style: "width:" + pct + "%;" })]),
+      el("div", { class: "progress", role: "progressbar", "aria-label": "Session completion", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct) }, [el("div", { class: "progress-bar", style: "width:" + pct + "%;" })]),
       el("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:14px;" }, [
-        el("button", { class: "btn btn-ghost btn-sm", text: "Copy to Notes", onclick: function () { openCopyModal(sessionPlainText(s, fmtDate(date))); } })
+        el("button", { class: "btn btn-ghost btn-sm", text: "Copy to Notes", onclick: function () { openCopyModal(trackedSessionPlainText(s, date, entry)); } })
       ])
     ]));
   }
@@ -786,8 +867,8 @@
     Object.keys(logs).sort().reverse().forEach(function (date) {
       Object.keys(logs[date].sessions || {}).forEach(function (sid) {
         var e = logs[date].sessions[sid];
-        var s = sessions.find(function (x) { return x.id === sid; });
-        if (!s || !e || e === true) return;
+        var s = e && e.snapshot || sessions.find(function (x) { return x.id === sid; });
+        if (!s || !e || e === true || !e.complete) return;
         entries.push({ date: date, s: s, e: e });
       });
     });
@@ -801,7 +882,7 @@
         en.s.name,
         fmtDate(en.date) + " | " + doneCount + "/" + total + " items" + (en.e.complete ? " | complete" : ""),
         [
-          el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(en.s, fmtDate(en.date))); } }),
+          el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(trackedSessionPlainText(en.s, en.date, en.e)); } }),
           el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", onclick: function () {
             var l = getLogs();
             if (l[en.date]) delete l[en.date].sessions[en.s.id];
@@ -827,12 +908,15 @@
     var tbody = $("#aft-table");
     tbody.innerHTML = "";
     (DOC.aft.events || []).forEach(function (e) {
+      if (e.code === "cft") return;
       tbody.appendChild(el("tr", {}, [
         el("td", { html: "<strong>" + esc(e.code) + "</strong><br><span style='font-size:.78rem;color:var(--text-muted);'>" + esc(e.name) + "</span>" }),
         el("td", {}, [badge(e.component)]),
         el("td", { text: e.secondary || "-" })
       ]));
     });
+    var cft = (DOC.aft.events || []).find(function (e) { return e.code === "cft"; });
+    $("#cft-note").innerHTML = cft ? "<strong>" + esc(cft.name) + "</strong><br>" + esc(cft.description) + "<br><span style='font-size:.76rem;'>" + esc(cft.citation) + "</span>" : "";
 
     var sess = $("#doctrine-session");
     sess.innerHTML = "";
@@ -981,17 +1065,39 @@
       STATE.session.duration = Math.max(10, parseInt($("#session-duration").value, 10) || 60);
       STATE.session.focus = $("#session-focus").value;
       STATE.session.rpe = parseInt($("#session-rpe").value, 10) || 7;
+      STATE.session.format = $("#session-format").value;
+      STATE.session.circuit = {
+        rounds: Math.max(1, parseInt($("#circuit-rounds").value, 10) || 3),
+        work: $("#circuit-work").value.trim() || "45 sec",
+        rest: $("#circuit-rest").value.trim() || "30 sec"
+      };
       STATE.session.notes = $("#session-notes").value.trim();
+      STATE.session.safetyConfirmed = $("#session-safety-confirm").checked;
     }
-    ["session-name", "session-duration", "session-focus", "session-rpe", "session-notes"].forEach(function (id) {
+    ["session-name", "session-duration", "session-focus", "session-rpe", "session-format", "circuit-rounds", "circuit-work", "circuit-rest", "session-notes"].forEach(function (id) {
       $("#" + id).addEventListener("input", syncSessionFromForm);
     });
+    $("#session-format").addEventListener("change", function () {
+      syncSessionFromForm();
+      if (STATE.session && STATE.session.format === "circuit" && STATE.session.rpe > 5) STATE.session.rpe = 5;
+      renderSessionEditor();
+    });
+    $("#session-safety-confirm").addEventListener("change", syncSessionFromForm);
 
     $("#session-save").addEventListener("click", function () {
       if (!STATE.session) return;
       syncSessionFromForm();
       var s = STATE.session;
       if (!s.name) { toast("Name the session"); return; }
+      if (!s.safetyConfirmed) { toast("Confirm profile, risk, supervision, and environmental controls"); return; }
+      if (!s.phases.prep.items.length || !s.phases.activity.items.length || !s.phases.recovery.items.length) {
+        toast("Every session requires preparation, activity, and recovery");
+        return;
+      }
+      if (s.format === "circuit") {
+        if (s.rpe > 5) { toast("Active-recovery circuits require a target RPE of 5 or lower"); return; }
+        if (s.phases.activity.items.length < 2) { toast("Add at least two activity stations to the circuit"); return; }
+      }
       var all = getSessions();
       var idx = all.findIndex(function (x) { return x.id === s.id; });
       if (idx === -1) all.push(s); else all[idx] = s;
@@ -1025,13 +1131,41 @@
     $("#track-date").addEventListener("change", function () { STATE.date = this.value; renderTrackerActive(); renderTrackerLog(); });
     $("#track-session").addEventListener("change", function () { renderTrackerActive(); });
 
-    $("#ex-modal-close").addEventListener("click", function () { $("#ex-modal").classList.add("hidden"); });
+    $("#ex-modal-close").addEventListener("click", function () {
+      $("#ex-modal").classList.add("hidden");
+      if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
+    });
     $("#copy-modal-close").addEventListener("click", closeCopyModal);
     $("#copy-btn").addEventListener("click", function () { doCopy(copyModalText); });
-    [document, $(".modal")].forEach(function (m) {
+    $$(".modal").forEach(function (m) {
       if (m) m.addEventListener("click", function (ev) {
-        if (ev.target.classList.contains("modal")) ev.target.classList.add("hidden");
+        if (ev.target.classList.contains("modal")) {
+          ev.target.classList.add("hidden");
+          if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
+        }
       });
+    });
+    document.addEventListener("keydown", function (event) {
+      var openModal = $$(".modal").find(function (modal) { return !modal.classList.contains("hidden"); });
+      if (!openModal) return;
+      if (event.key === "Escape" && openModal) {
+        openModal.classList.add("hidden");
+        if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
+        return;
+      }
+      if (event.key === "Tab") {
+        var focusable = Array.prototype.slice.call(openModal.querySelectorAll("button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"));
+        if (!focusable.length) return;
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     });
   }
 
