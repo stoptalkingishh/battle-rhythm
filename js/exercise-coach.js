@@ -141,8 +141,19 @@
       root.appendChild(targetList);
     }
 
-    movement = textOf(guide.movement) || textOf(guide.pattern);
-    if (movement) root.appendChild(node("p", movement));
+    movement = guide.movement || {};
+    var movementContent = node("div");
+    movementContent.className = "coach-movement";
+    movementContent.appendChild(node("strong", "Movement sequence"));
+    [
+      ["Start", textOf(movement.start)],
+      ["Action", textOf(movement.action)],
+      ["Finish", textOf(movement.finish)]
+    ].forEach(function (stage) {
+      if (stage[1]) movementContent.appendChild(node("p", stage[0] + ": " + stage[1]));
+    });
+    if (!movementContent.querySelector("p")) movementContent.appendChild(node("p", textOf(guide.pattern)));
+    root.appendChild(movementContent);
 
     steps = list(guide.steps).map(textOf).filter(Boolean).slice(0, 3);
     while (steps.length < 3 && cues.length) steps.push(textOf(cues.shift()));

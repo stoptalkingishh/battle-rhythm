@@ -369,7 +369,7 @@
 
   function exerciseCard(ex) {
     var cues = (ex.cues || []).slice(0, 2).map(function (c) { return "&bull; " + esc(c); }).join("<br>");
-    var card = el("div", { class: "card" }, [
+    var card = el("div", { class: "card exercise-tile", role: "button", tabindex: "0", "aria-label": "Open workout guide for " + ex.name }, [
       el("div", { style: "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;" }, [
         badge(ex.component),
         tag(ex.equipment || "No equipment"),
@@ -378,11 +378,15 @@
       el("h3", { class: "card-title", text: ex.name }),
       el("p", { class: "card-muted", html: cues, style: "font-size:.82rem;" }),
       el("div", { class: "tag-row", style: "margin-top:10px;" }, (ex.aft || []).map(function (a) { return tag("AFT " + a); })),
-      el("div", { class: "exercise-card-actions" }, [
-        el("button", { class: "btn btn-ghost btn-sm", text: "Details", onclick: function (e) { e.stopPropagation(); openExerciseModal(ex.id); } }),
-        el("button", { class: "btn btn-gold btn-sm", text: "+ Session", onclick: function (e) { e.stopPropagation(); addToSession(ex.id); } })
-      ])
+      el("p", { class: "card-muted", style: "font-size:.74rem;margin:14px 0 0;color:var(--gold);", text: "Open workout guide" })
     ]);
+    card.addEventListener("click", function () { openExerciseModal(ex.id); });
+    card.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openExerciseModal(ex.id);
+      }
+    });
     return card;
   }
 
@@ -425,10 +429,13 @@
 
     var body = $("#ex-modal-body");
     body.innerHTML = "";
+    if (window.BRExerciseCoach && window.BRExerciseCoach.render) {
+      body.appendChild(window.BRExerciseCoach.render(ex, GUIDES[ex.id]));
+    }
     var row = function (label, value) {
       body.appendChild(el("div", { style: "padding:10px 0;border-bottom:1px solid var(--border);" }, [
         el("p", { style: "font-size:.66rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 6px;", text: label }),
-        el("p", { style: "margin:0;font-size:.88rem;line-height:1.6;", text: value })
+        el("p", { style: "margin:0;font-size:.88rem;line-height:1.6;white-space:pre-line;", text: value })
       ]));
     };
     row("Form", (ex.cues || []).map(function (c, i) { return (i + 1) + ". " + c; }).join("\n"));
@@ -436,9 +443,6 @@
     row("Muscles", ex.muscles);
     row("Safety", ex.safety);
     row("Source", ex.source + "  [" + sourceLabel(ex) + "]");
-    if (window.BRExerciseCoach && window.BRExerciseCoach.render) {
-      body.appendChild(window.BRExerciseCoach.render(ex, GUIDES[ex.id]));
-    }
     $("#ex-modal-add").onclick = function () { addToSession(ex.id); $("#ex-modal").classList.add("hidden"); };
     $("#ex-modal-copy").onclick = function () { openCopyModal(exercisePlainText(ex)); $("#ex-modal").classList.add("hidden"); };
     $("#ex-modal").classList.remove("hidden");
@@ -1043,7 +1047,7 @@
   /* ==================== INIT / EVENTS ==================== */
 
   function bindEvents() {
-    $$(".nav-btn").forEach(function (b) {
+    $$("button[data-view]").forEach(function (b) {
       b.addEventListener("click", function () { nav(b.dataset.view); });
     });
     $$("[data-view-link]").forEach(function (a) {
