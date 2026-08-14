@@ -1343,9 +1343,49 @@ textarea {
 .coach-svg circle,
 .coach-svg line,
 .coach-svg polyline {
-  stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.coach-svg .coach-figure-head,
+.coach-svg .coach-figure-body {
+  fill: url(#coach-skin);
+  stroke: #a87a44;
+  stroke-width: 1.2;
+}
+
+.coach-svg .coach-figure-arms,
+.coach-svg .coach-figure-legs {
+  fill: none;
+  stroke: url(#coach-skin);
+  stroke-width: 10;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.coach-svg .coach-figure-arms {
+  stroke-width: 8;
+}
+
+.coach-svg .coach-muscle {
+  fill: url(#coach-shade);
+  stroke: #a87a44;
+  stroke-width: .8;
+  opacity: .55;
+}
+
+.coach-svg .coach-muscle-lines {
+  fill: none;
+  stroke: #9a6c38;
+  stroke-width: .7;
+  opacity: .5;
+}
+
+.coach-svg .coach-muscle-target {
+  fill: url(#coach-gold);
+  stroke: #a87a44;
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 3px rgba(212, 166, 68, .55));
 }
 
 .coach-svg .coach-targets,

@@ -3,6 +3,7 @@
   "use strict";
 
   var SVG_NS = "http://www.w3.org/2000/svg";
+  var MUSCLE_MAPS = window.BR_MUSCLE_MAPS || {};
   var TARGETS = {
     "chest": { label: "Chest", front: [44, 48, 32, 16], back: [44, 48, 32, 16] },
     "shoulders": { label: "Shoulders", front: [35, 43, 50, 9], back: [35, 43, 50, 9] },
@@ -50,6 +51,72 @@
 
   function targetKey(value) {
     return String(value || "").toLowerCase().replace(/_/g, "-").replace(/\s+/g, "-");
+  }
+
+  function camelKey(value) {
+    return String(value).split("-").map(function (part, i) {
+      return i ? part.charAt(0).toUpperCase() + part.slice(1) : part;
+    }).join("");
+  }
+
+  /* Muscle-map figure chosen from pattern + pose + exercise id. */
+  function figureKey(pattern, pose, id) {
+    switch (pattern) {
+      case "press":
+        if (id === "s3-bench-press") return "bench";
+        if (id === "m1-push-up" || id === "m2-hand-release-push-up" || id === "p4-8-count-t-push-up") return "floor";
+        return pose === "action" ? "pressUp" : "stand";
+      case "pull":
+        if (id === "s4-pull-up" || id === "m6-leg-tuck") return "hang";
+        if (id === "s7-bent-over-row") return "hinge";
+        return pose === "action" ? "hang" : "stand";
+      case "hinge":
+        return pose === "action" ? "hinge" : "stand";
+      case "squat":
+        if (id === "n6-burpee-squat-thrust") return pose === "action" ? "floor" : "squat";
+        return pose === "action" ? "squat" : "stand";
+      case "jump":
+        if (id === "p4-8-count-t-push-up") return "floor";
+        if (pose === "action") return "jump";
+        return pose === "finish" ? "squat" : "stand";
+      case "run":
+      case "sprint":
+        if (id === "a7-etm-session") return "stand";
+        return pose === "action" ? "run" : "stand";
+      case "ruck":
+        return pose === "action" ? "run" : "stand";
+      case "core":
+        if (id === "m5-mountain-climber") return "floor";
+        if (id === "m6-leg-tuck") return "hang";
+        return "supine";
+      case "static":
+        return id === "m3-plank" ? "plank" : "stand";
+      case "mobility":
+        if (id === "mb5-prone-row" || id === "mb6-shoulder-stability-drill") return "floor";
+        if (id === "mb1-bend-and-reach" && pose === "action") return "squat";
+        return "stand";
+      case "sled":
+        return "sled";
+      default:
+        return "stand";
+    }
+  }
+
+  function defsNode() {
+    var defs = svgNode("defs");
+    var grad = svgNode("linearGradient", { id: "coach-skin", x1: "0", y1: "0", x2: "0", y2: "1" });
+    grad.appendChild(svgNode("stop", { offset: "0%", "stop-color": "#e9c39a" }));
+    grad.appendChild(svgNode("stop", { offset: "100%", "stop-color": "#caa06f" }));
+    defs.appendChild(grad);
+    grad = svgNode("linearGradient", { id: "coach-shade", x1: "0", y1: "0", x2: "0", y2: "1" });
+    grad.appendChild(svgNode("stop", { offset: "0%", "stop-color": "#d8ab76" }));
+    grad.appendChild(svgNode("stop", { offset: "100%", "stop-color": "#b1834e" }));
+    defs.appendChild(grad);
+    grad = svgNode("linearGradient", { id: "coach-gold", x1: "0", y1: "0", x2: "0", y2: "1" });
+    grad.appendChild(svgNode("stop", { offset: "0%", "stop-color": "#ffe9a3" }));
+    grad.appendChild(svgNode("stop", { offset: "100%", "stop-color": "#c9972e" }));
+    defs.appendChild(grad);
+    return defs;
   }
 
   function guideTargets(guide) {
@@ -185,13 +252,48 @@
     return anchors.grip;
   }
 
+  function musclePath(muscles, target) {
+    if (!muscles) return null;
+    if (muscles[target]) return muscles[target];
+    return muscles[camelKey(target)] || null;
+  }
+
   function addFigure(svg, x, pose, view, targets, label, pattern, exerciseId) {
     var group = svgNode("g", { "class": "coach-pose-" + pose, "data-pose": pose, "data-view": view, "aria-label": label + ", " + view + " view" });
     var geometry = poseGeometry(pattern, pose, exerciseId);
+    var key = figureKey(pattern, pose, exerciseId);
+    var map = key && MUSCLE_MAPS[key];
+    var viewMap = map && (map[view] || map.front);
+    if (viewMap && viewMap.muscles) {
+      var inner = svgNode("g", { transform: "translate(" + x + " 0)" });
+      var i, key, path, spot;
+      inner.appendChild(svgNode("path", { "class": "coach-figure-body", d: viewMap.body }));
+      inner.appendChild(svgNode("path", { "class": "coach-figure-arms", d: viewMap.arms }));
+      inner.appendChild(svgNode("path", { "class": "coach-figure-legs", d: viewMap.legs }));
+      inner.appendChild(svgNode("circle", { "class": "coach-figure-head", cx: viewMap.head[0], cy: viewMap.head[1], r: viewMap.head[2] }));
+      for (key in viewMap.muscles) {
+        if (!viewMap.muscles.hasOwnProperty(key)) continue;
+        if (targets.indexOf(key) !== -1 || targets.indexOf(camelKey(key)) !== -1) continue;
+        inner.appendChild(svgNode("path", { "class": "coach-muscle", d: viewMap.muscles[key], "data-muscle": key }));
+      }
+      if (viewMap.lines) inner.appendChild(svgNode("path", { "class": "coach-muscle-lines", d: viewMap.lines }));
+      for (i = 0; i < targets.length; i++) {
+        path = musclePath(viewMap.muscles, targets[i]);
+        if (path) {
+          inner.appendChild(svgNode("path", { "class": "coach-muscle coach-muscle-target", d: path, "data-muscle": targets[i] }));
+        } else {
+          spot = targetSpot(targets[i], geometry.anchors);
+          inner.appendChild(svgNode("ellipse", { "class": "coach-muscle-target", cx: spot[0], cy: spot[1], rx: 7, ry: 5, "data-muscle": targets[i] }));
+        }
+      }
+      group.appendChild(inner);
+      group.appendChild(svgNode("text", { x: x + 60, y: 178, "text-anchor": "middle" }, label));
+      svg.appendChild(group);
+      return;
+    }
     var body = svgNode("g", { transform: "translate(" + x + " 0)", fill: "currentColor" });
     var targetLayer = svgNode("g", { "class": "coach-targets", transform: "translate(" + x + " 0)" });
-    var i, spot;
-
+    var spot;
     body.appendChild(svgNode("circle", { cx: geometry.head[0], cy: geometry.head[1], r: 10 }));
     body.appendChild(svgNode("path", { d: geometry.body }));
     body.appendChild(svgNode("path", { d: geometry.arms, fill: "none", "stroke-width": 9 }));
@@ -216,6 +318,7 @@
     var svg = svgNode("svg", {
       "class": "coach-svg", viewBox: "0 0 360 190", role: "img", "aria-labelledby": "coach-svg-title coach-svg-description"
     });
+    svg.appendChild(defsNode());
     var title = svgNode("title", { id: "coach-svg-title" }, name + " movement sequence");
     var description = svgNode("desc", { id: "coach-svg-description" }, "Three illustrative " + view + "-view positions: start, action, and finish. Highlighted gold regions indicate target muscle groups.");
     svg.appendChild(title);
