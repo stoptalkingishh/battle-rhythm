@@ -1242,6 +1242,63 @@ textarea {
   cursor: pointer;
 }
 
+.session-stopwatch {
+  margin-bottom: 20px;
+}
+
+.session-stopwatch-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stopwatch-display {
+  display: block;
+  margin: 14px 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 7vw, 3.25rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .08em;
+  line-height: 1;
+  color: var(--gold);
+}
+
+.stopwatch-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stopwatch-laps {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.stopwatch-laps h4 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: .78rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.stopwatch-laps ol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 6px 18px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.stopwatch-laps li {
+  color: var(--text-muted);
+  font-size: .82rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .tracker-item:focus-visible,
 .btn:focus-visible,
 .btn-icon:focus-visible,
@@ -1287,6 +1344,16 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .session-stopwatch-head {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stopwatch-actions .btn {
+    flex: 1 1 90px;
+  }
+
   #ex-modal .modal-card {
     max-width: 100%;
   }

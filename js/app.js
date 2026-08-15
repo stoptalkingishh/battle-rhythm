@@ -23,6 +23,24 @@
   var PHASE_ORDER = ["prep", "activity", "recovery"];
   var PHASE_LABEL = { prep: "Preparation", activity: "Activity", recovery: "Recovery" };
 
+  var MACHINE_OPTIONS = [
+    { value: "none", label: "No machine (free weight / bodyweight)" },
+    { value: "barbell", label: "Barbell rig" },
+    { value: "hex-bar", label: "MDL hex bar" },
+    { value: "cable", label: "Cable pulley column" },
+    { value: "leg-press", label: "Leg press machine" },
+    { value: "lat-pulldown", label: "Lat pulldown machine" },
+    { value: "smith", label: "Smith machine" },
+    { value: "treadmill", label: "Treadmill" },
+    { value: "stationary-bike", label: "Stationary cycle" },
+    { value: "erg-rower", label: "Rowing ergometer" }
+  ];
+  function machineLabel(value) {
+    if (!value || value === "none") return "";
+    var m = MACHINE_OPTIONS.find(function (o) { return o.value === value; });
+    return m ? m.label : value;
+  }
+
   var STATE = {
     view: "home",
     filter: { q: "", component: "all", aft: "all", equipment: "all" },
@@ -30,6 +48,8 @@
     regiment: null,
     date: todayStr()
   };
+
+  var STOPWATCH = { elapsed: 0, startedAt: 0, frame: null, laps: [], running: false };
 
   function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
   function load(key, def) { try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; } }
@@ -193,6 +213,8 @@
     if (item.reps) parts.push(item.reps + " reps");
     if (item.duration) parts.push(item.duration);
     if (item.rest) parts.push("rest " + item.rest);
+    var machine = machineLabel(item.machine);
+    if (machine) parts.push("machine: " + machine);
     return parts.join(", ");
   }
 
@@ -483,7 +505,7 @@
   function newItemFromExercise(ex) {
     return {
       id: uid(), type: "exercise", ref: ex.id, label: ex.name,
-      sets: "3", reps: "10", duration: "", rest: "60s"
+      sets: "3", reps: "10", duration: "", rest: "60s", machine: "none"
     };
   }
 
@@ -546,6 +568,20 @@
     ]);
   }
 
+  function machineField(item) {
+    var select = el("select", { class: "select", "aria-label": "Target machine for " + item.label });
+    select.appendChild(el("option", { value: "none", text: "No machine (free weight / bodyweight)" }));
+    MACHINE_OPTIONS.forEach(function (o) {
+      var opt = el("option", { value: o.value, text: o.label });
+      opt.selected = item.machine === o.value;
+      select.appendChild(opt);
+    });
+    select.addEventListener("change", function () { item.machine = select.value; });
+    return el("label", { style: "display:flex;flex-direction:column;gap:3px;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);" }, [
+      document.createTextNode("Machine (supplemental)"), select
+    ]);
+  }
+
   function renderPhaseItems(phase) {
     var wrap = el("div", {});
     if (!phase.items.length) {
@@ -553,6 +589,13 @@
       return wrap;
     }
     phase.items.forEach(function (item) {
+      var gridFields = [
+        itemField(item, "sets", "Sets"),
+        itemField(item, "reps", "Reps/Time"),
+        itemField(item, "duration", "Duration"),
+        itemField(item, "rest", "Rest")
+      ];
+      if (item.type === "exercise") gridFields.push(machineField(item));
       var block = el("div", { class: "phase-item" }, [
         el("div", { class: "phase-item-row" }, [
           el("p", { class: "phase-item-name", text: item.label }),
@@ -561,12 +604,7 @@
             renderSessionEditor();
           } })
         ]),
-        el("div", { class: "phase-item-grid" }, [
-          itemField(item, "sets", "Sets"),
-          itemField(item, "reps", "Reps/Time"),
-          itemField(item, "duration", "Duration"),
-          itemField(item, "rest", "Rest")
-        ])
+        el("div", { class: "phase-item-grid" }, gridFields)
       ]);
       wrap.appendChild(block);
     });
@@ -763,6 +801,76 @@
   }
 
   /* ==================== TRACKER ==================== */
+
+  function formatStopwatchTime(milliseconds) {
+    var tenths = Math.floor(milliseconds / 100);
+    var minutes = Math.floor(tenths / 600);
+    var seconds = Math.floor(tenths / 10) % 60;
+    return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds + "." + (tenths % 10);
+  }
+
+  function stopwatchElapsed() {
+    return STOPWATCH.running ? STOPWATCH.elapsed + performance.now() - STOPWATCH.startedAt : STOPWATCH.elapsed;
+  }
+
+  function renderStopwatchTime() {
+    var display = formatStopwatchTime(stopwatchElapsed());
+    var displayEl = $("#stopwatch-display");
+    displayEl.textContent = display;
+    displayEl.setAttribute("aria-label", "Elapsed time " + display);
+  }
+
+  function renderStopwatch() {
+    var startButton = $("#stopwatch-start");
+    var lapButton = $("#stopwatch-lap");
+    var status = $("#stopwatch-status");
+    var lapList = $("#stopwatch-lap-list");
+    renderStopwatchTime();
+    startButton.textContent = STOPWATCH.running ? "Pause" : "Start";
+    startButton.setAttribute("aria-pressed", String(STOPWATCH.running));
+    lapButton.disabled = !STOPWATCH.running;
+    status.textContent = STOPWATCH.running ? "Stopwatch running." : STOPWATCH.elapsed ? "Stopwatch paused." : "Stopwatch stopped.";
+    lapList.textContent = "";
+    STOPWATCH.laps.forEach(function (lap, index) {
+      lapList.appendChild(el("li", { text: "Lap " + (index + 1) + ": " + formatStopwatchTime(lap) }));
+    });
+  }
+
+  function updateStopwatch() {
+    renderStopwatchTime();
+    if (STOPWATCH.running) STOPWATCH.frame = requestAnimationFrame(updateStopwatch);
+  }
+
+  function startStopwatch() {
+    if (STOPWATCH.running) {
+      STOPWATCH.elapsed = stopwatchElapsed();
+      STOPWATCH.running = false;
+      cancelAnimationFrame(STOPWATCH.frame);
+      STOPWATCH.frame = null;
+      renderStopwatch();
+      return;
+    }
+    STOPWATCH.startedAt = performance.now();
+    STOPWATCH.running = true;
+    STOPWATCH.frame = requestAnimationFrame(updateStopwatch);
+    renderStopwatch();
+  }
+
+  function lapStopwatch() {
+    if (!STOPWATCH.running) return;
+    STOPWATCH.laps.push(stopwatchElapsed());
+    renderStopwatch();
+  }
+
+  function resetStopwatch() {
+    STOPWATCH.elapsed = 0;
+    STOPWATCH.startedAt = 0;
+    STOPWATCH.running = false;
+    STOPWATCH.laps = [];
+    if (STOPWATCH.frame !== null) cancelAnimationFrame(STOPWATCH.frame);
+    STOPWATCH.frame = null;
+    renderStopwatch();
+  }
 
   function getLogs() { return load(KEYS.logs, {}); }
   function saveLogs(logs) { store(KEYS.logs, logs); }
@@ -1134,6 +1242,9 @@
 
     $("#track-date").addEventListener("change", function () { STATE.date = this.value; renderTrackerActive(); renderTrackerLog(); });
     $("#track-session").addEventListener("change", function () { renderTrackerActive(); });
+    $("#stopwatch-start").addEventListener("click", startStopwatch);
+    $("#stopwatch-lap").addEventListener("click", lapStopwatch);
+    $("#stopwatch-reset").addEventListener("click", resetStopwatch);
 
     $("#ex-modal-close").addEventListener("click", function () {
       $("#ex-modal").classList.add("hidden");

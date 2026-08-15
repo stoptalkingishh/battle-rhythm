@@ -249,6 +249,23 @@
         </div>
       </div>
 
+      <section class="card session-stopwatch" aria-labelledby="stopwatch-title">
+        <div class="session-stopwatch-head">
+          <h3 class="card-title" id="stopwatch-title">Session Stopwatch</h3>
+          <p class="card-muted" id="stopwatch-status" role="status">Stopwatch stopped.</p>
+        </div>
+        <time class="stopwatch-display" id="stopwatch-display" aria-label="Elapsed time 00:00.0">00:00.0</time>
+        <div class="stopwatch-actions" aria-label="Stopwatch controls">
+          <button class="btn btn-gold" id="stopwatch-start" type="button" aria-pressed="false">Start</button>
+          <button class="btn btn-ghost" id="stopwatch-lap" type="button" disabled>Lap</button>
+          <button class="btn btn-ghost" id="stopwatch-reset" type="button">Reset</button>
+        </div>
+        <div class="stopwatch-laps" aria-labelledby="stopwatch-laps-title">
+          <h4 id="stopwatch-laps-title">Laps</h4>
+          <ol id="stopwatch-lap-list"></ol>
+        </div>
+      </section>
+
       <div class="card" style="margin-bottom:20px;">
         <div class="form-grid">
           <div class="field">
