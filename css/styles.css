@@ -1314,17 +1314,6 @@ textarea {
   cursor: pointer;
 }
 
-.exercise-thumbnail {
-  display: block;
-  width: 100%;
-  aspect-ratio: 12 / 7;
-  object-fit: contain;
-  margin: 0 0 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: var(--bg-soft);
-}
-
 #ex-modal .modal-card {
   max-width: 860px;
 }

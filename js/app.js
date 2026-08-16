@@ -4,8 +4,6 @@
   var EX = window.BR_EXERCISES || [];
   var DOC = window.BR_DOCTRINE || {};
   var GUIDES = window.BR_MOVEMENT_GUIDES || {};
-  var WORKOUT_CARDS = window.BR_WORKOUT_CARDS || {};
-  var AI_PLATES = window.BR_AI_PLATES || [];
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -391,35 +389,14 @@
     });
   }
 
-  function workoutCard(exercise) {
-    var card = WORKOUT_CARDS[exercise.id];
-    if (!card && Object.prototype.toString.call(WORKOUT_CARDS) === "[object Array]") {
-      card = WORKOUT_CARDS.find(function (item) { return item.id === exercise.id; });
-    }
-    var ai = AI_PLATES.find(function (plate) { return plate.id === exercise.id; });
-    if (ai) {
-      return {
-        src: ai.webp || ai.png || (card && card.src),
-        alt: (card && card.alt) || exercise.name + " anatomy plate"
-      };
-    }
-    return card;
-  }
-
   function exerciseCard(ex) {
     var cues = (ex.cues || []).slice(0, 2).map(function (c) { return "&bull; " + esc(c); }).join("<br>");
-    var cardImage = workoutCard(ex);
-    var thumbnail = cardImage && cardImage.src ? el("img", {
-      class: "exercise-thumbnail", src: cardImage.src, alt: "", "aria-hidden": "true", loading: "lazy"
-    }) : null;
-    if (thumbnail) thumbnail.addEventListener("error", function () { thumbnail.hidden = true; });
     var card = el("div", { class: "card exercise-tile", role: "button", tabindex: "0", "aria-label": "Open workout guide for " + ex.name }, [
       el("div", { style: "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;" }, [
         badge(ex.component),
         tag(ex.equipment || "No equipment"),
         (ex.drill ? tag(ex.drill) : null)
       ]),
-      thumbnail,
       el("h3", { class: "card-title", text: ex.name }),
       el("p", { class: "card-muted", html: cues, style: "font-size:.82rem;" }),
       el("div", { class: "tag-row", style: "margin-top:10px;" }, (ex.aft || []).map(function (a) { return tag("AFT " + a); })),
