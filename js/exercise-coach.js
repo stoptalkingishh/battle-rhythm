@@ -4,6 +4,8 @@
 
   var SVG_NS = "http://www.w3.org/2000/svg";
   var MUSCLE_MAPS = window.BR_MUSCLE_MAPS || {};
+  var WORKOUT_CARDS = window.BR_WORKOUT_CARDS || {};
+  var AI_PLATES = window.BR_AI_PLATES || [];
   var TARGETS = {
     "chest": { label: "Chest", front: [44, 48, 32, 16], back: [44, 48, 32, 16] },
     "shoulders": { label: "Shoulders", front: [35, 43, 50, 9], back: [35, 43, 50, 9] },
@@ -329,6 +331,43 @@
     return svg;
   }
 
+  function workoutCard(exercise) {
+    var card = WORKOUT_CARDS[exercise && exercise.id];
+    if (!card && Object.prototype.toString.call(WORKOUT_CARDS) === "[object Array]") {
+      card = WORKOUT_CARDS.find(function (item) { return item.id === exercise.id; });
+    }
+    var ai = AI_PLATES.find(function (plate) { return plate.id === exercise.id; });
+    if (ai) {
+      return {
+        src: ai.webp || ai.png || (card && card.src),
+        alt: (card && card.alt) || exercise.name + " anatomy plate"
+      };
+    }
+    return card;
+  }
+
+  function anatomyPlate(exercise, card) {
+    var image = node("img");
+    image.className = "coach-anatomy-plate";
+    image.src = card.src;
+    image.alt = card.alt || exercise.name + " anatomy plate";
+    return image;
+  }
+
+  function appendMotionControls(root) {
+    var controls = node("div");
+    var button = node("button", "Play motion");
+    controls.className = "coach-controls";
+    button.type = "button";
+    button.setAttribute("aria-pressed", "false");
+    button.addEventListener("click", function () {
+      var playing = root.classList.toggle("coach-playing");
+      button.setAttribute("aria-pressed", playing ? "true" : "false");
+    });
+    controls.appendChild(button);
+    root.appendChild(controls);
+  }
+
   function appendList(parent, values) {
     var listElement = node("ol");
     values.forEach(function (value) {
@@ -341,8 +380,11 @@
   function render(exercise, guide) {
     var root = node("section");
     var cues = list(exercise && exercise.cues);
-    var steps, warnings, targets, figure, targetList, controls, button, movement;
+    var steps, warnings, targets, figure, targetList, movement, card;
+    card = workoutCard(exercise);
+    var hasAnatomyPlate = !!(card && card.src);
     root.className = "exercise-coach";
+    if (hasAnatomyPlate) root.classList.add("has-anatomy-plate");
 
     if (!guide) {
       if (cues.length) {
@@ -358,7 +400,17 @@
     targets = guideTargets(guide);
     figure = node("figure");
     figure.className = "coach-figure";
-    figure.appendChild(diagram(exercise, guide, targets));
+    if (hasAnatomyPlate) {
+      var plate = anatomyPlate(exercise, card);
+      plate.addEventListener("error", function () {
+        figure.replaceChild(diagram(exercise, guide, targets), plate);
+        root.classList.remove("has-anatomy-plate");
+        appendMotionControls(root);
+      }, { once: true });
+      figure.appendChild(plate);
+    } else {
+      figure.appendChild(diagram(exercise, guide, targets));
+    }
     root.appendChild(figure);
 
     if (targets.length) {
@@ -402,17 +454,9 @@
       root.appendChild(warningContent);
     }
 
-    controls = node("div");
-    controls.className = "coach-controls";
-    button = node("button", "Play motion");
-    button.type = "button";
-    button.setAttribute("aria-pressed", "false");
-    button.addEventListener("click", function () {
-      var playing = root.classList.toggle("coach-playing");
-      button.setAttribute("aria-pressed", playing ? "true" : "false");
-    });
-    controls.appendChild(button);
-    root.appendChild(controls);
+    if (!hasAnatomyPlate) {
+      appendMotionControls(root);
+    }
     root.appendChild(node("p", "Illustrative movement guide — follow qualified instruction and unit policy.")).className = "coach-disclaimer";
     return root;
   }

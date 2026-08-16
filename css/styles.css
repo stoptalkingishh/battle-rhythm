@@ -1314,6 +1314,17 @@ textarea {
   cursor: pointer;
 }
 
+.exercise-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 12 / 7;
+  object-fit: contain;
+  margin: 0 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
 #ex-modal .modal-card {
   max-width: 860px;
 }
@@ -1388,6 +1399,15 @@ textarea {
   box-shadow: var(--shadow);
 }
 
+.exercise-coach.has-anatomy-plate {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.exercise-coach.has-anatomy-plate .coach-figure {
+  min-height: 0;
+  padding: 12px;
+}
+
 .coach-figure {
   display: grid;
   place-items: center;
@@ -1404,6 +1424,13 @@ textarea {
   width: min(100%, 360px);
   height: auto;
   color: var(--text-muted);
+}
+
+.coach-anatomy-plate {
+  display: block;
+  width: min(100%, 900px);
+  max-height: 620px;
+  height: auto;
 }
 
 .coach-svg path,
@@ -1570,5 +1597,9 @@ textarea {
 
   .coach-figure {
     min-height: 280px;
+  }
+
+  .coach-anatomy-plate {
+    max-height: 320px;
   }
 }

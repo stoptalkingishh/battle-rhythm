@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Original technical training plate: deadlift start position. All artwork is vector. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600" role="img" aria-labelledby="plate-title plate-desc">
+  <title id="plate-title">Deadlift: start position</title>
+  <desc id="plate-desc">Athletic male in a hip-hinge deadlift start position, gripping a floor-level barbell. Colored regions identify prime targets.</desc>
+  <defs>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0V30" fill="none" stroke="#29405d" stroke-width="1" opacity=".55"/>
+    </pattern>
+    <style>
+      .label { fill:#e8edf2; font-family:Arial,Helvetica,sans-serif; }
+      .small { fill:#9eb2c8; font-family:Arial,Helvetica,sans-serif; font-size:12px; letter-spacing:1.2px; }
+      .line { fill:none; stroke:#d9e1e9; stroke-linecap:round; stroke-linejoin:round; }
+      .leader { fill:none; stroke:#8fa6be; stroke-width:1.5; stroke-linecap:round; }
+    </style>
+  </defs>
+
+  <!-- Background and technical framing -->
+  <g id="background">
+    <rect width="900" height="600" fill="#0c1b31"/>
+    <rect width="900" height="600" fill="url(#grid)"/>
+    <path d="M42 78H858M42 540H858" stroke="#49637f" stroke-width="1" opacity=".75"/>
+    <path d="M450 92V525" stroke="#29445f" stroke-width="1" stroke-dasharray="4 8"/>
+  </g>
+
+  <!-- Editable typography -->
+  <g id="title-block">
+    <text x="42" y="48" class="label" font-size="26" font-weight="700" letter-spacing="2">DEADLIFT</text>
+    <text x="44" y="69" class="small">START POSITION / HIP HINGE</text>
+    <path d="M42 84H266" stroke="#d19a3e" stroke-width="3"/>
+    <text x="703" y="48" class="small">PLATE S1</text>
+    <text x="703" y="68" class="small">TECHNICAL ANATOMY</text>
+  </g>
+
+  <!-- Floor-level Olympic-style barbell, plates occur only outside matching collars -->
+  <g id="barbell" aria-label="Floor-level barbell">
+    <path d="M112 486H788" stroke="#c6d0d9" stroke-width="6" stroke-linecap="round"/>
+    <path d="M112 486H788" stroke="#73899f" stroke-width="2" stroke-linecap="round"/>
+    <g id="left-plate">
+      <rect x="224" y="472" width="12" height="28" rx="2" fill="#d19a3e"/>
+      <rect x="174" y="450" width="48" height="72" rx="7" fill="#3d5771" stroke="#aab8c5" stroke-width="2"/>
+      <rect x="183" y="457" width="30" height="58" rx="4" fill="#172a42" stroke="#69829b" stroke-width="2"/>
+      <circle cx="198" cy="486" r="7" fill="#7890a7"/>
+    </g>
+    <g id="right-plate">
+      <rect x="664" y="472" width="12" height="28" rx="2" fill="#d19a3e"/>
+      <rect x="678" y="450" width="48" height="72" rx="7" fill="#3d5771" stroke="#aab8c5" stroke-width="2"/>
+      <rect x="687" y="457" width="30" height="58" rx="4" fill="#172a42" stroke="#69829b" stroke-width="2"/>
+      <circle cx="702" cy="486" r="7" fill="#7890a7"/>
+    </g>
+  </g>
+
+  <!-- Athlete base silhouette: head, hinged trunk, bent legs, and vertical arms -->
+  <g id="athlete-silhouette" stroke="#aebdca" stroke-width="2" stroke-linejoin="round">
+    <path id="head" d="M351 122c0-24 18-39 39-39 20 0 35 15 35 35 0 18-11 32-27 36l-5 22-35-4-1-22c-4-7-6-17-6-28z" fill="#74899a"/>
+    <path id="neck-and-torso" d="M362 164c22 8 35 9 49 2l18 22c25 14 56 35 83 61 16 15 25 33 26 54l-34 21-35-29-66-43-55-22 8-47z" fill="#61778a"/>
+    <path id="pelvis" d="M489 253c25-4 48 10 55 31l-14 38-52 5-26-29 11-31z" fill="#536b80"/>
+    <!-- Rear leg is shown behind the near leg to keep the stance readable. -->
+    <path id="rear-leg" d="M490 314l45 5 25 70-9 60-28-3-7-54-26-48-33 63-37-8 25-76z" fill="#526a7e"/>
+    <path id="rear-shoe" d="M514 443l40 1 13 15-4 12h-59c-8-4-7-17 10-28z" fill="#202e42"/>
+    <path id="near-leg" d="M474 310l47 15-22 61-11 54-38-2-1-53-37-58 22-22z" fill="#6b8091"/>
+    <path id="near-shoe" d="M448 436l43 1 14 15-5 12h-61c-8-5-6-18 9-28z" fill="#202e42"/>
+    <path id="far-arm" d="M413 207c9-2 18 2 21 10l21 111 4 128-20 1-11-126-26-106c-3-9 2-16 11-18z" fill="#71879a"/>
+    <path id="near-arm" d="M384 203c10-4 19 1 22 10l18 117-4 128-20-1-1-125-25-108c-3-9 1-17 10-21z" fill="#8195a5"/>
+    <!-- Both hands overlap the knurled bar rather than merely touching it. -->
+    <path id="far-hand" d="M438 453l21-1 4 13-6 15-15-1-6-12z" fill="#d19a3e"/>
+    <path id="near-hand" d="M399 453l21 1 3 13-7 14-15-2-5-13z" fill="#d19a3e"/>
+  </g>
+
+  <!-- Restrained target overlays, each isolated for easy editing -->
+  <g id="anatomy-targets" opacity=".94">
+    <path id="erectors-cyan" d="M374 181l15 5 78 59 32 39-13 13-44-38-65-43-16-27z" fill="#54c1cf"/>
+    <path id="glutes-crimson" d="M478 264c20-12 47-1 54 20l-10 27-37 1-24-15 7-22z" fill="#b9475d"/>
+    <path id="hamstrings-coral" d="M485 323l30 6-18 52-9 49-27-1-1-42-29-54 20-12z" fill="#dd766a"/>
+    <path id="quads-orange" d="M505 326l28 2 20 61-8 44-24-2-5-39-22-55z" fill="#df8745"/>
+    <path id="forearms-amber" d="M388 221l14-4 19 113-3 81-13-1-4-78zM414 219l14 2 21 110 4 81-13 1-5-82-21-106z" fill="#d19a3e"/>
+  </g>
+
+  <!-- Neutral spine and alignment cues sit above anatomy overlays. -->
+  <g id="form-cues">
+    <path id="neutral-spine-line" d="M367 169C394 188 427 211 460 234c18 12 32 25 45 39" class="line" stroke="#f2f5f7" stroke-width="3" stroke-dasharray="7 6"/>
+    <path d="M337 157l27 9-11 23" class="leader"/>
+    <text x="220" y="153" class="small">NEUTRAL SPINE</text>
+    <path d="M544 281l42-19h51" class="leader"/>
+    <text x="592" y="257" class="small">HIPS BACK</text>
+    <path d="M424 474v-41" class="leader"/>
+    <text x="365" y="423" class="small">ARMS VERTICAL</text>
+    <path d="M485 388l55 4" class="leader"/>
+    <text x="548" y="397" class="small">KNEES TRACK</text>
+  </g>
+
+  <!-- Compact target key uses the same editable palette as the overlays. -->
+  <g id="target-legend">
+    <rect x="42" y="340" width="183" height="154" rx="5" fill="#10233b" stroke="#3d5976"/>
+    <text x="58" y="366" class="label" font-size="13" font-weight="700" letter-spacing="1.4">PRIMARY TARGETS</text>
+    <path d="M58 378H208" stroke="#49637f"/>
+    <rect x="58" y="392" width="11" height="11" rx="2" fill="#b9475d"/><text x="78" y="402" class="small">GLUTES</text>
+    <rect x="58" y="415" width="11" height="11" rx="2" fill="#dd766a"/><text x="78" y="425" class="small">HAMSTRINGS</text>
+    <rect x="58" y="438" width="11" height="11" rx="2" fill="#df8745"/><text x="78" y="448" class="small">QUADS</text>
+    <rect x="58" y="461" width="11" height="11" rx="2" fill="#54c1cf"/><text x="78" y="471" class="small">ERECTORS / GRIP</text>
+  </g>
+
+  <g id="footer">
+    <text x="676" y="565" class="small">BAR OVER MIDFOOT</text>
+    <path d="M674 573H858" stroke="#d19a3e" stroke-width="2"/>
+  </g>
+</svg>

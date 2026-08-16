@@ -1,0 +1,232 @@
+{
+  "s1-deadlift": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at deadlift lockout, holding a loaded barbell close to straight legs, hips and knees fully extended, neutral spine; dark-navy training-studio background with a subtle blueprint grid, restrained red overlays on hamstrings, glutes, lower back, and forearms; clean semi-realistic anatomy, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, extra limbs, rounded back, incorrect bar path",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s2-squat": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a parallel back-barbell squat, front three-quarter view, chest lifted, knees tracking over toes and feet planted; dark-navy blueprint-grid background, restrained red overlays on quads, glutes, and core; precise athletic anatomy, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, knee valgus, floating heels, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s3-bench-press": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure lying on a flat bench and pressing a barbell above mid-chest, feet grounded and shoulder blades set; dark-navy technical grid backdrop, restrained red overlays on chest, triceps, and shoulders; clear side three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, bent bar, unsafe grip, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s4-pull-up": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure doing a strict pull-up, viewed from the front, chin held clearly above a fixed horizontal bar, elbows pulled down and back, legs straight and crossed slightly beneath, scapulae retracted; dark-navy blueprint grid background, restrained red overlays on lats, upper back, biceps, and grip; no text.",
+    "negativePrompt": "words, letters, logos, watermarks, kipping, partial range, broken bar, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s5-sumo-squat": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the bottom of a bodyweight sumo squat, wide stance, toes turned slightly outward, heels down, hands forward for balance; dark-navy grid setting, restrained red overlays on quads, adductors, and glutes; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, lifted heels, knee collapse, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s6-straight-leg-deadlift": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure performing a straight-leg barbell deadlift at the hip-hinge position, bar held close to legs, long hamstrings and flat neutral back; dark-navy blueprint grid background, restrained red overlays on hamstrings, glutes, and lower back; side three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, rounded spine, deep squat, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s7-bent-over-row": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure bent over about 45 degrees with a flat back, pulling a barbell toward lower ribs with elbows behind torso; dark-navy technical grid background, restrained red overlays on upper back, lats, and biceps; side three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, upright posture, rounded back, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "s8-overhead-push-press": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure finishing a barbell push-press overhead, arms locked out, torso braced and legs straight after a shallow drive; dark-navy blueprint grid background, restrained red overlays on shoulders, triceps, quads, and core; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, hyperextended back, bent bar, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p1-power-jump": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in midair during a vertical power jump from a straddle stance, arms swinging upward, toes pointed down; dark-navy grid background with a subtle ground plane, restrained red overlays on quads, glutes, and calves; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, impossible pose, extra limbs, unsafe landing",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p2-standing-long-jump": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure airborne in a standing long jump, both feet traveling forward and arms reaching ahead toward a balanced two-foot landing; dark-navy blueprint-grid background, restrained red overlays on glutes, quads, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, running start, extra limbs, distorted feet",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p3-tuck-jump": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the apex of a tuck jump, knees driven toward chest, upright torso and arms balanced; dark-navy technical grid background, restrained red overlays on quads, calves, and core; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, seated pose, extra limbs, distorted knees",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p4-8-count-t-push-up": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this eight-count exercise the panels show: START = front-leaning rest (high plank), ACTION = open T push-up with body rotated and one arm reaching straight up, FINISH = squat with feet drawn to hands ready to jump; restrained red overlays on chest, shoulders, core, and quads; three-quarter view for the ACTION panel.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, sagging hips, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p5-kettlebell-swing": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the top of a Russian kettlebell swing, bell at chest height, hips snapped tall and arms straight but relaxed; dark-navy blueprint grid background, restrained red overlays on glutes, hamstrings, and forearms; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, overhead swing, squat posture, rounded back",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p6-sled-push-drag": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure pushing a weighted training sled down a marked lane, two hands on upright handles, body leaning forward in a powerful drive; dark-navy grid environment, restrained red overlays on quads, glutes, core, and forearms; side three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, vehicle, floating sled, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "p7-overhead-push-press-power": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure explosively locking a barbell overhead in a power push-press, heels grounded after a fast dip-drive; dark-navy blueprint-grid background, restrained red overlays on shoulders, quads, and core; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, excessive back arch, bent bar, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a1-unit-formation-run": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic runner in a unit formation run, shown at a steady relaxed pace as the clear foreground figure with a neat column of three faint runner silhouettes in loose formation behind him, cadence-matched; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, crowd, sprinting, scattered runners, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a2-ability-group-run": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic runner in an ability group run, one clear foreground figure at a controlled endurance pace with two shorter faint paired silhouettes running together a short distance behind, group spacing even; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, crowd, sprinting, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a3-release-run": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic runner on a release run, single clear foreground figure at a conversational easy pace with a gently curving open route line behind him and no pack; relaxed upright form, light foot strike; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, crowd, sprinting, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a4-foot-march-ruck-march": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure marching with a loaded ruck pack worn high and tight, natural stride and upright back view; dark-navy blueprint grid background, restrained red overlays on quads, hamstrings, calves, upper back, and core; no text.",
+    "negativePrompt": "words, letters, logos, watermarks, weapons, tactical insignia, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a5-2-mile-run": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic distance runner holding a steady target pace for a 2-mile test, compact arm swing, level gaze, efficient mid-foot stride on a flat measured course with faint lane marks; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, crowd, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a6-sustained-run": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic runner at a constant sustainable aerobic pace, calm controlled breathing posture, even stride length, relaxed shoulders, single clear foreground figure; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, sprinting, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "a7-etm-session": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure running on a modern treadmill for an endurance training machine session, controlled upright form, hands swinging naturally and free, front three-quarter view of the treadmill and runner; dark-navy blueprint-grid studio background, restrained red overlays on quads, hamstrings, and calves; no text.",
+    "negativePrompt": "words, letters, logos, watermarks, holding the rails, running beside the treadmill, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n1-30-60s": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a maximal 30-second sprint interval, aggressive forward lean, explosive arm drive, high knee lift, powerful heel-to-glute strike on a marked running lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, easy jogging, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n2-60-120s": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure running a hard 60-second interval, tall sprint posture with forceful knee drive, strong pumping arms, maximal sustained effort on a marked lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, easy jogging, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n3-300-meter-shuttle-run": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this shuttle run the panels show: START = runner sprinting down the lane toward the far line, ACTION = runner planting the outside foot low and touching the ground line with one hand to turn, FINISH = runner accelerating back down the lane; restrained red overlays on quads, hamstrings, and calves; side view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, race bibs, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n4-shuttle-sprint": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this 25-meter shuttle sprint the panels show: START = runner sprinting hard, ACTION = runner planting and touching the ground at the line, coiled to drive back, FINISH = runner accelerating back up the lane; restrained red overlays on quads, hamstrings, and calves; side view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, race bibs, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n5-hill-repeats": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure sprinting uphill on a clean stylized incline, forward lean from ankles and vigorous arm drive; dark-navy blueprint grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, mountain landscape, crowd, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n6-burpee-squat-thrust": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this burpee the panels show: START = squatting down from standing, ACTION = kicking the feet back into a front-leaning rest plank, FINISH = jumping the feet back in and standing tall; restrained red overlays on chest, shoulders, core, and quads; side view for all three panels.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, sagging hips, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "n7-sprint-intervals": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at full speed in a set sprint interval, long powerful stride, coordinated arm drive, forward lean, maximal effort on a minimal running lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, race bibs, relaxed jogging, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m1-push-up": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the bottom of a standard push-up, hands under shoulders, elbows about 45 degrees, body straight from head to heels; dark-navy blueprint grid background, restrained red overlays on chest, shoulders, triceps, and core; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, sagging hips, flared elbows, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m2-hand-release-push-up": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the floor phase of a hand-release push-up, chest and hips near the floor, hands lifted just clear of the ground, body in a straight line, elbows at the sides; dark-navy grid background, restrained red overlays on chest, shoulders, triceps, and core; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, sagging hips, flared elbows, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m3-plank": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure holding a forearm plank, elbows under shoulders and body in one straight line from head to heels; dark-navy blueprint grid background, restrained red overlay on core; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, raised hips, sagging hips, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m4-v-up": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure performing a V-up on his back, straight legs and straight arms rising together toward a clear V shape; dark-navy technical grid background, restrained red overlays on abdominals and hip flexors; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, bent knees, seated crunch, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m5-mountain-climber": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a mountain climber, strong front-leaning-rest position with one knee driving forward and the other leg extended, hips level; dark-navy blueprint grid background, restrained red overlays on core, hip flexors, and shoulders; side three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, raised hips, extra limbs, distorted hands",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m6-leg-tuck": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure hanging from a pull-up bar during a leg tuck, knees lifted tightly toward elbows with a controlled torso; dark-navy technical grid background, restrained red overlays on forearms, shoulders, core, and hip flexors; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, swinging wildly, broken bar, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m7-rower": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in the seated balance point of a bodyweight rower, knees bent together, feet close, torso curled upright and arms forward; dark-navy blueprint grid background, restrained red overlay on core; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, rowing machine, extra limbs, distorted spine",
+    "sourceStatus": "original-generation-spec"
+  },
+  "m8-bent-leg-body-twist": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this core exercise the panels show: START = lying supine with hips and knees bent to 90 degrees, feet off the floor, FINISH = rotating both bent legs down to the left side while keeping the shoulders pinned, ACTION = legs mid-rotation; restrained red overlays on obliques and core; overhead view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, straight legs, shoulders lifting, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb1-bend-and-reach": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a wide straddle squat, heels flat, reaching both arms between the legs as part of bend and reach mobility; dark-navy blueprint grid background, restrained red overlays on hip flexors, quads, and shoulders; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, lifted heels, knee collapse, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb2-rear-lunge": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a deep rear lunge, stepping one foot back so both knees bend to about 90 degrees, front knee stacked over the ankle, rear heel lifted, hips square, torso tall and upright; dark-navy grid background, restrained red overlays on quads, glutes, and hip flexors; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, front knee past toes, leaning forward, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb3-high-jumper": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure at the takeoff of a high jumper approach drill, tall upright running posture, hips up, driving knee and arm reaching upward, back foot pushing off, focused upward path; dark-navy grid background, restrained red overlays on calves, quads, and glutes; side view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, slouching, landing, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb4-windmill": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure in a straddle windmill stretch, torso bent and rotated toward the outside foot while the opposite arm reaches vertically up; dark-navy technical grid background, restrained red overlays on core, shoulders, and hip flexors; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, rounded back, extra limbs, impossible twist",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb5-prone-row": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure lying prone, lifting head and chest slightly with elbows drawn back and arms beside shoulders for a prone row; dark-navy blueprint grid background, restrained red overlays on upper back and shoulders; rear three-quarter view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, weight equipment, cranked neck, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb6-shoulder-stability-drill": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this shoulder stability drill the panels show: START = prone on the floor with arms extended forward in the I position, ACTION = one arm raised diagonally overhead in the Y position with thumb up, FINISH = arms out to the sides in the T position with thumbs up; restrained red overlays on shoulders and upper back; rear view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, sagging hips, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb7-hip-stability-drill": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this hip stability drill the panels show: START = standing tall on one leg with the other knee lifted to hip height, ACTION = controlling the lifted knee forward and back with hips level and core braced, FINISH = the lifted leg extended straight back behind the body in a single-leg balance; restrained red overlays on glutes, hip flexors, and core; side view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, hips tilting, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb8-recovery-drill-stretches": {
+    "prompt": "single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this recovery drill the panels show: START = standing calf stretch with rear heel down and back leg straight, ACTION = seated hamstring stretch reaching toward the toes with a flat back, FINISH = standing quad stretch holding the ankle behind; restrained red overlays on calves, hamstrings, and quads; side view.",
+    "negativePrompt": "words, letters, logos, watermarks, arrows, text labels, rounded back, bouncing, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  },
+  "mb9-pmcs-drill": {
+    "prompt": "16:9 raster technical athletic illustration of a male athletic figure performing a pain-free movement control check, standing upright with one arm slowly circling overhead in a smooth controlled arc while the opposite arm rests, hips and spine neutral, weight even; dark-navy blueprint grid background, restrained red overlays on shoulders, core, and hip flexors; front view, no text.",
+    "negativePrompt": "words, letters, logos, watermarks, jerky motion, twisting spine, extra limbs",
+    "sourceStatus": "original-generation-spec"
+  }
+}
