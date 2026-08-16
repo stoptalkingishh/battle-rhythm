@@ -1397,6 +1397,11 @@ textarea {
   padding: 12px;
 }
 
+.exercise-coach.has-run-visual .coach-figure {
+  min-height: 0;
+  padding: 16px;
+}
+
 .coach-figure {
   display: grid;
   place-items: center;
@@ -1591,4 +1596,174 @@ textarea {
   .coach-anatomy-plate {
     max-height: 320px;
   }
+}
+
+/* ==================== RUN VISUAL ==================== */
+.run-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.run-track-svg {
+  display: block;
+  width: min(100%, 520px);
+  height: auto;
+  margin: 0 auto;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.run-track-label {
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.run-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  align-items: center;
+  font-size: .76rem;
+  color: var(--text-muted);
+}
+
+.run-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 5px;
+}
+
+.run-legend-text {
+  margin-right: 4px;
+}
+
+.run-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.run-info-line {
+  margin: 0;
+  font-size: .82rem;
+  line-height: 1.55;
+}
+
+.run-info-line strong {
+  color: var(--gold);
+  font-size: .66rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.run-desired,
+.run-source {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+}
+
+.run-desired strong,
+.run-source strong {
+  display: block;
+  color: var(--gold);
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.run-desired p,
+.run-source p {
+  margin: 0;
+  font-size: .82rem;
+  line-height: 1.6;
+}
+
+.run-source p {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.run-standards-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-soft);
+  padding: 12px;
+}
+
+.run-standards-title {
+  margin: 0 0 10px;
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.run-standards {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .78rem;
+  min-width: 460px;
+}
+
+.run-standards th,
+.run-standards td {
+  border: 1px solid var(--border);
+  padding: 5px 8px;
+  text-align: center;
+}
+
+.run-standards thead th {
+  background: var(--surface);
+  color: var(--text);
+  font-size: .7rem;
+}
+
+.run-standards tbody th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.run-standards td.run-pass {
+  background: rgba(75, 191, 115, .12);
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.run-standards thead th.run-pass {
+  background: rgba(75, 191, 115, .18);
+  color: var(--ok);
+}
+
+.run-standards td.run-max {
+  background: rgba(212, 166, 68, .1);
+  color: var(--gold-bright);
+}
+
+.run-standards thead th.run-max {
+  background: rgba(212, 166, 68, .14);
+  color: var(--gold-bright);
+}
+
+.run-standards-note {
+  margin: 10px 0 0;
+  font-size: .72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }

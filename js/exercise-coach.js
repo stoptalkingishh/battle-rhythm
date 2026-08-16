@@ -400,7 +400,11 @@
     targets = guideTargets(guide);
     figure = node("figure");
     figure.className = "coach-figure";
-    if (hasAnatomyPlate) {
+    var runVisual = (window.BRRunVisual && window.BRRunVisual.render(exercise)) || null;
+    if (runVisual) {
+      root.classList.add("has-run-visual");
+      figure.appendChild(runVisual);
+    } else if (hasAnatomyPlate) {
       var plate = anatomyPlate(exercise, card);
       plate.addEventListener("error", function () {
         figure.replaceChild(diagram(exercise, guide, targets), plate);
