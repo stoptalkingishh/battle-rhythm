@@ -12,7 +12,6 @@
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
-    "hypertrophy": { label: "Hypertrophy", badge: "badge-hy" },
     "muscular-endurance": { label: "Muscular Endurance", badge: "badge-me" },
     "aerobic-endurance": { label: "Aerobic Endurance", badge: "badge-ae" },
     "anaerobic-endurance": { label: "Anaerobic Endurance", badge: "badge-an" },

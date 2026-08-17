@@ -87,11 +87,11 @@ window.BR_DOCTRINE = {
       citation: "FM 7-22, para 6-7"
     },
     {
-      id: "hypertrophy",
-      name: "Hypertrophy",
-      definition: "\u201Cincrease in muscle size, which can be achieved through a blending of muscular strength and muscular endurance training\u201D [PAR] (moderate-to-heavy loads, 65\u201385% 1RM).",
-      tasks: "[PAR] Not listed in Table 3-1; supports strength and muscular endurance development",
-      citation: "FM 7-22, para 6-8"
+      id: "mobility-stability",
+      name: "Mobility & Stability",
+      definition: "\u201Cthe ability to achieve and maintain a functional joint position and movement pattern while stabilizing the spine and controlling motion.\u201D [PAR] Includes range of motion and neuromuscular control around the joints.",
+      tasks: "Move through full range of motion; stabilize the spine during limb movement; execute precise, controlled drills",
+      citation: "FM 7-22, para 6-13"
     },
     {
       id: "muscular-endurance",
