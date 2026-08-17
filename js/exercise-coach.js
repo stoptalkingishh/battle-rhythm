@@ -404,15 +404,16 @@
     if (runVisual) {
       root.classList.add("has-run-visual");
       figure.appendChild(runVisual);
-    } else if (hasAnatomyPlate) {
+    }
+    if (hasAnatomyPlate) {
       var plate = anatomyPlate(exercise, card);
       plate.addEventListener("error", function () {
         figure.replaceChild(diagram(exercise, guide, targets), plate);
         root.classList.remove("has-anatomy-plate");
-        appendMotionControls(root);
+        if (!runVisual) appendMotionControls(root);
       }, { once: true });
       figure.appendChild(plate);
-    } else {
+    } else if (!runVisual) {
       figure.appendChild(diagram(exercise, guide, targets));
     }
     root.appendChild(figure);
