@@ -9,6 +9,7 @@
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
   var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker" };
+  var TRACKER_SCHEMA = 1;
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -871,12 +872,22 @@
     renderStopwatch();
   }
 
-  function getLogs() { return load(KEYS.logs, {}); }
+  function getLogs() {
+    var v = load(KEYS.logs, null);
+    if (typeof v !== "object" || v === null) v = {};
+    Object.keys(v).forEach(function (date) {
+      if (typeof v[date] !== "object" || v[date] === null || typeof v[date].sessions !== "object") {
+        v[date] = { sessions: {} };
+      }
+    });
+    return v;
+  }
   function saveLogs(logs) { store(KEYS.logs, logs); }
   function snapshotSession(session) { return JSON.parse(JSON.stringify(session)); }
   function ensureLogEntry(date, session) {
     var logs = getLogs();
-    if (!logs[date]) logs[date] = { sessions: {} };
+    if (typeof logs[date] !== "object" || logs[date] === null) logs[date] = { sessions: {} };
+    if (!logs[date].sessions) logs[date].sessions = {};
     if (!logs[date].sessions[session.id]) {
       logs[date].sessions[session.id] = { done: {}, complete: false, snapshot: snapshotSession(session) };
     }
