@@ -526,7 +526,6 @@
     var key = ex.id === "mb8-recovery-drill-stretches" ? "recovery" : ex.component === "mobility-stability" ? "prep" : "activity";
     addItemToPhase(STATE.session, key, newItemFromExercise(ex));
     nav("builder");
-    renderSessionEditor();
     toast("Added " + ex.name + " to " + PHASE_LABEL[key]);
   }
 

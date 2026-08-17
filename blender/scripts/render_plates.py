@@ -18,16 +18,36 @@ import os
 import sys
 
 import bpy
+from mathutils import Vector
 
 PROJECT_ROOT = os.path.normpath(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
 )
 MANIFEST_PATH = os.path.join(PROJECT_ROOT, "blender", "data", "plates.json")
-WEBP_DIR = os.path.join(PROJECT_ROOT, "assets", "plates", "webp")
-PNG_DIR = os.path.join(PROJECT_ROOT, "assets", "plates", "png")
+DEFAULT_OUTPUT_ROOT = os.path.join(PROJECT_ROOT, "assets", "plates")
 
 RESOLUTION_X = 1024
 RESOLUTION_Y = 1536  # portrait, web-optimized plate
+
+# MPFB's standard rig maps these broad review regions to its skin weights.
+# They are a visual draft aid only: every mask needs an anatomy review before
+# it can be delivered as a target-muscle plate.
+TARGET_GROUPS = {
+    "biceps": ("upperarm01", "upperarm02", "lowerarm01"),
+    "calves": ("lowerleg01", "lowerleg02"),
+    "chest": ("breast", "clavicle"),
+    "core": ("pelvis", "spine01", "spine02", "spine03"),
+    "glutes": ("pelvis",),
+    "grip": ("lowerarm02", "wrist", "finger"),
+    "hamstrings": ("upperleg01", "upperleg02"),
+    "hip-flexors": ("pelvis", "upperleg01"),
+    "lower-back": ("spine01", "spine02", "spine03", "spine04"),
+    "obliques": ("spine01", "spine02", "spine03"),
+    "quads": ("upperleg01", "upperleg02"),
+    "shoulders": ("clavicle", "shoulder01", "upperarm01"),
+    "triceps": ("upperarm01", "upperarm02", "lowerarm01"),
+    "upper-back": ("spine03", "spine04", "spine05", "clavicle"),
+}
 
 
 def fail(message):
@@ -65,9 +85,16 @@ def find_rig(rig_name):
     return obj
 
 
-def clear_scene():
-    bpy.ops.object.select_all(action="SELECT")
-    bpy.ops.object.delete(use_global=False)
+def clear_scene(preserve=None):
+    """Remove all scene objects except the reviewed rig (and its collection)."""
+    preserve_ids = set()
+    if preserve is not None:
+        preserve_ids.add(preserve.name)
+        preserve_ids.update(o.name for o in preserve.children_recursive)
+    for obj in list(bpy.data.objects):
+        if obj.name in preserve_ids:
+            continue
+        bpy.data.objects.remove(obj, do_unlink=True)
 
 
 def add_ground():
@@ -84,6 +111,7 @@ def add_ground():
 
 
 def add_studio_lighting():
+    target = (0.0, 0.0, 1.15)
     bpy.ops.object.select_all(action="DESELECT")
     key = bpy.data.lights.new("PlateKeyLight", "AREA")
     key.energy = 800.0
@@ -91,7 +119,7 @@ def add_studio_lighting():
     key_obj = bpy.data.objects.new("PlateKeyLight", key)
     bpy.context.collection.objects.link(key_obj)
     key_obj.location = (-5.0, -5.0, 6.0)
-    key_obj.rotation_euler = (0.9, 0.3, 0.6)
+    aim_at(key_obj, target)
 
     fill = bpy.data.lights.new("PlateFillLight", "AREA")
     fill.energy = 320.0
@@ -99,31 +127,40 @@ def add_studio_lighting():
     fill_obj = bpy.data.objects.new("PlateFillLight", fill)
     bpy.context.collection.objects.link(fill_obj)
     fill_obj.location = (5.0, 4.0, 3.0)
-    fill_obj.rotation_euler = (1.2, -0.4, -1.8)
+    aim_at(fill_obj, target)
+
+
+def aim_at(obj, target):
+    direction = (Vector(target) - obj.location).normalized()
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
 
 
 def add_camera(view):
     cam = bpy.data.cameras.new("PlateCamera")
+    cam.lens = 70
+    cam.shift_y = -0.13
     cam_obj = bpy.data.objects.new("PlateCamera", cam)
     bpy.context.collection.objects.link(cam_obj)
+    aim = (0.0, 0.0, 1.15)
     if view == "front":
         cam_obj.location = (0.0, -6.0, 1.35)
     elif view == "back":
         cam_obj.location = (0.0, 6.0, 1.35)
-        cam_obj.rotation_euler = (1.5708, 0.0, 3.14159)
     else:
         cam_obj.location = (-5.0, -4.5, 1.3)
-        cam_obj.rotation_euler = (1.5708, 0.0, 0.9)
+    aim_at(cam_obj, aim)
     bpy.context.scene.camera = cam_obj
 
 
 def set_engine():
     scene = bpy.context.scene
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = RESOLUTION_X
     scene.render.resolution_y = RESOLUTION_Y
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
+    scene.view_settings.look = "AgX - Medium High Contrast"
+    scene.world.color = (0.015, 0.015, 0.015)
 
 
 # --- Original primitive props (no external assets) ---------------------------
@@ -139,6 +176,35 @@ def _bare_material(name, color):
     return mat
 
 
+def apply_target_overlay(rig, plate):
+    prefixes = []
+    for target in plate.get("targetMuscles", []):
+        prefixes.extend(TARGET_GROUPS.get(target, ()))
+    if not prefixes:
+        return
+
+    neutral = _bare_material("PlateNeutralSkin", (0.42, 0.37, 0.31))
+    gold = _bare_material("PlateTargetGold", (0.83, 0.62, 0.16))
+    for obj in rig.children_recursive:
+        if obj.type != "MESH":
+            continue
+        target_groups = {
+            group.index for group in obj.vertex_groups
+            if any(group.name.startswith(prefix) for prefix in prefixes)
+        }
+        if not target_groups:
+            continue
+        obj.data.materials.clear()
+        obj.data.materials.append(neutral)
+        obj.data.materials.append(gold)
+        for polygon in obj.data.polygons:
+            target_vertices = sum(
+                any(weight.group in target_groups and weight.weight >= 0.25 for weight in obj.data.vertices[index].groups)
+                for index in polygon.vertices
+            )
+            polygon.material_index = 1 if target_vertices * 2 >= len(polygon.vertices) else 0
+
+
 def _bare_cylinder(name, radius, depth, location, rotation=(0, 0, 0), color=(0.5, 0.5, 0.5)):
     bpy.ops.mesh.primitive_cylinder_add(
         radius=radius, depth=depth, location=location, rotation=rotation
@@ -149,11 +215,15 @@ def _bare_cylinder(name, radius, depth, location, rotation=(0, 0, 0), color=(0.5
     return obj
 
 
-def add_barbell(location=(0, 0, 1.0)):
-    bar = _bare_cylinder("PlateBarbell", 0.035, 2.2, location, color=(0.55, 0.55, 0.58))
+def add_barbell(location=(0, -0.25, 0.17)):
+    bar = _bare_cylinder(
+        "PlateBarbell", 0.035, 2.2, location,
+        rotation=(0, 1.5708, 0), color=(0.55, 0.55, 0.58)
+    )
     for side in (-0.95, 0.95):
         _bare_cylinder(
-            "PlateWeight", 0.16, 0.10, (side, 0, bar.location.z), color=(0.25, 0.25, 0.27)
+            "PlateWeight", 0.16, 0.10, (side, 0, bar.location.z),
+            rotation=(0, 1.5708, 0), color=(0.25, 0.25, 0.27)
         )
     return bar
 
@@ -234,14 +304,14 @@ def pose_action_exists(rig, plate_id):
     if rig.animation_data is None:
         rig.animation_data_create()
     rig.animation_data.action = action
-    bpy.context.scene.frame_set(0)
+    bpy.context.scene.frame_set(int(action.frame_range[0]))
     return action
 
 
-def render_plate(plate, rig, action_frame=None):
+def render_plate(plate, rig, output_root, action_frame=None):
     out_id = plate["id"]
     print("[plates] rendering %s (%s) view=%s" % (out_id, plate["poseFamily"], plate.get("view", "both")))
-    clear_scene()
+    clear_scene(preserve=rig)
     add_ground()
     add_studio_lighting()
     build_props(plate)
@@ -249,32 +319,45 @@ def render_plate(plate, rig, action_frame=None):
     set_engine()
     bpy.ops.object.select_all(action="DESELECT")
     rig.hide_set(False)
+    rig.hide_render = False
     pose_action_exists(rig, out_id)
+    apply_target_overlay(rig, plate)
     if action_frame is not None:
         bpy.context.scene.frame_set(action_frame)
 
-    os.makedirs(WEBP_DIR, exist_ok=True)
-    os.makedirs(PNG_DIR, exist_ok=True)
+    webp_dir = os.path.join(output_root, "webp")
+    png_dir = os.path.join(output_root, "png")
+    os.makedirs(webp_dir, exist_ok=True)
+    os.makedirs(png_dir, exist_ok=True)
 
     scene = bpy.context.scene
-    scene.render.filepath = os.path.join(PNG_DIR, out_id + ".png")
+    scene.render.filepath = os.path.join(png_dir, out_id + ".png")
     scene.render.image_settings.file_format = "PNG"
     print("[plates]   PNG -> %s" % scene.render.filepath)
     bpy.ops.render.render(write_still=True)
 
-    scene.render.filepath = os.path.join(WEBP_DIR, out_id + ".webp")
+    scene.render.filepath = os.path.join(webp_dir, out_id + ".webp")
     scene.render.image_settings.file_format = "WEBP"
     print("[plates]   WEBP -> %s" % scene.render.filepath)
     bpy.ops.render.render(write_still=True)
 
 
 def parse_args():
+    argv = sys.argv[:]
+    if "--" in argv:
+        argv = argv[argv.index("--") + 1:]
+    else:
+        argv = argv[1:]
     parser = argparse.ArgumentParser(description="Render Battle Rhythm plates")
     parser.add_argument("--rig-object", default=None, help="Name of the reviewed armature in the blend")
     parser.add_argument("--id", default=None, help="Render a single plate by exercise id")
     parser.add_argument("--all", action="store_true", help="Render every plate in the manifest")
     parser.add_argument("--frame", type=int, default=None, help="Optional action frame to render")
-    return parser.parse_args()
+    parser.add_argument(
+        "--output-root", default=DEFAULT_OUTPUT_ROOT,
+        help="Output directory containing webp/ and png/ (use a temporary path for unreviewed renders)"
+    )
+    return parser.parse_args(argv)
 
 
 def main():
@@ -289,7 +372,7 @@ def main():
         fail("no manifest entry for id '%s'" % args.id)
 
     for plate in selected:
-        render_plate(plate, rig, action_frame=args.frame)
+        render_plate(plate, rig, os.path.abspath(args.output_root), action_frame=args.frame)
 
     print("[plates] done. Review WebP/PNG per assets/plates/ATTRIBUTION.md before deploy.")
 
