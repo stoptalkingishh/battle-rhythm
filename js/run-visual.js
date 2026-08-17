@@ -72,6 +72,46 @@
     return "M " + pts.join(" L ") + " Z";
   }
 
+  function insetOvalGeometry(inset) {
+    var r = R - inset;
+    var l = L - inset * 0.5;
+    var per = 2 * l + 2 * Math.PI * r;
+    return { r: r, l: l, per: per };
+  }
+
+  function insetOvalPoint(inset, t) {
+    var g = insetOvalGeometry(inset);
+    var d = (t % 1) * g.per;
+    if (d < g.l) return [CX - g.l / 2 + d, CY - g.r];
+    if (d < g.l + Math.PI * g.r) {
+      var a = (d - g.l) / g.r;
+      return [CX + g.l / 2 + Math.sin(a) * g.r, CY - Math.cos(a) * g.r];
+    }
+    if (d < g.l + Math.PI * g.r + g.l) {
+      var b = d - (g.l + Math.PI * g.r);
+      return [CX + g.l / 2 - b, CY + g.r];
+    }
+    var c = d - (g.l + Math.PI * g.r + g.l);
+    var a2 = c / g.r;
+    return [CX - g.l / 2 - Math.sin(a2) * g.r, CY + Math.cos(a2) * g.r];
+  }
+
+  function insetOvalPath(inset) {
+    var g = insetOvalGeometry(inset);
+    var pts = [];
+    var n = 160;
+    for (var i = 0; i <= n; i++) {
+      var d = (i / n) * g.per;
+      var x, y;
+      if (d < g.l) { x = CX - g.l / 2 + d; y = CY - g.r; }
+      else if (d < g.l + Math.PI * g.r) { var a = (d - g.l) / g.r; x = CX + g.l / 2 + Math.sin(a) * g.r; y = CY - Math.cos(a) * g.r; }
+      else if (d < g.l + Math.PI * g.r + g.l) { var b = d - (g.l + Math.PI * g.r); x = CX + g.l / 2 - b; y = CY + g.r; }
+      else { var c = d - (g.l + Math.PI * g.r + g.l); var a2 = c / g.r; x = CX - g.l / 2 - Math.sin(a2) * g.r; y = CY + Math.cos(a2) * g.r; }
+      pts.push(x.toFixed(1) + "," + y.toFixed(1));
+    }
+    return "M " + pts.join(" L ") + " Z";
+  }
+
   function laneMarkers(count) {
     var group = svg("g", {});
     for (var i = 0; i < count; i++) {
@@ -303,27 +343,26 @@
   function abilityGroups(exercise, spec) {
     var root = container();
     var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run lanes" });
-    sv.appendChild(svg("path", { d: fullOvalPath(0), fill: "none", stroke: BORDER, "stroke-width": 14, opacity: 0.9 }));
-    sv.appendChild(svg("path", { d: fullOvalPath(12), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.5 }));
-    startLine(sv);
-    spec.groups.forEach(function (g) {
-      var p = trackPoint(g.t);
+    sv.appendChild(svg("path", { d: insetOvalPath(4), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.4 }));
+    var n = spec.groups.length;
+    var insetStart = 10, insetStep = 11;
+    spec.groups.forEach(function (g, i) {
+      var inset = insetStart + i * insetStep;
       sv.appendChild(svg("path", {
-        d: tracePath(g.t, g.t + 0.09, 60), fill: "none",
-        stroke: g.color, "stroke-width": 7, "stroke-linecap": "round", opacity: 0.9
+        d: insetOvalPath(inset), fill: "none",
+        stroke: g.color, "stroke-width": 6, "stroke-linecap": "round", opacity: 0.9
       }));
-      var t = svg("text", {
-        x: p[0], y: p[1], "text-anchor": "middle",
-        fill: g.color, class: "run-track-label", "font-size": "11px", "font-weight": 700
+    });
+    startLine(sv);
+    spec.groups.forEach(function (g, i) {
+      var inset = insetStart + i * insetStep;
+      var p = insetOvalPoint(inset, 0.13);
+      var label = svg("text", {
+        x: p[0], y: p[1], "text-anchor": "start",
+        fill: g.color, class: "run-track-label", "font-size": "12px", "font-weight": 700
       });
-      t.appendChild(document.createTextNode(g.label));
-      sv.appendChild(t);
-      var sub = svg("text", {
-        x: p[0], y: p[1] + 13, "text-anchor": "middle",
-        fill: MUTED, class: "run-track-label", "font-size": "9px"
-      });
-      sub.appendChild(document.createTextNode(g.pace));
-      sv.appendChild(sub);
+      label.appendChild(document.createTextNode(g.label + "  " + g.pace));
+      sv.appendChild(label);
     });
     root.appendChild(sv);
     root.appendChild(legend(spec.groups.map(function (g) {

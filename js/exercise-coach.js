@@ -383,6 +383,7 @@
     var steps, warnings, targets, figure, targetList, movement, card;
     card = workoutCard(exercise);
     var hasAnatomyPlate = !!(card && card.src);
+    var hasAIPlate = AI_PLATES.some(function (plate) { return plate.id === exercise.id; });
     root.className = "exercise-coach";
     if (hasAnatomyPlate) root.classList.add("has-anatomy-plate");
 
@@ -400,12 +401,12 @@
     targets = guideTargets(guide);
     figure = node("figure");
     figure.className = "coach-figure";
-    var runVisual = (window.BRRunVisual && window.BRRunVisual.render(exercise)) || null;
+    var runVisual = (!hasAIPlate && window.BRRunVisual && window.BRRunVisual.render(exercise)) || null;
     if (runVisual) {
       root.classList.add("has-run-visual");
       figure.appendChild(runVisual);
     }
-    if (hasAnatomyPlate) {
+    if (hasAnatomyPlate && !runVisual) {
       var plate = anatomyPlate(exercise, card);
       plate.addEventListener("error", function () {
         figure.replaceChild(diagram(exercise, guide, targets), plate);
