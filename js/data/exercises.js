@@ -203,7 +203,7 @@ window.BR_EXERCISES = [
     cues: ["Run with your ability group", "Controlled effort"],
     programming: "20-45 min, RPE 5",
     safety: "Ability-grouped to avoid over/under-exertion",
-    source: "QUOTE",
+    source: "QUOTE: FM 7-22, Table 6-2",
     aft: ["2MR"]
   },
   {
@@ -215,7 +215,7 @@ window.BR_EXERCISES = [
     cues: ["Start together; run at conversational effort", "Control pace"],
     programming: "20-40 min, RPE 3-5",
     safety: "Stay within pre-briefed route",
-    source: "QUOTE",
+    source: "QUOTE: FM 7-22, Table 6-2",
     aft: ["2MR"]
   },
   {
@@ -227,7 +227,7 @@ window.BR_EXERCISES = [
     cues: ["Pack load high and tight", "Natural stride; foot care", "Pace discipline"],
     programming: "Progress one variable per week (load/distance/speed/gradient); see Table 7-3 (e.g., wk1-2: 15-20 lb, 2 mi, 35 min)",
     safety: "Loads above 30 percent of body weight should be increased with caution. Do not do long marches/endurance runs/heavy leg strength on consecutive days.",
-    source: "QUOTE: paras 7-9, Table 7-3"
+    source: "QUOTE: FM 7-22, paras 7-9, Table 7-3"
   },
   {
     id: "a5-2-mile-run",
@@ -286,7 +286,7 @@ window.BR_EXERCISES = [
     cues: ["60-sec hard run; 120-sec walk", "Hold pace"],
     programming: "3-10 reps",
     safety: "Build volume gradually",
-    source: "QUOTE",
+    source: "QUOTE: FM 7-22, Table 6-2",
     aft: ["2MR"]
   },
   {
