@@ -7,6 +7,7 @@
   var GOLD = "#D4A644";
   var MUTED = "#9AA3B2";
   var BORDER = "#262B36";
+  var BLUE = "#4C8BF5";
 
   var SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -298,6 +299,42 @@
     return root;
   }
 
+  /* ---------------- ability groups ---------------- */
+  function abilityGroups(exercise, spec) {
+    var root = container();
+    var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run lanes" });
+    sv.appendChild(svg("path", { d: fullOvalPath(0), fill: "none", stroke: BORDER, "stroke-width": 14, opacity: 0.9 }));
+    sv.appendChild(svg("path", { d: fullOvalPath(12), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.5 }));
+    startLine(sv);
+    spec.groups.forEach(function (g) {
+      var p = trackPoint(g.t);
+      sv.appendChild(svg("path", {
+        d: tracePath(g.t, g.t + 0.09, 60), fill: "none",
+        stroke: g.color, "stroke-width": 7, "stroke-linecap": "round", opacity: 0.9
+      }));
+      var t = svg("text", {
+        x: p[0], y: p[1], "text-anchor": "middle",
+        fill: g.color, class: "run-track-label", "font-size": "11px", "font-weight": 700
+      });
+      t.appendChild(document.createTextNode(g.label));
+      sv.appendChild(t);
+      var sub = svg("text", {
+        x: p[0], y: p[1] + 13, "text-anchor": "middle",
+        fill: MUTED, class: "run-track-label", "font-size": "9px"
+      });
+      sub.appendChild(document.createTextNode(g.pace));
+      sv.appendChild(sub);
+    });
+    root.appendChild(sv);
+    root.appendChild(legend(spec.groups.map(function (g) {
+      return { color: g.color, label: g.label + " — " + g.pace };
+    })));
+    root.appendChild(infoLines(exercise, spec.extra));
+    if (spec.desired) root.appendChild(desiredBlock(spec.desired));
+    if (spec.source) root.appendChild(sourceBlock(spec.source));
+    return root;
+  }
+
   /* ---------------- AFT 2MR standards table ---------------- */
   function standardsTable() {
     if (!AFT) return null;
@@ -357,12 +394,15 @@
       source: "QUOTE: FM 7-22 Table 7-1 abbrev."
     },
     "a2-ability-group-run": {
-      kind: "timed",
-      distance: "20-45 min",
-      color: GREEN,
-      lineLabel: "Ability-group effort (RPE 5)",
+      kind: "groups",
+      groups: [
+        { label: "A", pace: "8:00/mi", t: 0.72, color: RED },
+        { label: "B", pace: "9:00/mi", t: 0.52, color: GOLD },
+        { label: "C", pace: "9:30/mi", t: 0.32, color: GREEN },
+        { label: "D", pace: "10:30/mi", t: 0.12, color: BLUE }
+      ],
       extra: [["Grouping", "Soldiers run with their ability group so effort stays controlled"]],
-      desired: "Run with your ability group at a controlled, steady effort for the full session. Push within your own band without dropping below conversational control.",
+      desired: "Run with your ability group at a controlled, steady effort for the full session. Each group holds its own pace: A 8:00/mile, B 9:00/mile, C 9:30/mile, D 10:30/mile. Push within your own band without dropping below conversational control.",
       source: "QUOTE: FM 7-22 ability group run"
     },
     "a3-release-run": {
@@ -454,6 +494,7 @@
       case "interval": node = interval(exercise, spec); break;
       case "hill": node = hill(exercise, spec); break;
       case "shuttle": node = shuttle(exercise, spec); break;
+      case "groups": node = abilityGroups(exercise, spec); break;
       default: node = timed(exercise, spec); break;
     }
     if (exercise.id === "a5-2-mile-run") {
