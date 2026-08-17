@@ -342,29 +342,31 @@
   /* ---------------- ability groups ---------------- */
   function abilityGroups(exercise, spec) {
     var root = container();
-    var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run lanes" });
-    sv.appendChild(svg("path", { d: insetOvalPath(4), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.4 }));
-    var n = spec.groups.length;
-    var insetStart = 10, insetStep = 11;
-    spec.groups.forEach(function (g, i) {
-      var inset = insetStart + i * insetStep;
-      sv.appendChild(svg("path", {
-        d: insetOvalPath(inset), fill: "none",
-        stroke: g.color, "stroke-width": 6, "stroke-linecap": "round", opacity: 0.9
-      }));
-    });
+    var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run positions on the track" });
+    sv.appendChild(svg("path", { d: fullOvalPath(0), fill: "none", stroke: BORDER, "stroke-width": 14, opacity: 0.9 }));
+    sv.appendChild(svg("path", { d: fullOvalPath(12), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.5 }));
     startLine(sv);
-    spec.groups.forEach(function (g, i) {
-      var inset = insetStart + i * insetStep;
-      var p = insetOvalPoint(inset, 0.13);
+    sv.appendChild(svg("text", { x: trackPoint(0)[0] + 16, y: trackPoint(0)[1] - 6, "text-anchor": "start", fill: MUTED, class: "run-track-label", "font-size": "9px" })
+      .appendChild(document.createTextNode("START")));
+    spec.groups.forEach(function (g) {
+      var p = trackPoint(g.t);
+      sv.appendChild(svg("circle", {
+        cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 8,
+        fill: g.color, stroke: "#0B0C0F", "stroke-width": 2
+      }));
+      var dx = p[0] - CX, dy = p[1] - CY;
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
+      var lx = p[0] + (dx / len) * 18, ly = p[1] + (dy / len) * 18;
       var label = svg("text", {
-        x: p[0], y: p[1], "text-anchor": "start",
+        x: lx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle",
         fill: g.color, class: "run-track-label", "font-size": "12px", "font-weight": 700
       });
       label.appendChild(document.createTextNode(g.label + "  " + g.pace));
       sv.appendChild(label);
     });
     root.appendChild(sv);
+    root.appendChild(el("p", "run-groups-note",
+      "Four ability groups on the same track. A is furthest along (fastest pace), D is closest to the start (slowest pace)."));
     root.appendChild(legend(spec.groups.map(function (g) {
       return { color: g.color, label: g.label + " — " + g.pace };
     })));
@@ -435,9 +437,9 @@
     "a2-ability-group-run": {
       kind: "groups",
       groups: [
-        { label: "A", pace: "8:00/mi", t: 0.72, color: RED },
-        { label: "B", pace: "9:00/mi", t: 0.52, color: GOLD },
-        { label: "C", pace: "9:30/mi", t: 0.32, color: GREEN },
+        { label: "A", pace: "8:00/mi", t: 0.88, color: RED },
+        { label: "B", pace: "9:00/mi", t: 0.62, color: GOLD },
+        { label: "C", pace: "9:30/mi", t: 0.36, color: GREEN },
         { label: "D", pace: "10:30/mi", t: 0.12, color: BLUE }
       ],
       extra: [["Grouping", "Soldiers run with their ability group so effort stays controlled"]],

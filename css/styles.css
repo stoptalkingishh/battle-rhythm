@@ -1767,3 +1767,10 @@ textarea {
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+.run-groups-note {
+  margin: 0;
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
