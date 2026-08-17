@@ -61,6 +61,10 @@
     }).join("");
   }
 
+  function hyphenKey(value) {
+    return String(value || "").replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  }
+
   /* Muscle-map figure chosen from pattern + pose + exercise id. */
   function figureKey(pattern, pose, id) {
     switch (pattern) {
@@ -275,7 +279,7 @@
       inner.appendChild(svgNode("circle", { "class": "coach-figure-head", cx: viewMap.head[0], cy: viewMap.head[1], r: viewMap.head[2] }));
       for (key in viewMap.muscles) {
         if (!viewMap.muscles.hasOwnProperty(key)) continue;
-        if (targets.indexOf(key) !== -1 || targets.indexOf(camelKey(key)) !== -1) continue;
+        if (targets.indexOf(key) !== -1 || targets.indexOf(hyphenKey(key)) !== -1) continue;
         inner.appendChild(svgNode("path", { "class": "coach-muscle", d: viewMap.muscles[key], "data-muscle": key }));
       }
       if (viewMap.lines) inner.appendChild(svgNode("path", { "class": "coach-muscle-lines", d: viewMap.lines }));

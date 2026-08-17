@@ -55,58 +55,18 @@
   }
 
   function fullOvalPath(inset) {
+    var r = R - inset;
+    var l = L - inset * 0.5;
+    var per = 2 * l + 2 * Math.PI * r;
     var pts = [];
     var n = 160;
     for (var i = 0; i <= n; i++) {
-      var t = i / n;
-      var d = t * P;
+      var d = (i / n) * per;
       var x, y;
-      var r = R - inset;
-      var l = L - inset * 0.5;
       if (d < l) { x = CX - l / 2 + d; y = CY - r; }
       else if (d < l + Math.PI * r) { var a = (d - l) / r; x = CX + l / 2 + Math.sin(a) * r; y = CY - Math.cos(a) * r; }
       else if (d < l + Math.PI * r + l) { var b = d - (l + Math.PI * r); x = CX + l / 2 - b; y = CY + r; }
       else { var c = d - (l + Math.PI * r + l); var a2 = c / r; x = CX - l / 2 - Math.sin(a2) * r; y = CY + Math.cos(a2) * r; }
-      pts.push(x.toFixed(1) + "," + y.toFixed(1));
-    }
-    return "M " + pts.join(" L ") + " Z";
-  }
-
-  function insetOvalGeometry(inset) {
-    var r = R - inset;
-    var l = L - inset * 0.5;
-    var per = 2 * l + 2 * Math.PI * r;
-    return { r: r, l: l, per: per };
-  }
-
-  function insetOvalPoint(inset, t) {
-    var g = insetOvalGeometry(inset);
-    var d = (t % 1) * g.per;
-    if (d < g.l) return [CX - g.l / 2 + d, CY - g.r];
-    if (d < g.l + Math.PI * g.r) {
-      var a = (d - g.l) / g.r;
-      return [CX + g.l / 2 + Math.sin(a) * g.r, CY - Math.cos(a) * g.r];
-    }
-    if (d < g.l + Math.PI * g.r + g.l) {
-      var b = d - (g.l + Math.PI * g.r);
-      return [CX + g.l / 2 - b, CY + g.r];
-    }
-    var c = d - (g.l + Math.PI * g.r + g.l);
-    var a2 = c / g.r;
-    return [CX - g.l / 2 - Math.sin(a2) * g.r, CY + Math.cos(a2) * g.r];
-  }
-
-  function insetOvalPath(inset) {
-    var g = insetOvalGeometry(inset);
-    var pts = [];
-    var n = 160;
-    for (var i = 0; i <= n; i++) {
-      var d = (i / n) * g.per;
-      var x, y;
-      if (d < g.l) { x = CX - g.l / 2 + d; y = CY - g.r; }
-      else if (d < g.l + Math.PI * g.r) { var a = (d - g.l) / g.r; x = CX + g.l / 2 + Math.sin(a) * g.r; y = CY - Math.cos(a) * g.r; }
-      else if (d < g.l + Math.PI * g.r + g.l) { var b = d - (g.l + Math.PI * g.r); x = CX + g.l / 2 - b; y = CY + g.r; }
-      else { var c = d - (g.l + Math.PI * g.r + g.l); var a2 = c / g.r; x = CX - g.l / 2 - Math.sin(a2) * g.r; y = CY + Math.cos(a2) * g.r; }
       pts.push(x.toFixed(1) + "," + y.toFixed(1));
     }
     return "M " + pts.join(" L ") + " Z";
@@ -339,34 +299,39 @@
     return root;
   }
 
-  /* ---------------- ability groups ---------------- */
+/* ---------------- ability groups ---------------- */
   function abilityGroups(exercise, spec) {
     var root = container();
-    var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run positions on the track" });
+    var sv = svg("svg", { viewBox: "0 0 420 264", class: "run-track-svg", role: "img", "aria-label": "Ability group run, four paces on one track" });
     sv.appendChild(svg("path", { d: fullOvalPath(0), fill: "none", stroke: BORDER, "stroke-width": 14, opacity: 0.9 }));
     sv.appendChild(svg("path", { d: fullOvalPath(12), fill: "none", stroke: BORDER, "stroke-width": 1, opacity: 0.5 }));
     startLine(sv);
-    sv.appendChild(svg("text", { x: trackPoint(0)[0] + 16, y: trackPoint(0)[1] - 6, "text-anchor": "start", fill: MUTED, class: "run-track-label", "font-size": "9px" })
+    sv.appendChild(svg("text", { x: 62, y: 74, "text-anchor": "start", fill: MUTED, class: "run-track-label", "font-size": "9px" })
       .appendChild(document.createTextNode("START")));
-    spec.groups.forEach(function (g) {
+    var labelAnchors = [
+      { anchor: "end", offset: -16, v: "middle" },
+      { anchor: "start", offset: 16, v: "middle" },
+      { anchor: "end", offset: -16, v: "middle" },
+      { anchor: "start", offset: 16, v: "middle" }
+    ];
+    spec.groups.forEach(function (g, i) {
       var p = trackPoint(g.t);
       sv.appendChild(svg("circle", {
-        cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 8,
+        cx: p[0].toFixed(1), cy: p[1].toFixed(1), r: 7,
         fill: g.color, stroke: "#0B0C0F", "stroke-width": 2
       }));
-      var dx = p[0] - CX, dy = p[1] - CY;
-      var len = Math.sqrt(dx * dx + dy * dy) || 1;
-      var lx = p[0] + (dx / len) * 18, ly = p[1] + (dy / len) * 18;
+      var anchor = labelAnchors[i % labelAnchors.length];
+      var tx = (p[0] + anchor.offset).toFixed(1);
       var label = svg("text", {
-        x: lx.toFixed(1), y: ly.toFixed(1), "text-anchor": "middle",
+        x: tx, y: (p[1] + 24).toFixed(1), "text-anchor": anchor.anchor,
         fill: g.color, class: "run-track-label", "font-size": "12px", "font-weight": 700
       });
-      label.appendChild(document.createTextNode(g.label + "  " + g.pace));
+      label.appendChild(document.createTextNode(g.label));
       sv.appendChild(label);
     });
     root.appendChild(sv);
     root.appendChild(el("p", "run-groups-note",
-      "Four ability groups on the same track. A is furthest along (fastest pace), D is closest to the start (slowest pace)."));
+      "Four ability groups on one track, each holding its own pace. A runs the fastest; D runs the slowest."));
     root.appendChild(legend(spec.groups.map(function (g) {
       return { color: g.color, label: g.label + " — " + g.pace };
     })));
