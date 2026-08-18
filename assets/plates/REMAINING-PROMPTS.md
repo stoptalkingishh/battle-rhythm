@@ -1,175 +1,103 @@
-# Remaining AI Plate Prompts (43)
+# Remaining AI Plate Prompts (20)
 
-Generated from `assets/plates/ai-image-prompts.json`. Save each output as the file name shown (WebP or PNG). The 3 already approved (`s1-deadlift`, `s3-bench-press`, `m1-push-up`) are not listed.
+Copy-paste prompts for exercises that still use the generated SVG fallback card. Generated from `ai-image-prompts.json` (the source of truth). Save each output as `assets/plates/ai/<id>.webp` and register it (see `assets/plates/AI-ASSET-INTAKE.md`).
 
-## Strength — s2-squat
-> 16:9 raster technical athletic illustration of a male athletic figure at the bottom of a back squat, thighs parallel to the floor, knees tracking over toes, torso braced and chest up; dark-navy blueprint grid background, restrained red overlays on quads, glutes, core, and lower back; side view, no text.
-> Negative: words, letters, logos, watermarks, heels lifted, knees caving in, rounded back, extra limbs
+### a1-unit-formation-run
 
-## Strength — s4-pull-up
-> 16:9 raster technical athletic illustration of a male athletic figure at the top of a pull-up, chin over the bar, elbows pulling down and back, scapulae retracted; dark-navy blueprint grid background, restrained red overlays on lats, biceps, and upper back; front view, no text.
-> Negative: words, letters, logos, watermarks, kipping, half range of motion, extra limbs
+> 16:9 raster technical athletic illustration of a male athletic runner in a unit formation run, shown at a steady relaxed pace as the clear foreground figure with a neat column of three faint runner silhouettes in loose formation behind him, cadence-matched; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> Negative: words, letters, logos, watermarks, race bibs, crowd, sprinting, scattered runners, extra limbs
 
-## Strength — s5-sumo-squat
-> 16:9 raster technical athletic illustration of a male athletic figure at the bottom of a sumo squat, wide stance, feet turned out, thighs parallel to the floor, knees over toes; dark-navy blueprint grid background, restrained red overlays on adductors, glutes, and quads; front view, no text.
-> Negative: words, letters, logos, watermarks, knees caving in, rounded back, extra limbs
+### a2-ability-group-run
 
-## Strength — s6-straight-leg-deadlift
-> 16:9 raster technical athletic illustration of a male athletic figure mid straight-leg deadlift, hinged at the hips with a loaded barbell just below the knees, back flat, knees soft, hamstrings stretched; dark-navy blueprint grid background, restrained red overlays on hamstrings, glutes, and lower back; side view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, bent knees, bar drifting forward, extra limbs
-
-## Strength — s7-bent-over-row
-> 16:9 raster technical athletic illustration of a male athletic figure bent over at the hips pulling a barbell to the lower ribs, torso near parallel to the floor, back flat; dark-navy blueprint grid background, restrained red overlays on lats, upper back, and biceps; side view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, jerking the bar, extra limbs
-
-## Strength — s8-overhead-push-press
-> 16:9 raster technical athletic illustration of a male athletic figure finishing a barbell push-press overhead, arms locked out, torso braced and legs straight after a shallow drive; dark-navy blueprint grid background, restrained red overlays on shoulders, triceps, quads, and core; front view, no text.
-> Negative: words, letters, logos, watermarks, hyperextended back, bent bar, extra limbs
-
-## Power — p1-power-jump
-> 16:9 raster technical athletic illustration of a male athletic figure exploding upward in a countermovement jump, arms swinging overhead, hips and knees extending, feet leaving the ground; dark-navy blueprint grid background, restrained red overlays on quads, glutes, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, bent bar, extra limbs, landing on heels
-
-## Power — p2-standing-long-jump
-> 16:9 raster technical athletic illustration of a male athletic figure airborne in a standing long jump, knees tucked, arms forward, reaching full distance; dark-navy blueprint grid background, restrained red overlays on quads, glutes, and hamstrings; side view, no text.
-> Negative: words, letters, logos, watermarks, falling backward, arms behind body, extra limbs
-
-## Power — p3-tuck-jump
-> 16:9 raster technical athletic illustration of a male athletic figure at the peak of a tuck jump, knees drawn to the chest, arms at sides, fully airborne; dark-navy blueprint grid background, restrained red overlays on quads, core, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, straight legs, soft knees, extra limbs
-
-## Power — p4-8-count-t-push-up
-> 16:9 raster technical athletic illustration of a male athletic figure in the top push-up position of an 8-count T push-up, body in a straight plank, hands under shoulders; dark-navy blueprint grid background, restrained red overlays on chest, shoulders, triceps, and core; side view, no text.
-> Negative: words, letters, logos, watermarks, sagging hips, flared elbows, extra limbs
-
-## Power — p5-kettlebell-swing
-> 16:9 raster technical athletic illustration of a male athletic figure at the top of a kettlebell swing, hips extended, arms in line with the torso, kettlebell at chest height, hinge to a plumb line; dark-navy blueprint grid background, restrained red overlays on glutes, hamstrings, and core; side view, no text.
-> Negative: words, letters, logos, watermarks, squatting the swing, rounded back, arms lifting the bell, extra limbs
-
-## Power — p6-sled-push-drag
-> 16:9 raster technical athletic illustration of a male athletic figure pushing a weighted sled, body leaning forward in a strong drive position, arms extended to the handles, one leg driving; dark-navy blueprint grid background, restrained red overlays on quads, glutes, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, vertical torso, extra limbs
-
-## Power — p7-overhead-push-press-power
-> 16:9 raster technical athletic illustration of a male athletic figure driving a barbell overhead with a powerful hip extension, arms finishing locked out above the head, torso upright; dark-navy blueprint grid background, restrained red overlays on shoulders, triceps, quads, and core; front view, no text.
-> Negative: words, letters, logos, watermarks, hyperextended back, bent bar, extra limbs
-
-## Aerobic — a1-unit-formation-run
-> 16:9 raster technical athletic illustration of a male athletic runner moving at a relaxed steady pace, shown as the clear foreground subject with faint aligned runner silhouettes behind to convey formation; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, crowd, extra limbs
-
-## Aerobic — a2-ability-group-run
-> 16:9 raster technical athletic illustration of a male athletic runner at a steady aerobic pace in small-group formation, foreground subject with a few faint silhouettes at a similar pace behind; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> 16:9 raster technical athletic illustration of a male athletic runner in an ability group run, one clear foreground figure at a controlled endurance pace with two shorter faint paired silhouettes running together a short distance behind, group spacing even; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
 > Negative: words, letters, logos, watermarks, race bibs, crowd, sprinting, extra limbs
 
-## Aerobic — a3-release-run
-> 16:9 raster technical athletic illustration of a male athletic runner at a relaxed endurance pace on an open course, clear foreground subject, minimal background; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+### a3-release-run
+
+> 16:9 raster technical athletic illustration of a male athletic runner on a release run, single clear foreground figure at a conversational easy pace with a gently curving open route line behind him and no pack; relaxed upright form, light foot strike; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> Negative: words, letters, logos, watermarks, race bibs, crowd, sprinting, extra limbs
+
+### a5-2-mile-run
+
+> 16:9 raster technical athletic illustration of a male athletic distance runner holding a steady target pace for a 2-mile test, compact arm swing, level gaze, efficient mid-foot stride on a flat measured course with faint lane marks; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
 > Negative: words, letters, logos, watermarks, race bibs, crowd, extra limbs
 
-## Aerobic — a4-foot-march-ruck-march
-> 16:9 raster technical athletic illustration of a male athletic figure ruck marching with a rucksack, steady long stride, torso upright, hands at shoulder straps; dark-navy grid background, restrained red overlays on shoulders, lower back, glutes, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, running, slouching, extra limbs
+### a6-sustained-run
 
-## Aerobic — a5-2-mile-run
-> 16:9 raster technical athletic illustration of a male athletic runner at a steady pace, relaxed upper body, rhythmic stride, clear foreground subject; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, crowd, extra limbs
-
-## Aerobic — a6-sustained-run
-> 16:9 raster technical athletic illustration of a male athletic runner at a consistent aerobic pace, smooth cadence, clear foreground subject; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> 16:9 raster technical athletic illustration of a male athletic runner at a constant sustainable aerobic pace, calm controlled breathing posture, even stride length, relaxed shoulders, single clear foreground figure; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
 > Negative: words, letters, logos, watermarks, race bibs, sprinting, extra limbs
 
-## Aerobic — a7-etm-session
-> 16:9 raster technical athletic illustration of a male athletic figure running on a treadmill, upright posture, steady stride, hands near the console; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, handrails, holding on, extra limbs
+### m2-hand-release-push-up
 
-## Anaerobic — n1-30-60s
-> 16:9 raster technical athletic illustration of a male athletic runner in a hard interval effort, strong forward lean and drive, arms pumping; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, easy jog, extra limbs
-
-## Anaerobic — n2-60-120s
-> 16:9 raster technical athletic illustration of a male athletic runner at a strong interval pace, decisive stride, arms driving; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, easy jog, extra limbs
-
-## Anaerobic — n3-300-meter-shuttle-run
-> 16:9 raster technical athletic illustration of a male athletic figure at a sharp turn on a shuttle run, leaning into the cut, one foot planted; dark-navy grid background, restrained red overlays on quads, glutes, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, stopping, extra limbs
-
-## Anaerobic — n4-shuttle-sprint
-> 16:9 raster technical athletic illustration of a male athletic figure sprinting hard and reaching low toward a turn point, explosive acceleration, forward lean; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, upright jog, extra limbs
-
-## Anaerobic — n5-hill-repeats
-> 16:9 raster technical athletic illustration of a male athletic figure running uphill with a strong drive, leaning into the grade, high knees, arms pumping; dark-navy grid background, restrained red overlays on glutes, quads, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, downhill, extra limbs
-
-## Anaerobic — n6-burpee-squat-thrust
-> 16:9 raster technical athletic illustration of a male athletic figure in the mid plank phase of a burpee, hands under shoulders, body in a straight line, preparing to bring the feet forward; dark-navy grid background, restrained red overlays on chest, quads, core, and shoulders; side view, no text.
-> Negative: words, letters, logos, watermarks, sagging hips, extra limbs, text
-
-## Anaerobic — n7-sprint-intervals
-> 16:9 raster technical athletic illustration of a male athletic sprinter at maximum effort, explosive stride, long arm drive, forward lean; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
-> Negative: words, letters, logos, watermarks, race bibs, relaxed jog, extra limbs
-
-## Muscular — m2-hand-release-push-up
-> 16:9 raster technical athletic illustration of a male athletic figure at the top of a hand-release push-up, hands lifted just off the floor, body in a straight plank; dark-navy blueprint grid background, restrained red overlays on chest, shoulders, triceps, and core; side view, no text.
+> 16:9 raster technical athletic illustration of a male athletic figure at the floor phase of a hand-release push-up, chest and hips near the floor, hands lifted just clear of the ground, body in a straight line, elbows at the sides; dark-navy grid background, restrained red overlays on chest, shoulders, triceps, and core; side view, no text.
 > Negative: words, letters, logos, watermarks, sagging hips, flared elbows, extra limbs
 
-## Muscular — m3-plank
-> 16:9 raster technical athletic illustration of a male athletic figure holding a plank on forearms, body in a straight line from head to heels, core braced, neutral neck; dark-navy blueprint grid background, restrained red overlays on core, shoulders, and glutes; side view, no text.
-> Negative: words, letters, logos, watermarks, sagging hips, raised hips, extra limbs
+### m8-bent-leg-body-twist
 
-## Muscular — m4-v-up
-> 16:9 raster technical athletic illustration of a male athletic figure at the top of a V-up, torso and legs lifted off the floor meeting at the hands, balancing on the lower back; dark-navy blueprint grid background, restrained red overlays on core and hip flexors; side view, no text.
-> Negative: words, letters, logos, watermarks, bent knees, momentum swing, extra limbs
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this core exercise the panels show: START = lying supine with hips and knees bent to 90 degrees, feet off the floor, FINISH = rotating both bent legs down to the left side while keeping the shoulders pinned, ACTION = legs mid-rotation; restrained red overlays on obliques and core; overhead view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, straight legs, shoulders lifting, extra limbs
 
-## Muscular — m5-mountain-climber
-> 16:9 raster technical athletic illustration of a male athletic figure in a plank with one knee driven toward the chest, hands under shoulders, hips low; dark-navy blueprint grid background, restrained red overlays on core, shoulders, and quads; side view, no text.
-> Negative: words, letters, logos, watermarks, sagging hips, standing up, extra limbs
+### mb2-rear-lunge
 
-## Muscular — m6-leg-tuck
-> 16:9 raster technical athletic illustration of a male athletic figure hanging from a bar with knees pulled to the chest in a leg tuck, hips flexed, core engaged; dark-navy blueprint grid background, restrained red overlays on core and hip flexors; front view, no text.
-> Negative: words, letters, logos, watermarks, swinging, straight legs, extra limbs
-
-## Muscular — m7-rower
-> 16:9 raster technical athletic illustration of a male athletic figure at the finish of a rowing stroke on a rower, legs extended, torso leaned back slightly, arms pulling to the ribs; dark-navy grid background, restrained red overlays on back, legs, and arms; side view, no text.
-> Negative: words, letters, logos, watermarks, hunched back, bent knees at finish, extra limbs
-
-## Muscular — m8-bent-leg-body-twist
-> 16:9 raster technical athletic illustration of a male athletic figure performing a bent-leg body twist, lying on the floor with knees bent and rotated to one side, shoulders pinned; dark-navy blueprint grid background, restrained red overlays on obliques and core; overhead view, no text.
-> Negative: words, letters, logos, watermarks, shoulders lifting off floor, straight legs, extra limbs
-
-## Mobility — mb1-bend-and-reach
-> 16:9 raster technical athletic illustration of a male athletic figure in a bend and reach, hinging forward from the hips with flat back and reaching toward the floor, knees soft; dark-navy blueprint grid background, restrained red overlays on hamstrings and lower back; side view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, locked knees, extra limbs
-
-## Mobility — mb2-rear-lunge
-> 16:9 raster technical athletic illustration of a male athletic figure in a rear lunge, stepping back into a deep lunge with both knees bent to about 90 degrees, torso upright; dark-navy blueprint grid background, restrained red overlays on quads and glutes; side view, no text.
+> 16:9 raster technical athletic illustration of a male athletic figure in a deep rear lunge, stepping one foot back so both knees bend to about 90 degrees, front knee stacked over the ankle, rear heel lifted, hips square, torso tall and upright; dark-navy grid background, restrained red overlays on quads, glutes, and hip flexors; side view, no text.
 > Negative: words, letters, logos, watermarks, front knee past toes, leaning forward, extra limbs
 
-## Mobility — mb3-high-jumper
-> 16:9 raster technical athletic illustration of a male athletic figure preparing a high jumper's approach, tall running posture, hips up, powerful stride; dark-navy grid background, restrained red overlays on calves, quads, and glutes; side view, no text.
-> Negative: words, letters, logos, watermarks, slouching, extra limbs
+### mb3-high-jumper
 
-## Mobility — mb4-windmill
-> 16:9 raster technical athletic illustration of a male athletic figure in a windmill stretch, feet wide, one arm reaching overhead toward the opposite foot, hips hinged, back flat; dark-navy blueprint grid background, restrained red overlays on hamstrings, obliques, and lower back; front view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, bent knees, extra limbs
+> 16:9 raster technical athletic illustration of a male athletic figure at the takeoff of a high jumper approach drill, tall upright running posture, hips up, driving knee and arm reaching upward, back foot pushing off, focused upward path; dark-navy grid background, restrained red overlays on calves, quads, and glutes; side view, no text.
+> Negative: words, letters, logos, watermarks, slouching, landing, extra limbs
 
-## Mobility — mb5-prone-row
-> 16:9 raster technical athletic illustration of a male athletic figure lying prone performing a rowing pull, elbows drawing the arms to the ribs, chest lifting slightly, glutes and legs relaxed; dark-navy blueprint grid background, restrained red overlays on upper back and rear shoulders; side view, no text.
-> Negative: words, letters, logos, watermarks, legs lifting, neck craned, extra limbs
+### mb6-shoulder-stability-drill
 
-## Mobility — mb6-shoulder-stability-drill
-> 16:9 raster technical athletic illustration of a male athletic figure performing a shoulder stability drill on the floor, plank position with one arm raised to form a T/Y with the body; dark-navy blueprint grid background, restrained red overlays on shoulders and core; side view, no text.
-> Negative: words, letters, logos, watermarks, sagging hips, extra limbs
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this shoulder stability drill the panels show: START = prone on the floor with arms extended forward in the I position, ACTION = one arm raised diagonally overhead in the Y position with thumb up, FINISH = arms out to the sides in the T position with thumbs up; restrained red overlays on shoulders and upper back; rear view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, sagging hips, extra limbs
 
-## Mobility — mb7-hip-stability-drill
-> 16:9 raster technical athletic illustration of a male athletic figure performing a hip stability drill, standing on one leg with the other knee raised, hips level and core braced; dark-navy blueprint grid background, restrained red overlays on hips and core; front view, no text.
-> Negative: words, letters, logos, watermarks, hips tilting, wobbling, extra limbs
+### mb7-hip-stability-drill
 
-## Mobility — mb8-recovery-drill-stretches
-> 16:9 raster technical athletic illustration of a male athletic figure performing a static recovery stretch, seated with one leg extended and reaching toward the toes, back flat; dark-navy grid background, restrained red overlays on hamstrings and lower back; side view, no text.
-> Negative: words, letters, logos, watermarks, rounded back, bouncing, extra limbs
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this hip stability drill the panels show: START = standing tall on one leg with the other knee lifted to hip height, ACTION = controlling the lifted knee forward and back with hips level and core braced, FINISH = the lifted leg extended straight back behind the body in a single-leg balance; restrained red overlays on glutes, hip flexors, and core; side view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, hips tilting, extra limbs
 
-## Mobility — mb9-pmcs-drill
-> 16:9 raster technical athletic illustration of a male athletic figure performing a dynamic mobility drill, smooth controlled movement through a wide range, arms and legs flowing; dark-navy blueprint grid background, restrained red overlays on shoulders, hips, and core; side view, no text.
-> Negative: words, letters, logos, watermarks, jerky motion, extra limbs
+### mb8-recovery-drill-stretches
+
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this recovery drill the panels show: START = standing calf stretch with rear heel down and back leg straight, ACTION = seated hamstring stretch reaching toward the toes with a flat back, FINISH = standing quad stretch holding the ankle behind; restrained red overlays on calves, hamstrings, and quads; side view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, rounded back, bouncing, extra limbs
+
+### mb9-pmcs-drill
+
+> 16:9 raster technical athletic illustration of a male athletic figure performing a pain-free movement control check, standing upright with one arm slowly circling overhead in a smooth controlled arc while the opposite arm rests, hips and spine neutral, weight even; dark-navy blueprint grid background, restrained red overlays on shoulders, core, and hip flexors; front view, no text.
+> Negative: words, letters, logos, watermarks, jerky motion, twisting spine, extra limbs
+
+### n1-30-60s
+
+> 16:9 raster technical athletic illustration of a male athletic figure in a maximal 30-second sprint interval, aggressive forward lean, explosive arm drive, high knee lift, powerful heel-to-glute strike on a marked running lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> Negative: words, letters, logos, watermarks, race bibs, easy jogging, extra limbs
+
+### n2-60-120s
+
+> 16:9 raster technical athletic illustration of a male athletic figure running a hard 60-second interval, tall sprint posture with forceful knee drive, strong pumping arms, maximal sustained effort on a marked lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> Negative: words, letters, logos, watermarks, race bibs, easy jogging, extra limbs
+
+### n3-300-meter-shuttle-run
+
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this shuttle run the panels show: START = runner sprinting down the lane toward the far line, ACTION = runner planting the outside foot low and touching the ground line with one hand to turn, FINISH = runner accelerating back down the lane; restrained red overlays on quads, hamstrings, and calves; side view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, race bibs, extra limbs
+
+### n4-shuttle-sprint
+
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this 25-meter shuttle sprint the panels show: START = runner sprinting hard, ACTION = runner planting and touching the ground at the line, coiled to drive back, FINISH = runner accelerating back up the lane; restrained red overlays on quads, hamstrings, and calves; side view.
+> Negative: words, letters, logos, watermarks, arrows, text labels, race bibs, extra limbs
+
+### n7-sprint-intervals
+
+> 16:9 raster technical athletic illustration of a male athletic figure at full speed in a set sprint interval, long powerful stride, coordinated arm drive, forward lean, maximal effort on a minimal running lane; dark-navy grid background, restrained red overlays on quads, hamstrings, and calves; side view, no text.
+> Negative: words, letters, logos, watermarks, race bibs, relaxed jogging, extra limbs
+
+### p4-8-count-t-push-up
+
+> single 16:9 image split into three equal panels left-to-right showing the full movement sequence: panel 1 START, panel 2 ACTION, panel 3 FINISH, each panel a technical athletic illustration of the same male athletic figure on a dark-navy blueprint grid background with restrained red overlays on the target muscles, consistent scale, no text, no arrows, no labels; in this eight-count exercise the panels show: START = front-leaning rest (high plank), ACTION = open T push-up with body rotated and one arm reaching straight up, FINISH = squat with feet drawn to hands ready to jump; restrained red overlays on chest, shoulders, core, and quads; three-quarter view for the ACTION panel.
+> Negative: words, letters, logos, watermarks, arrows, text labels, sagging hips, extra limbs
+
+### r7-band-chest-stretch
+
+> 16:9 raster technical athletic illustration of a male athletic figure holding a resistance band behind the back with straight arms, pulling the hands apart and squeezing the shoulder blades for a chest stretch; dark-navy blueprint grid background, restrained red overlays on the chest and front shoulders; front view, no text.
+> Negative: words, letters, logos, watermarks, bent elbows, shrugging, forcing the stretch, extra limbs

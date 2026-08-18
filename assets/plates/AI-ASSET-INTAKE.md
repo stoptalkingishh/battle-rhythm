@@ -20,7 +20,7 @@ The script rejects an input path inside `assets/`, symlinks, subdirectories, unk
 
 ## Required Files
 
-The intake directory must be flat. It may contain any subset of the 72 IDs from `assets/plates/workout-cards.json` — only approved IDs need to be present at each run. For each supplied ID, provide:
+The intake directory must be flat. It may contain any subset of the 80 IDs from `assets/plates/workout-cards.json` — only approved IDs need to be present at each run. For each supplied ID, provide:
 
 - At least one image named `<id>.webp` and/or `<id>.png`.
 - One matching `<id>.webp.json` and/or `<id>.png.json` provenance sidecar for every supplied image.

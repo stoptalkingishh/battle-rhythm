@@ -6,16 +6,59 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 
 ## Features
 
-- **Exercise Library** — 46 exercises and activities from FM 7-22 / ATP 7-22.02, each with component tag, form cues, programming, safety notes, AFT-event mapping, and doctrine citation.
-- **Session Builder** — compose a training session using the doctrinal **preparation → activity → recovery** structure; add exercises and drills, set sets/reps/rest, target RPE and focus component.
+- **Exercise Library** — 80 exercises and activities from FM 7-22 / ATP 7-22.02 across all six H2F components, each with a component tag, form cues, programming, safety notes, AFT-event mapping, and doctrine citation. Every exercise has a visual plate: an AI-generated anatomy illustration where approved, otherwise a generated SVG technical card.
+- **Session Builder** — compose a training session using the doctrinal **preparation → activity → recovery** structure; add exercises and drills, set sets/reps/rest, target RPE and focus component. Preview any exercise or drill in a guide modal from the builder before adding it.
 - **Regiments** — group saved sessions across the training week and tag a periodization phase (base / build / peak / recovery).
-- **Tracker** — check off exercises, mark sessions complete, and review your training log.
+- **Tracker** — check off exercises, mark sessions complete, and review your training log with a stopwatch.
 - **Copy to Notes** — generate a clean text summary of any exercise, session, or regiment and copy it straight into your notes app (Apple Notes, Google Keep, etc.).
 - **Doctrine tab** — the Army Fitness Test (AFT) five events, session structure, drills, load/HR zones, periodization, weekly splits, sample templates, training strategies, safety & compliance, and all sources.
 
 ## Current doctrine
 
 The AFT (**Army Fitness Test**) replaced the historic Army Combat Fitness Test on **1 June 2025** per Army Directive 2025-06. It has **five events** — MDL, HRP, SDC, PLK, 2MR — the Standing Power Throw is not a current AFT event. The Combat Field Test (CFT) is in its initial implementation period for designated combat specialties under AD 2026-07; consult current Army policy for applicability and standards.
+
+## Repository layout
+
+```text
+index.html                        App shell, nav, modals; cache-busted script tags
+css/styles.css                    All styles
+js/app.js                         Views, state, localStorage, builder/tracker logic
+js/exercise-coach.js              Inline muscle-map coach figure renderer
+js/run-visual.js                  Run-track visualization for run events
+js/data/exercises.js              80 exercise schema entries
+js/data/doctrine.js               Doctrine content (components, drills, AFT, programming)
+js/data/movement-guides.js        Coach-figure pose/pattern definitions
+js/data/muscle-maps.js            Muscle map geometry used by the coach figure
+js/data/workout-cards.js          Generated 80-entry card manifest (do not hand-edit)
+js/data/aft-standards.js          AFT standards tables
+assets/plates/ai/*.webp           Approved AI anatomy plates (60 registered)
+assets/plates/ai/registry.js      Browser registry for approved AI plates
+assets/plates/svg/*.svg           Generated SVG fallback cards for every exercise
+assets/plates/ai-image-prompts.json  Master prompt store (80 prompts, source of truth)
+assets/plates/workout-cards.json  Manifest for card generation + plate intake
+scripts/generate-workout-cards.mjs  Regenerates SVG cards + js/data/workout-cards.js
+scripts/import-ai-plates.mjs      Local AI-plate import/validation tool
+blender/                          Source-only MakeHuman/Blender render pipeline (kept for reference)
+research/                         Web-reference research docs behind the exercise data
+```
+
+## Visual plates
+
+- **AI plates** (`assets/plates/ai/*.webp`): original AI-generated anatomy illustrations, registered in `registry.js` (`window.BR_AI_PLATES`) with per-image provenance (generator, provider, date, prompt ID, license assertion). 60 of 80 exercises currently have an approved AI plate.
+- **SVG cards** (`assets/plates/svg/*.svg`): generated fallbacks for every exercise, rendered when no AI plate is registered.
+
+The exercise guide modal shows the AI plate first, falling back to the SVG card or the inline coach figure. The library tiles always show a compact card; the plate renders inside the guide modal. See `assets/plates/README.md` and `assets/plates/AI-ASSET-INTAKE.md` for the plate pipeline and intake workflow.
+
+## Development workflow
+
+- **Cache busting:** every script/link tag in `index.html` carries `?v=battle-rhythm-N`. Bump N on any change so GitHub Pages serves fresh assets.
+- **Exercise data:** edit `js/data/exercises.js`, `js/data/movement-guides.js`, and add a manifest entry to `assets/plates/workout-cards.json`, then regenerate the SVG cards and `js/data/workout-cards.js`:
+
+  ```bash
+  node scripts/generate-workout-cards.mjs
+  ```
+
+- **AI plates:** generate images from `assets/plates/REMAINING-PROMPTS.md`, save as `<id>.webp` under `assets/plates/ai/`, and run `node scripts/import-ai-plates.mjs` (see `AI-ASSET-INTAKE.md`).
 
 ## Run locally
 
