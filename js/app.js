@@ -399,7 +399,7 @@
       if (f.equipment !== "all" && e.equipment !== f.equipment) return false;
       if (f.q) {
         var q = f.q.toLowerCase();
-        var hay = (e.name + " " + (e.muscles || "") + " " + (e.drill || "")).toLowerCase();
+        var hay = (e.name + " " + (e.muscles || "") + " " + (e.drill || "") + " " + (e.equipment || "") + " " + (e.cues || []).join(" ") + " " + (e.programming || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
