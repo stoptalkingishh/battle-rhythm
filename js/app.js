@@ -67,7 +67,13 @@
     return months[(+p[1]) - 1] + " " + (+p[2]) + ", " + p[0];
   }
   function stripQuotes(str) { return String(str || "").replace(/^“|”$/g, ""); }
-  function stripPar(str) { return String(str || "").replace(/^\[PAR\] ?/, ""); }
+  function stripPar(str) {
+    return String(str || "")
+      .replace(/^\[PAR\] ?/g, "")
+      .replace(/\[PAR\] ?/g, " ")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+  }
   function esc(str) {
     return String(str == null ? "" : str)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -328,7 +334,7 @@
       dom.appendChild(el("div", { class: "card" }, [
         badge(c.id),
         el("h3", { class: "card-title", style: "margin-top:10px;", text: c.name }),
-        el("p", { class: "card-muted", text: stripQuotes(c.definition) }),
+        el("p", { class: "card-muted", text: stripQuotes(stripPar(c.definition)) }),
         el("p", { class: "card-muted", style: "font-size:.74rem;margin:10px 0 0;", text: c.citation })
       ]));
     });
@@ -655,6 +661,8 @@
       var actions = el("div", { style: "display:flex;align-items:center;gap:6px;" });
       if (item.type === "exercise") {
         actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview workout guide", "aria-label": "Preview " + item.label, onclick: function () { openExerciseModal(item.ref); } }));
+      } else if (item.type === "drill") {
+        actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview drill guide", "aria-label": "Preview " + item.label, onclick: function () { openDrillModal(item.ref); } }));
       }
       actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
         phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
@@ -1109,7 +1117,7 @@
       ]));
     });
     var cft = (DOC.aft.events || []).find(function (e) { return e.code === "cft"; });
-    $("#cft-note").innerHTML = cft ? "<strong>" + esc(cft.name) + "</strong><br>" + esc(cft.description) + "<br><span style='font-size:.76rem;'>" + esc(cft.citation) + "</span>" : "";
+    $("#cft-note").innerHTML = cft ? "<strong>" + esc(cft.name) + "</strong><br>" + esc(stripPar(cft.description)) + "<br><span style='font-size:.76rem;'>" + esc(cft.citation) + "</span>" : "";
 
     var sess = $("#doctrine-session");
     sess.innerHTML = "";
@@ -1162,7 +1170,7 @@
           }))
         ])
       ]));
-      if (p.hrZones.note) prog.appendChild(el("p", { class: "card-muted", style: "font-size:.76rem;margin:6px 0 0;", text: p.hrZones.note + "  " + (p.hrZones.citation || "") }));
+      if (p.hrZones.note) prog.appendChild(el("p", { class: "card-muted", style: "font-size:.76rem;margin:6px 0 0;", text: stripPar(p.hrZones.note) + "  " + (p.hrZones.citation || "") }));
     }
 
     if (p.periods && p.periods.length) {
@@ -1170,7 +1178,7 @@
       p.periods.forEach(function (per) {
         prog.appendChild(el("div", { style: "padding:8px 0;border-bottom:1px solid var(--border);" }, [
           el("h4", { style: "margin:0;font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;", text: per.name }),
-          el("p", { class: "card-muted", style: "margin:4px 0 0;font-size:.84rem;", text: stripQuotes(per.text) }),
+          el("p", { class: "card-muted", style: "margin:4px 0 0;font-size:.84rem;", text: stripQuotes(stripPar(per.text)) }),
           el("p", { class: "card-muted", style: "font-size:.72rem;margin:4px 0 0;", text: per.citation })
         ]));
       });
@@ -1179,7 +1187,7 @@
     if (p.weeklySplit && p.weeklySplit.length) {
       prog.appendChild(el("h3", { class: "card-title", style: "margin-top:22px;", text: "Weekly Splits" }));
       p.weeklySplit.forEach(function (w) {
-        prog.appendChild(el("p", { class: "card-muted", style: "font-size:.84rem;margin:6px 0;", text: w.name + ": " + stripQuotes(w.text) }));
+        prog.appendChild(el("p", { class: "card-muted", style: "font-size:.84rem;margin:6px 0;", text: w.name + ": " + stripQuotes(stripPar(w.text)) }));
       });
     }
 
@@ -1205,7 +1213,7 @@
     (DOC.strategies || []).forEach(function (s) {
       strat.appendChild(el("div", { class: "card card-accent" }, [
         el("h3", { class: "card-title", text: s.name }),
-        el("p", { class: "card-muted", text: stripQuotes(s.description) }),
+        el("p", { class: "card-muted", text: stripQuotes(stripPar(s.description)) }),
         el("p", { class: "card-muted", style: "font-size:.72rem;", text: s.citation })
       ]));
     });
