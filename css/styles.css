@@ -918,6 +918,12 @@ textarea {
   border: 1px solid var(--border);
 }
 
+.tags.tag-preset {
+  color: var(--gold);
+  background: rgba(198, 160, 92, 0.08);
+  border-color: rgba(198, 160, 92, 0.35);
+}
+
 .timeline {
   list-style: none;
   margin: 0;

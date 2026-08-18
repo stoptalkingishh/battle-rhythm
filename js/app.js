@@ -113,7 +113,7 @@
   function rowEl(icon, title, sub, actions) {
     var act = actions || [];
     var kids = [el("div", { class: "lead" }, [icon])];
-    var contentKids = [el("h4", { text: title })];
+    var contentKids = [Array.isArray(title) ? el("h4", {}, title) : el("h4", { text: title })];
     if (sub) contentKids.push(el("p", { class: "card-muted", style: "margin:0;font-size:.78rem;", text: sub }));
     kids.push(el("div", { class: "content" }, contentKids));
     if (act.length) kids.push(el("div", { class: "actions", style: "display:flex;gap:6px;flex-wrap:wrap;" }, act));
@@ -780,12 +780,15 @@
     var host = $("#sessions-list");
     host.innerHTML = "";
     $("#sessions-empty").classList.toggle("hidden", all.length > 0);
+    var presets = window.BR_PRESET_WORKOUTS || [];
+    function isPreset(sid) { return presets.some(function (p) { return p.id === sid; }); }
     all.forEach(function (s) {
       var count = 0;
       PHASE_ORDER.forEach(function (k) { if (s.phases[k]) count += s.phases[k].items.length; });
       host.appendChild(rowEl(
         el("span", { text: "S", style: "font-family:var(--font-display);font-size:1.2rem;" }),
-        s.name,
+        [el("span", { text: s.name }), isPreset(s.id) ? el("span", { class: "tags tag-preset", text: "Preset" }) : null]
+          .filter(Boolean),
         s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + " | " + count + " items",
         [
           el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; renderBuilder(); } }),
@@ -1003,7 +1006,18 @@
     var sel = $("#track-session");
     var sessions = getSessions();
     sel.innerHTML = "";
-    sessions.forEach(function (s) { sel.appendChild(el("option", { value: s.id, text: s.name })); });
+    var presets = window.BR_PRESET_WORKOUTS || [];
+    function isPreset(sid) { return presets.some(function (p) { return p.id === sid; }); }
+    var groupPresets = sessions.filter(function (s) { return isPreset(s.id); });
+    var groupCustom = sessions.filter(function (s) { return !isPreset(s.id); });
+    function appendGroup(label, list) {
+      if (!list.length) return;
+      var grp = el("optgroup", { label: label });
+      list.forEach(function (s) { grp.appendChild(el("option", { value: s.id, text: s.name })); });
+      sel.appendChild(grp);
+    }
+    appendGroup("Built-in workouts", groupPresets);
+    appendGroup("Your sessions", groupCustom);
     if (!sessions.length) {
       sel.appendChild(el("option", { value: "", text: "No sessions yet" }));
       $("#tracker-active").innerHTML = '<div class="empty-state"><p>Build a session first, then track it here.</p></div>';
