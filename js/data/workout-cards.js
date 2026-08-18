@@ -76,6 +76,46 @@ window.BR_WORKOUT_CARDS = [
     "alt": "Overhead Push-Press (power variation) technical workout card"
   },
   {
+    "id": "p8-box-jump",
+    "src": "assets/plates/svg/p8-box-jump.svg",
+    "alt": "Box Jump technical workout card"
+  },
+  {
+    "id": "p9-lateral-bound",
+    "src": "assets/plates/svg/p9-lateral-bound.svg",
+    "alt": "Lateral Bound technical workout card"
+  },
+  {
+    "id": "p10-depth-jump",
+    "src": "assets/plates/svg/p10-depth-jump.svg",
+    "alt": "Depth Jump technical workout card"
+  },
+  {
+    "id": "p11-squat-jump",
+    "src": "assets/plates/svg/p11-squat-jump.svg",
+    "alt": "Squat Jump technical workout card"
+  },
+  {
+    "id": "p12-jump-lunge",
+    "src": "assets/plates/svg/p12-jump-lunge.svg",
+    "alt": "Jump Lunge (Split Jump) technical workout card"
+  },
+  {
+    "id": "p13-speed-skater",
+    "src": "assets/plates/svg/p13-speed-skater.svg",
+    "alt": "Speed Skater technical workout card"
+  },
+  {
+    "id": "p14-medicine-ball-slam",
+    "src": "assets/plates/svg/p14-medicine-ball-slam.svg",
+    "alt": "Medicine Ball Slam technical workout card"
+  },
+  {
+    "id": "p15-tuck-jump-progression",
+    "src": "assets/plates/svg/p15-tuck-jump-progression.svg",
+    "alt": "Tuck Jump Progression technical workout card"
+  },
+  {
     "id": "a1-unit-formation-run",
     "src": "assets/plates/svg/a1-unit-formation-run.svg",
     "alt": "Unit Formation Run (UFR) technical workout card"

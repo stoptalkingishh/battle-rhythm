@@ -759,5 +759,96 @@
       "calves",
       "lower-back"
     ]
+  },
+  {
+    "id": "p8-box-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "box-jump",
+    "targets": [
+      "quads",
+      "glutes",
+      "calves",
+      "core"
+    ]
+  },
+  {
+    "id": "p9-lateral-bound",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "lateral-bound",
+    "targets": [
+      "glutes",
+      "quads",
+      "calves"
+    ]
+  },
+  {
+    "id": "p10-depth-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "depth-jump",
+    "targets": [
+      "quads",
+      "glutes",
+      "calves"
+    ]
+  },
+  {
+    "id": "p11-squat-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "squat-jump",
+    "targets": [
+      "quads",
+      "glutes",
+      "calves"
+    ]
+  },
+  {
+    "id": "p12-jump-lunge",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "jump-lunge",
+    "targets": [
+      "quads",
+      "glutes",
+      "hamstrings"
+    ]
+  },
+  {
+    "id": "p13-speed-skater",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "speed-skater",
+    "targets": [
+      "glutes",
+      "quads",
+      "calves",
+      "core"
+    ]
+  },
+  {
+    "id": "p14-medicine-ball-slam",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "medicine-ball-slam",
+    "targets": [
+      "core",
+      "shoulders",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "p15-tuck-jump-progression",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "tuck-jump",
+    "targets": [
+      "quads",
+      "calves",
+      "core",
+      "hip-flexors"
+    ]
   }
 ]
