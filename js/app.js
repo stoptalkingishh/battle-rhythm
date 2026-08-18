@@ -595,13 +595,18 @@
         itemField(item, "rest", "Rest")
       ];
       if (item.type === "exercise") gridFields.push(machineField(item));
+      var actions = el("div", { style: "display:flex;align-items:center;gap:6px;" });
+      if (item.type === "exercise") {
+        actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview workout guide", "aria-label": "Preview " + item.label, onclick: function () { openExerciseModal(item.ref); } }));
+      }
+      actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
+        phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
+        renderSessionEditor();
+      } }));
       var block = el("div", { class: "phase-item" }, [
         el("div", { class: "phase-item-row" }, [
           el("p", { class: "phase-item-name", text: item.label }),
-          el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
-            phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
-            renderSessionEditor();
-          } })
+          actions
         ]),
         el("div", { class: "phase-item-grid" }, gridFields)
       ]);
@@ -632,7 +637,15 @@
       }
       renderSessionEditor();
     } });
+    var previewBtn = el("button", { class: "btn btn-ghost btn-sm", text: "Preview", onclick: function () {
+      var v = select.value;
+      if (!v) { toast("Pick an exercise or drill"); return; }
+      if (v.indexOf("drill:") === 0) { toast("Drills have no workout guide"); return; }
+      var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
+      if (ex) openExerciseModal(ex.id);
+    } });
     wrap.appendChild(select);
+    wrap.appendChild(previewBtn);
     wrap.appendChild(btn);
     return wrap;
   }
