@@ -207,6 +207,17 @@
     return lines.join("\n");
   }
 
+  function drillPlainText(drill) {
+    var lines = [];
+    lines.push(drill.name.toUpperCase());
+    lines.push("Doctrine Drill");
+    lines.push("");
+    if (drill.description) { lines.push("PURPOSE:"); lines.push("  " + drill.description); }
+    if (drill.exercises) { lines.push("EXERCISES:"); lines.push("  " + drill.exercises); }
+    if (drill.citation) { lines.push("CITATION: " + drill.citation); }
+    return lines.join("\n");
+  }
+
   function itemText(item) {
     var parts = [];
     if (item.sets) parts.push(item.sets + " sets");
@@ -437,21 +448,44 @@
   }
 
   function openExerciseModal(id) {
-    var ex = EX.find(function (e) { return e.id === id; });
-    if (!ex) return;
+    openGuideModal("exercise", id);
+  }
+
+  function openDrillModal(id) {
+    openGuideModal("drill", id);
+  }
+
+  function drillPhase(drillId) {
+    var prep = ["pd", "4c", "ssd", "hsd", "mmd1", "mmd2"];
+    var recovery = ["rd", "pmcs"];
+    if (prep.indexOf(drillId) !== -1) return "prep";
+    if (recovery.indexOf(drillId) !== -1) return "recovery";
+    return "activity";
+  }
+
+  function openGuideModal(kind, id) {
+    var ex = kind === "exercise" ? EX.find(function (e) { return e.id === id; }) : null;
+    var drill = kind === "drill" ? (DOC.drills || []).find(function (d) { return d.id === id; }) : null;
+    var item = ex || drill;
+    if (!item) return;
     rememberModalFocus();
-    $("#ex-modal-name").textContent = ex.name;
+    $("#ex-modal-name").textContent = item.name;
     var tags = $("#ex-modal-tags");
     tags.innerHTML = "";
-    tags.appendChild(badge(ex.component));
-    tags.appendChild(tag(ex.equipment || "No equipment"));
-    if (ex.drill) tags.appendChild(tag(ex.drill));
-    (ex.aft || []).forEach(function (a) { tags.appendChild(tag("AFT " + a)); });
-    tags.appendChild(tag(sourceLabel(ex)));
+    if (ex) {
+      tags.appendChild(badge(ex.component));
+      tags.appendChild(tag(ex.equipment || "No equipment"));
+      if (ex.drill) tags.appendChild(tag(ex.drill));
+      (ex.aft || []).forEach(function (a) { tags.appendChild(tag("AFT " + a)); });
+      tags.appendChild(tag(sourceLabel(ex)));
+    } else {
+      (drill.components || [drill.component]).forEach(function (c) { tags.appendChild(badge(c)); });
+      tags.appendChild(tag("Doctrine Drill"));
+    }
 
     var body = $("#ex-modal-body");
     body.innerHTML = "";
-    if (window.BRExerciseCoach && window.BRExerciseCoach.render) {
+    if (ex && window.BRExerciseCoach && window.BRExerciseCoach.render) {
       body.appendChild(window.BRExerciseCoach.render(ex, GUIDES[ex.id]));
     }
     var row = function (label, value) {
@@ -460,13 +494,26 @@
         el("p", { style: "margin:0;font-size:.88rem;line-height:1.6;white-space:pre-line;", text: value })
       ]));
     };
-    row("Form", (ex.cues || []).map(function (c, i) { return (i + 1) + ". " + c; }).join("\n"));
-    row("Programming", ex.programming);
-    row("Muscles", ex.muscles);
-    row("Safety", ex.safety);
-    row("Source", ex.source + "  [" + sourceLabel(ex) + "]");
-    $("#ex-modal-add").onclick = function () { addToSession(ex.id); $("#ex-modal").classList.add("hidden"); };
-    $("#ex-modal-copy").onclick = function () { openCopyModal(exercisePlainText(ex)); $("#ex-modal").classList.add("hidden"); };
+    if (ex) {
+      row("Form", (ex.cues || []).map(function (c, i) { return (i + 1) + ". " + c; }).join("\n"));
+      row("Programming", ex.programming);
+      row("Muscles", ex.muscles);
+      row("Safety", ex.safety);
+      row("Source", ex.source + "  [" + sourceLabel(ex) + "]");
+    } else {
+      row("Purpose", drill.description || "");
+      row("Exercises", drill.exercises || "");
+      row("Citation", drill.citation || "");
+    }
+    $("#ex-modal-add").onclick = function () {
+      if (ex) { addToSession(ex.id); }
+      else { addDrillToSession(drill.id); }
+      $("#ex-modal").classList.add("hidden");
+    };
+    $("#ex-modal-copy").onclick = function () {
+      openCopyModal(ex ? exercisePlainText(ex) : drillPlainText(drill));
+      $("#ex-modal").classList.add("hidden");
+    };
     $("#ex-modal").classList.remove("hidden");
     $("#ex-modal-close").focus();
   }
@@ -527,6 +574,16 @@
     addItemToPhase(STATE.session, key, newItemFromExercise(ex));
     nav("builder");
     toast("Added " + ex.name + " to " + PHASE_LABEL[key]);
+  }
+
+  function addDrillToSession(drillId) {
+    var drill = (DOC.drills || []).find(function (d) { return d.id === drillId; });
+    if (!drill) return;
+    if (!STATE.session) STATE.session = blankSession();
+    var key = drillPhase(drillId);
+    addItemToPhase(STATE.session, key, newItemFromDrill(drillId, key));
+    nav("builder");
+    toast("Added " + drill.name + " to " + PHASE_LABEL[key]);
   }
 
   function fillFocusSelect() {
@@ -640,9 +697,11 @@
     var previewBtn = el("button", { class: "btn btn-ghost btn-sm", text: "Preview", onclick: function () {
       var v = select.value;
       if (!v) { toast("Pick an exercise or drill"); return; }
-      if (v.indexOf("drill:") === 0) { toast("Drills have no workout guide"); return; }
-      var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
-      if (ex) openExerciseModal(ex.id);
+      if (v.indexOf("drill:") === 0) { openDrillModal(v.split(":")[1]); }
+      else {
+        var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
+        if (ex) openExerciseModal(ex.id);
+      }
     } });
     wrap.appendChild(select);
     wrap.appendChild(previewBtn);
