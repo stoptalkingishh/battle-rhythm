@@ -94,7 +94,7 @@ function validateImage(filePath, extension) {
 
 function loadManifest() {
   const cards = readJson(manifestPath, 'Prompt manifest');
-  if (!Array.isArray(cards) || cards.length !== 46) fail(`Prompt manifest must contain exactly 46 entries; found ${Array.isArray(cards) ? cards.length : 'a non-array value'}.`);
+  if (!Array.isArray(cards) || !cards.length) fail('Prompt manifest must be a non-empty array of manifest cards.');
   const ids = cards.map(card => card?.id);
   if (ids.some(id => typeof id !== 'string' || !/^[a-z0-9-]+$/.test(id)) || new Set(ids).size !== ids.length) fail('Prompt manifest has invalid or duplicate IDs.');
   return ids;

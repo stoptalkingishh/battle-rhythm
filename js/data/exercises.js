@@ -791,84 +791,84 @@ window.BR_EXERCISES = [
     id: "y1-downward-dog",
     name: "Downward-Facing Dog",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Hamstrings, calves, shoulders, upper back",
     cues: ["Press hands and feet into floor, hips high", "Lengthen spine, heels reach toward floor", "Breathe slowly"],
     programming: "Hold 30-60 sec, 2-3 rounds",
     safety: "Bend knees if hamstrings are tight; keep a flat-ish back",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y2-childs-pose",
     name: "Child's Pose",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Lower back, hips, shoulders, chest",
     cues: ["Kneel, sit back on heels", "Reach arms forward, rest forehead on floor", "Breathe and relax"],
     programming: "Hold 30-60 sec, 2-3 rounds",
     safety: "Knees apart if hips are tight; stop on knee pain",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y3-cat-cow",
     name: "Cat-Cow",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Spine, core, lower back, abdomen",
     cues: ["On hands and knees", "Inhale, arch back (cow)", "Exhale, round spine (cat)"],
     programming: "8-10 slow cycles",
     safety: "Move slowly within pain-free range; keep wrists aligned with shoulders",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y4-warrior-two",
     name: "Warrior II",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Quads, glutes, hips, shoulders",
     cues: ["Stance wide, front knee bent over ankle", "Arms extended parallel, gaze past front hand", "Hold and breathe"],
     programming: "Hold 30-60 sec per side",
     safety: "Keep front knee tracking over toes; level hips",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y5-pigeon-pose",
     name: "Pigeon Pose",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Glutes, hip flexors, lower back",
     cues: ["Front shin across, back leg extended", "Hips square, fold forward", "Hold and breathe"],
     programming: "Hold 30-60 sec per side",
     safety: "Keep hips level; use a support under the sit bone if tight",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y6-cobra-pose",
     name: "Cobra Pose",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Upper back, lower back, chest, shoulders",
     cues: ["Prone, hands under shoulders", "Press up gently, lift chest", "Keep hips down"],
     programming: "Hold 15-30 sec, 2-3 rounds",
     safety: "Go only as high as comfortable; avoid impingement in the lower back",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   },
   {
     id: "y7-seated-forward-fold",
     name: "Seated Forward Fold",
     component: "mobility-stability",
-    equipment: "Yoga mat",
+    equipment: "Mobility mat",
     muscles: "Hamstrings, calves, lower back",
     cues: ["Sit with legs extended", "Hinge at hips, reach toward feet", "Keep spine long"],
     programming: "Hold 30-60 sec",
     safety: "Bend knees if hamstrings are tight",
-    source: "PAR - adapted: common H2F recovery yoga",
-    drill: "Yoga / Mobility"
+    source: "PAR - adapted: common H2F recovery mobility",
+    drill: "Mobility"
   }
 ];

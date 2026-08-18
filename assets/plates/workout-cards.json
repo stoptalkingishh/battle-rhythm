@@ -1,48 +1,763 @@
 [
-  {"id":"s1-deadlift","pose":"hinge","equipment":"barbell","variant":"deadlift","targets":["glutes","hamstrings","back","grip"]},
-  {"id":"s2-squat","pose":"squat","equipment":"barbell","variant":"back-rack","targets":["quads","glutes","core"]},
-  {"id":"s3-bench-press","pose":"bench","equipment":"barbell","variant":"flat-press","targets":["chest","triceps","shoulders"]},
-  {"id":"s4-pull-up","pose":"hang","equipment":"pull-up-bar","variant":"vertical-pull","targets":["lats","upper-back","biceps","grip"]},
-  {"id":"s5-sumo-squat","pose":"squat","equipment":"none","variant":"wide-stance","targets":["quads","adductors","glutes"]},
-  {"id":"s6-straight-leg-deadlift","pose":"hinge","equipment":"barbell","variant":"straight-leg","targets":["hamstrings","glutes","lower-back"]},
-  {"id":"s7-bent-over-row","pose":"hinge","equipment":"barbell","variant":"row","targets":["upper-back","lats","biceps"]},
-  {"id":"s8-overhead-push-press","pose":"standing-press","equipment":"barbell","variant":"press","targets":["shoulders","triceps","legs"]},
-  {"id":"p1-power-jump","pose":"jump","equipment":"none","variant":"vertical","targets":["quads","glutes","calves"]},
-  {"id":"p2-standing-long-jump","pose":"jump","equipment":"none","variant":"forward","targets":["glutes","quads","calves"]},
-  {"id":"p3-tuck-jump","pose":"jump","equipment":"none","variant":"tuck","targets":["quads","calves","core"]},
-  {"id":"p4-8-count-t-push-up","pose":"floor-hold","equipment":"none","variant":"t-position","targets":["chest","shoulders","core","quads"]},
-  {"id":"p5-kettlebell-swing","pose":"hinge","equipment":"kettlebell","variant":"swing","targets":["hips","posterior-chain","grip"]},
-  {"id":"p6-sled-push-drag","pose":"sled","equipment":"sled","variant":"push","targets":["legs","full-body","grip"]},
-  {"id":"p7-overhead-push-press-power","pose":"standing-press","equipment":"barbell","variant":"power","targets":["shoulders","legs"]},
-  {"id":"a1-unit-formation-run","pose":"run","equipment":"none","variant":"formation","targets":["legs","cardiovascular"]},
-  {"id":"a2-ability-group-run","pose":"run","equipment":"none","variant":"steady","targets":["legs","cardiovascular"]},
-  {"id":"a3-release-run","pose":"run","equipment":"none","variant":"easy","targets":["legs","cardiovascular"]},
-  {"id":"a4-foot-march-ruck-march","pose":"ruck","equipment":"ruck","variant":"march","targets":["legs","back","cardiovascular"]},
-  {"id":"a5-2-mile-run","pose":"run","equipment":"none","variant":"distance","targets":["legs","cardiovascular"]},
-  {"id":"a6-sustained-run","pose":"run","equipment":"none","variant":"sustained","targets":["legs","cardiovascular"]},
-  {"id":"a7-etm-session","pose":"run","equipment":"none","variant":"machine-session","targets":["legs","cardiovascular"]},
-  {"id":"n1-30-60s","pose":"sprint","equipment":"none","variant":"30-60","targets":["legs","full-body"]},
-  {"id":"n2-60-120s","pose":"sprint","equipment":"none","variant":"60-120","targets":["legs","full-body"]},
-  {"id":"n3-300-meter-shuttle-run","pose":"shuttle","equipment":"lane-marker","variant":"300m","targets":["legs","agility"]},
-  {"id":"n4-shuttle-sprint","pose":"shuttle","equipment":"lane-marker","variant":"touch-turn","targets":["legs","agility"]},
-  {"id":"n5-hill-repeats","pose":"sprint","equipment":"hill","variant":"uphill","targets":["legs","anaerobic-capacity"]},
-  {"id":"n6-burpee-squat-thrust","pose":"floor-hold","equipment":"none","variant":"squat-thrust","targets":["full-body","legs"]},
-  {"id":"n7-sprint-intervals","pose":"sprint","equipment":"none","variant":"interval","targets":["legs","anaerobic-capacity"]},
-  {"id":"m1-push-up","pose":"floor-press","equipment":"none","variant":"standard","targets":["chest","shoulders","triceps","core"]},
-  {"id":"m2-hand-release-push-up","pose":"floor-press","equipment":"none","variant":"hand-release","targets":["chest","shoulders","triceps","core"]},
-  {"id":"m3-plank","pose":"floor-hold","equipment":"none","variant":"forearm","targets":["core"]},
-  {"id":"m4-v-up","pose":"supine-core","equipment":"none","variant":"v-up","targets":["abs","hip-flexors"]},
-  {"id":"m5-mountain-climber","pose":"floor-hold","equipment":"none","variant":"knee-drive","targets":["abs","hip-flexors","shoulders"]},
-  {"id":"m6-leg-tuck","pose":"hang","equipment":"pull-up-bar","variant":"knee-raise","targets":["grip","shoulders","core","hip-flexors"]},
-  {"id":"m7-rower","pose":"supine-core","equipment":"none","variant":"rock","targets":["abs","trunk"]},
-  {"id":"m8-bent-leg-body-twist","pose":"supine-core","equipment":"none","variant":"rotation","targets":["obliques","trunk"]},
-  {"id":"mb1-bend-and-reach","pose":"mobility","equipment":"none","variant":"bend-reach","targets":["hips","spine","shoulders"]},
-  {"id":"mb2-rear-lunge","pose":"mobility","equipment":"none","variant":"rear-lunge","targets":["hip-flexors","quads","balance"]},
-  {"id":"mb3-high-jumper","pose":"jump","equipment":"none","variant":"low-jump","targets":["legs","balance","coordination"]},
-  {"id":"mb4-windmill","pose":"mobility","equipment":"none","variant":"windmill","targets":["trunk","legs","shoulders","hips"]},
-  {"id":"mb5-prone-row","pose":"prone","equipment":"none","variant":"row","targets":["back","shoulders"]},
-  {"id":"mb6-shoulder-stability-drill","pose":"prone","equipment":"none","variant":"y-raise","targets":["rotator-cuff","shoulder-girdle"]},
-  {"id":"mb7-hip-stability-drill","pose":"mobility","equipment":"none","variant":"hip-control","targets":["glutes","hips","core"]},
-  {"id":"mb8-recovery-drill-stretches","pose":"mobility","equipment":"none","variant":"static-stretch","targets":["full-body","flexibility"]},
-  {"id":"mb9-pmcs-drill","pose":"mobility","equipment":"none","variant":"joint-check","targets":["joint-mobility"]}
+  {
+    "id": "s1-deadlift",
+    "pose": "hinge",
+    "equipment": "barbell",
+    "variant": "deadlift",
+    "targets": [
+      "glutes",
+      "hamstrings",
+      "back",
+      "grip"
+    ]
+  },
+  {
+    "id": "s2-squat",
+    "pose": "squat",
+    "equipment": "barbell",
+    "variant": "back-rack",
+    "targets": [
+      "quads",
+      "glutes",
+      "core"
+    ]
+  },
+  {
+    "id": "s3-bench-press",
+    "pose": "bench",
+    "equipment": "barbell",
+    "variant": "flat-press",
+    "targets": [
+      "chest",
+      "triceps",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "s4-pull-up",
+    "pose": "hang",
+    "equipment": "pull-up-bar",
+    "variant": "vertical-pull",
+    "targets": [
+      "lats",
+      "upper-back",
+      "biceps",
+      "grip"
+    ]
+  },
+  {
+    "id": "s5-sumo-squat",
+    "pose": "squat",
+    "equipment": "none",
+    "variant": "wide-stance",
+    "targets": [
+      "quads",
+      "adductors",
+      "glutes"
+    ]
+  },
+  {
+    "id": "s6-straight-leg-deadlift",
+    "pose": "hinge",
+    "equipment": "barbell",
+    "variant": "straight-leg",
+    "targets": [
+      "hamstrings",
+      "glutes",
+      "lower-back"
+    ]
+  },
+  {
+    "id": "s7-bent-over-row",
+    "pose": "hinge",
+    "equipment": "barbell",
+    "variant": "row",
+    "targets": [
+      "upper-back",
+      "lats",
+      "biceps"
+    ]
+  },
+  {
+    "id": "s8-overhead-push-press",
+    "pose": "standing-press",
+    "equipment": "barbell",
+    "variant": "press",
+    "targets": [
+      "shoulders",
+      "triceps",
+      "legs"
+    ]
+  },
+  {
+    "id": "p1-power-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "vertical",
+    "targets": [
+      "quads",
+      "glutes",
+      "calves"
+    ]
+  },
+  {
+    "id": "p2-standing-long-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "forward",
+    "targets": [
+      "glutes",
+      "quads",
+      "calves"
+    ]
+  },
+  {
+    "id": "p3-tuck-jump",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "tuck",
+    "targets": [
+      "quads",
+      "calves",
+      "core"
+    ]
+  },
+  {
+    "id": "p4-8-count-t-push-up",
+    "pose": "floor-hold",
+    "equipment": "none",
+    "variant": "t-position",
+    "targets": [
+      "chest",
+      "shoulders",
+      "core",
+      "quads"
+    ]
+  },
+  {
+    "id": "p5-kettlebell-swing",
+    "pose": "hinge",
+    "equipment": "kettlebell",
+    "variant": "swing",
+    "targets": [
+      "hips",
+      "posterior-chain",
+      "grip"
+    ]
+  },
+  {
+    "id": "p6-sled-push-drag",
+    "pose": "sled",
+    "equipment": "sled",
+    "variant": "push",
+    "targets": [
+      "legs",
+      "full-body",
+      "grip"
+    ]
+  },
+  {
+    "id": "p7-overhead-push-press-power",
+    "pose": "standing-press",
+    "equipment": "barbell",
+    "variant": "power",
+    "targets": [
+      "shoulders",
+      "legs"
+    ]
+  },
+  {
+    "id": "a1-unit-formation-run",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "formation",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a2-ability-group-run",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "steady",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a3-release-run",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "easy",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a4-foot-march-ruck-march",
+    "pose": "ruck",
+    "equipment": "ruck",
+    "variant": "march",
+    "targets": [
+      "legs",
+      "back",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a5-2-mile-run",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "distance",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a6-sustained-run",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "sustained",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "a7-etm-session",
+    "pose": "run",
+    "equipment": "none",
+    "variant": "machine-session",
+    "targets": [
+      "legs",
+      "cardiovascular"
+    ]
+  },
+  {
+    "id": "n1-30-60s",
+    "pose": "sprint",
+    "equipment": "none",
+    "variant": "30-60",
+    "targets": [
+      "legs",
+      "full-body"
+    ]
+  },
+  {
+    "id": "n2-60-120s",
+    "pose": "sprint",
+    "equipment": "none",
+    "variant": "60-120",
+    "targets": [
+      "legs",
+      "full-body"
+    ]
+  },
+  {
+    "id": "n3-300-meter-shuttle-run",
+    "pose": "shuttle",
+    "equipment": "lane-marker",
+    "variant": "300m",
+    "targets": [
+      "legs",
+      "agility"
+    ]
+  },
+  {
+    "id": "n4-shuttle-sprint",
+    "pose": "shuttle",
+    "equipment": "lane-marker",
+    "variant": "touch-turn",
+    "targets": [
+      "legs",
+      "agility"
+    ]
+  },
+  {
+    "id": "n5-hill-repeats",
+    "pose": "sprint",
+    "equipment": "hill",
+    "variant": "uphill",
+    "targets": [
+      "legs",
+      "anaerobic-capacity"
+    ]
+  },
+  {
+    "id": "n6-burpee-squat-thrust",
+    "pose": "floor-hold",
+    "equipment": "none",
+    "variant": "squat-thrust",
+    "targets": [
+      "full-body",
+      "legs"
+    ]
+  },
+  {
+    "id": "n7-sprint-intervals",
+    "pose": "sprint",
+    "equipment": "none",
+    "variant": "interval",
+    "targets": [
+      "legs",
+      "anaerobic-capacity"
+    ]
+  },
+  {
+    "id": "m1-push-up",
+    "pose": "floor-press",
+    "equipment": "none",
+    "variant": "standard",
+    "targets": [
+      "chest",
+      "shoulders",
+      "triceps",
+      "core"
+    ]
+  },
+  {
+    "id": "m2-hand-release-push-up",
+    "pose": "floor-press",
+    "equipment": "none",
+    "variant": "hand-release",
+    "targets": [
+      "chest",
+      "shoulders",
+      "triceps",
+      "core"
+    ]
+  },
+  {
+    "id": "m3-plank",
+    "pose": "floor-hold",
+    "equipment": "none",
+    "variant": "forearm",
+    "targets": [
+      "core"
+    ]
+  },
+  {
+    "id": "m4-v-up",
+    "pose": "supine-core",
+    "equipment": "none",
+    "variant": "v-up",
+    "targets": [
+      "abs",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "m5-mountain-climber",
+    "pose": "floor-hold",
+    "equipment": "none",
+    "variant": "knee-drive",
+    "targets": [
+      "abs",
+      "hip-flexors",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "m6-leg-tuck",
+    "pose": "hang",
+    "equipment": "pull-up-bar",
+    "variant": "knee-raise",
+    "targets": [
+      "grip",
+      "shoulders",
+      "core",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "m7-rower",
+    "pose": "supine-core",
+    "equipment": "none",
+    "variant": "rock",
+    "targets": [
+      "abs",
+      "trunk"
+    ]
+  },
+  {
+    "id": "m8-bent-leg-body-twist",
+    "pose": "supine-core",
+    "equipment": "none",
+    "variant": "rotation",
+    "targets": [
+      "obliques",
+      "trunk"
+    ]
+  },
+  {
+    "id": "mb1-bend-and-reach",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "bend-reach",
+    "targets": [
+      "hips",
+      "spine",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "mb2-rear-lunge",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "rear-lunge",
+    "targets": [
+      "hip-flexors",
+      "quads",
+      "balance"
+    ]
+  },
+  {
+    "id": "mb3-high-jumper",
+    "pose": "jump",
+    "equipment": "none",
+    "variant": "low-jump",
+    "targets": [
+      "legs",
+      "balance",
+      "coordination"
+    ]
+  },
+  {
+    "id": "mb4-windmill",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "windmill",
+    "targets": [
+      "trunk",
+      "legs",
+      "shoulders",
+      "hips"
+    ]
+  },
+  {
+    "id": "mb5-prone-row",
+    "pose": "prone",
+    "equipment": "none",
+    "variant": "row",
+    "targets": [
+      "back",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "mb6-shoulder-stability-drill",
+    "pose": "prone",
+    "equipment": "none",
+    "variant": "y-raise",
+    "targets": [
+      "rotator-cuff",
+      "shoulder-girdle"
+    ]
+  },
+  {
+    "id": "mb7-hip-stability-drill",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "hip-control",
+    "targets": [
+      "glutes",
+      "hips",
+      "core"
+    ]
+  },
+  {
+    "id": "mb8-recovery-drill-stretches",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "static-stretch",
+    "targets": [
+      "full-body",
+      "flexibility"
+    ]
+  },
+  {
+    "id": "mb9-pmcs-drill",
+    "pose": "mobility",
+    "equipment": "none",
+    "variant": "joint-check",
+    "targets": [
+      "joint-mobility"
+    ]
+  },
+  {
+    "id": "m1-lat-pulldown",
+    "pose": "hang",
+    "equipment": "machine",
+    "variant": "lat-pulldown",
+    "targets": [
+      "lats",
+      "upper-back",
+      "biceps"
+    ]
+  },
+  {
+    "id": "m2-seated-cable-row",
+    "pose": "hinge",
+    "equipment": "cable",
+    "variant": "seated-row",
+    "targets": [
+      "upper-back",
+      "lats",
+      "biceps"
+    ]
+  },
+  {
+    "id": "m3-leg-press",
+    "pose": "squat",
+    "equipment": "machine",
+    "variant": "leg-press",
+    "targets": [
+      "quads",
+      "glutes",
+      "hamstrings"
+    ]
+  },
+  {
+    "id": "m4-leg-extension",
+    "pose": "squat",
+    "equipment": "machine",
+    "variant": "leg-extension",
+    "targets": [
+      "quads"
+    ]
+  },
+  {
+    "id": "m5-seated-leg-curl",
+    "pose": "hinge",
+    "equipment": "machine",
+    "variant": "seated-leg-curl",
+    "targets": [
+      "hamstrings",
+      "calves"
+    ]
+  },
+  {
+    "id": "m6-shoulder-press-machine",
+    "pose": "standing-press",
+    "equipment": "machine",
+    "variant": "shoulder-press",
+    "targets": [
+      "shoulders",
+      "triceps",
+      "chest"
+    ]
+  },
+  {
+    "id": "c1-cable-face-pull",
+    "pose": "hinge",
+    "equipment": "cable",
+    "variant": "face-pull",
+    "targets": [
+      "shoulders",
+      "upper-back"
+    ]
+  },
+  {
+    "id": "c2-cable-triceps-pushdown",
+    "pose": "standing-press",
+    "equipment": "cable",
+    "variant": "triceps-pushdown",
+    "targets": [
+      "triceps"
+    ]
+  },
+  {
+    "id": "c3-cable-biceps-curl",
+    "pose": "mobility",
+    "equipment": "cable",
+    "variant": "biceps-curl",
+    "targets": [
+      "biceps"
+    ]
+  },
+  {
+    "id": "c4-cable-woodchopper",
+    "pose": "mobility",
+    "equipment": "cable",
+    "variant": "woodchopper",
+    "targets": [
+      "obliques",
+      "core",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "m7-pec-deck",
+    "pose": "bench",
+    "equipment": "machine",
+    "variant": "pec-deck",
+    "targets": [
+      "chest",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "m8-assisted-pull-up-dip",
+    "pose": "hang",
+    "equipment": "machine",
+    "variant": "assisted-pull-up",
+    "targets": [
+      "lats",
+      "biceps",
+      "chest"
+    ]
+  },
+  {
+    "id": "r1-band-pull-apart",
+    "pose": "mobility",
+    "equipment": "band",
+    "variant": "pull-apart",
+    "targets": [
+      "upper-back",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "r2-band-glute-bridge",
+    "pose": "floor-hold",
+    "equipment": "band",
+    "variant": "glute-bridge",
+    "targets": [
+      "glutes",
+      "hamstrings",
+      "core"
+    ]
+  },
+  {
+    "id": "r3-band-monster-walk",
+    "pose": "squat",
+    "equipment": "band",
+    "variant": "monster-walk",
+    "targets": [
+      "glutes",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "r4-band-shoulder-external-rotation",
+    "pose": "mobility",
+    "equipment": "band",
+    "variant": "external-rotation",
+    "targets": [
+      "shoulders",
+      "upper-back"
+    ]
+  },
+  {
+    "id": "r5-band-hamstring-stretch",
+    "pose": "floor-hold",
+    "equipment": "band",
+    "variant": "hamstring-stretch",
+    "targets": [
+      "hamstrings",
+      "calves"
+    ]
+  },
+  {
+    "id": "r6-band-assisted-squat-mobility",
+    "pose": "squat",
+    "equipment": "band",
+    "variant": "assisted-squat",
+    "targets": [
+      "quads",
+      "glutes",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "r7-band-chest-stretch",
+    "pose": "mobility",
+    "equipment": "band",
+    "variant": "chest-stretch",
+    "targets": [
+      "chest",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "y1-downward-dog",
+    "pose": "floor-hold",
+    "equipment": "mat",
+    "variant": "downward-dog",
+    "targets": [
+      "hamstrings",
+      "calves",
+      "shoulders",
+      "upper-back"
+    ]
+  },
+  {
+    "id": "y2-childs-pose",
+    "pose": "floor-hold",
+    "equipment": "mat",
+    "variant": "childs-pose",
+    "targets": [
+      "lower-back",
+      "shoulders",
+      "hip-flexors"
+    ]
+  },
+  {
+    "id": "y3-cat-cow",
+    "pose": "floor-hold",
+    "equipment": "mat",
+    "variant": "cat-cow",
+    "targets": [
+      "core",
+      "lower-back"
+    ]
+  },
+  {
+    "id": "y4-warrior-two",
+    "pose": "squat",
+    "equipment": "mat",
+    "variant": "warrior-two",
+    "targets": [
+      "quads",
+      "glutes",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "y5-pigeon-pose",
+    "pose": "floor-hold",
+    "equipment": "mat",
+    "variant": "pigeon",
+    "targets": [
+      "glutes",
+      "hip-flexors",
+      "lower-back"
+    ]
+  },
+  {
+    "id": "y6-cobra-pose",
+    "pose": "floor-press",
+    "equipment": "mat",
+    "variant": "cobra",
+    "targets": [
+      "upper-back",
+      "chest",
+      "shoulders"
+    ]
+  },
+  {
+    "id": "y7-seated-forward-fold",
+    "pose": "floor-hold",
+    "equipment": "mat",
+    "variant": "forward-fold",
+    "targets": [
+      "hamstrings",
+      "calves",
+      "lower-back"
+    ]
+  }
 ]

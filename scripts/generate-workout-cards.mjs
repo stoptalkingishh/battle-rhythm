@@ -11,7 +11,7 @@ const manifestPath = path.join(root, 'assets/plates/workout-cards.json');
 const svgDir = path.join(root, 'assets/plates/svg');
 const cardsPath = path.join(root, 'js/data/workout-cards.js');
 const allowedPoses = new Set(['hinge', 'squat', 'bench', 'hang', 'standing-press', 'jump', 'run', 'sprint', 'shuttle', 'ruck', 'sled', 'floor-press', 'floor-hold', 'supine-core', 'mobility', 'prone']);
-const allowedEquipment = new Set(['none', 'barbell', 'pull-up-bar', 'kettlebell', 'sled', 'ruck', 'lane-marker', 'hill']);
+const allowedEquipment = new Set(['none', 'barbell', 'pull-up-bar', 'kettlebell', 'sled', 'ruck', 'lane-marker', 'hill', 'machine', 'cable', 'band', 'mat']);
 
 function loadExercises() {
   const context = { window: {} };
@@ -62,6 +62,10 @@ function equipmentGeometry(equipment, pose, variant) {
   if (equipment === 'lane-marker') return '<path d="M150 365H590" class="ground"/><path d="M185 342v30M535 342v30" class="accent"/>';
   if (equipment === 'hill') return '<path d="M115 364l154-88 100 47 97-82 124 123z" class="hill"/>';
   if (variant === 'machine-session') return '<path d="M500 170v166M500 170h72l-22 48h-50M500 278h66l29 57M520 278l-26 57" class="prop"/><circle cx="550" cy="350" r="18" class="plate"/>';
+  if (equipment === 'machine') return '<path d="M96 96v228h30V96zM138 120h30v60h-30zM138 220h30v60h-30z" class="prop"/><path d="M96 96v228M96 96h168" class="prop"/>';
+  if (equipment === 'cable') return '<path d="M126 86h80M126 86v40h16l-8 178M214 86l-20 34h16l-8 144" class="prop"/><rect x="126" y="250" width="52" height="14" rx="4" class="plate"/>';
+  if (equipment === 'band') return '<path d="M400 312v-28c0-24 34-24 34 0v28" class="prop"/><path d="M400 312h34" class="prop"/>';
+  if (equipment === 'mat') return '<rect x="110" y="352" width="430" height="12" rx="6" class="bench"/><path d="M110 352h430" class="ground"/>';
   return '';
 }
 
@@ -88,8 +92,7 @@ function svg(card, exercise) {
 function validate(exercises, cards) {
   const ids = exercises.map(exercise => exercise.id);
   const cardIds = cards.map(card => card.id);
-  if (ids.length !== 46) throw new Error(`Expected 46 exercises, found ${ids.length}`);
-  if (cards.length !== 46) throw new Error(`Expected 46 manifest cards, found ${cards.length}`);
+  if (ids.length !== cardIds.length) throw new Error(`Exercise count (${ids.length}) must match manifest card count (${cards.length})`);
   if (new Set(cardIds).size !== cardIds.length) throw new Error('Manifest contains duplicate IDs');
   const missing = ids.filter(id => !cardIds.includes(id));
   const extra = cardIds.filter(id => !ids.includes(id));

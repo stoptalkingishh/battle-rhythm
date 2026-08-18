@@ -229,5 +229,135 @@ window.BR_WORKOUT_CARDS = [
     "id": "mb9-pmcs-drill",
     "src": "assets/plates/svg/mb9-pmcs-drill.svg",
     "alt": "PMCS Drill technical workout card"
+  },
+  {
+    "id": "m1-lat-pulldown",
+    "src": "assets/plates/svg/m1-lat-pulldown.svg",
+    "alt": "Lat Pulldown Machine technical workout card"
+  },
+  {
+    "id": "m2-seated-cable-row",
+    "src": "assets/plates/svg/m2-seated-cable-row.svg",
+    "alt": "Seated Cable Row technical workout card"
+  },
+  {
+    "id": "m3-leg-press",
+    "src": "assets/plates/svg/m3-leg-press.svg",
+    "alt": "Leg Press Machine technical workout card"
+  },
+  {
+    "id": "m4-leg-extension",
+    "src": "assets/plates/svg/m4-leg-extension.svg",
+    "alt": "Leg Extension Machine technical workout card"
+  },
+  {
+    "id": "m5-seated-leg-curl",
+    "src": "assets/plates/svg/m5-seated-leg-curl.svg",
+    "alt": "Seated Leg Curl Machine technical workout card"
+  },
+  {
+    "id": "m6-shoulder-press-machine",
+    "src": "assets/plates/svg/m6-shoulder-press-machine.svg",
+    "alt": "Shoulder Press Machine technical workout card"
+  },
+  {
+    "id": "c1-cable-face-pull",
+    "src": "assets/plates/svg/c1-cable-face-pull.svg",
+    "alt": "Cable Face Pull technical workout card"
+  },
+  {
+    "id": "c2-cable-triceps-pushdown",
+    "src": "assets/plates/svg/c2-cable-triceps-pushdown.svg",
+    "alt": "Cable Triceps Pushdown technical workout card"
+  },
+  {
+    "id": "c3-cable-biceps-curl",
+    "src": "assets/plates/svg/c3-cable-biceps-curl.svg",
+    "alt": "Cable Biceps Curl technical workout card"
+  },
+  {
+    "id": "c4-cable-woodchopper",
+    "src": "assets/plates/svg/c4-cable-woodchopper.svg",
+    "alt": "Cable Woodchopper technical workout card"
+  },
+  {
+    "id": "m7-pec-deck",
+    "src": "assets/plates/svg/m7-pec-deck.svg",
+    "alt": "Pec Deck / Chest Fly Machine technical workout card"
+  },
+  {
+    "id": "m8-assisted-pull-up-dip",
+    "src": "assets/plates/svg/m8-assisted-pull-up-dip.svg",
+    "alt": "Assisted Pull-Up / Dip Machine technical workout card"
+  },
+  {
+    "id": "r1-band-pull-apart",
+    "src": "assets/plates/svg/r1-band-pull-apart.svg",
+    "alt": "Band Pull-Apart technical workout card"
+  },
+  {
+    "id": "r2-band-glute-bridge",
+    "src": "assets/plates/svg/r2-band-glute-bridge.svg",
+    "alt": "Band Glute Bridge technical workout card"
+  },
+  {
+    "id": "r3-band-monster-walk",
+    "src": "assets/plates/svg/r3-band-monster-walk.svg",
+    "alt": "Band Lateral (Monster) Walk technical workout card"
+  },
+  {
+    "id": "r4-band-shoulder-external-rotation",
+    "src": "assets/plates/svg/r4-band-shoulder-external-rotation.svg",
+    "alt": "Band External Rotation technical workout card"
+  },
+  {
+    "id": "r5-band-hamstring-stretch",
+    "src": "assets/plates/svg/r5-band-hamstring-stretch.svg",
+    "alt": "Band Hamstring Stretch technical workout card"
+  },
+  {
+    "id": "r6-band-assisted-squat-mobility",
+    "src": "assets/plates/svg/r6-band-assisted-squat-mobility.svg",
+    "alt": "Band-Assisted Deep Squat Hold technical workout card"
+  },
+  {
+    "id": "r7-band-chest-stretch",
+    "src": "assets/plates/svg/r7-band-chest-stretch.svg",
+    "alt": "Band Chest Stretch technical workout card"
+  },
+  {
+    "id": "y1-downward-dog",
+    "src": "assets/plates/svg/y1-downward-dog.svg",
+    "alt": "Downward-Facing Dog technical workout card"
+  },
+  {
+    "id": "y2-childs-pose",
+    "src": "assets/plates/svg/y2-childs-pose.svg",
+    "alt": "Child's Pose technical workout card"
+  },
+  {
+    "id": "y3-cat-cow",
+    "src": "assets/plates/svg/y3-cat-cow.svg",
+    "alt": "Cat-Cow technical workout card"
+  },
+  {
+    "id": "y4-warrior-two",
+    "src": "assets/plates/svg/y4-warrior-two.svg",
+    "alt": "Warrior II technical workout card"
+  },
+  {
+    "id": "y5-pigeon-pose",
+    "src": "assets/plates/svg/y5-pigeon-pose.svg",
+    "alt": "Pigeon Pose technical workout card"
+  },
+  {
+    "id": "y6-cobra-pose",
+    "src": "assets/plates/svg/y6-cobra-pose.svg",
+    "alt": "Cobra Pose technical workout card"
+  },
+  {
+    "id": "y7-seated-forward-fold",
+    "src": "assets/plates/svg/y7-seated-forward-fold.svg",
+    "alt": "Seated Forward Fold technical workout card"
   }
 ];
