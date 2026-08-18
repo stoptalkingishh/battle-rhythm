@@ -339,6 +339,84 @@ window.BR_AI_PLATES = [
     }
   },
   {
+    "id": "p10-depth-jump",
+    "webp": "assets/plates/ai/p10-depth-jump.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p10-depth-jump",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p11-squat-jump",
+    "webp": "assets/plates/ai/p11-squat-jump.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p11-squat-jump",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p12-jump-lunge",
+    "webp": "assets/plates/ai/p12-jump-lunge.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p12-jump-lunge",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p13-speed-skater",
+    "webp": "assets/plates/ai/p13-speed-skater.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p13-speed-skater",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p14-medicine-ball-slam",
+    "webp": "assets/plates/ai/p14-medicine-ball-slam.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p14-medicine-ball-slam",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p15-tuck-jump-progression",
+    "webp": "assets/plates/ai/p15-tuck-jump-progression.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p15-tuck-jump-progression",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
     "id": "p2-standing-long-jump",
     "webp": "assets/plates/ai/p2-standing-long-jump.webp",
     "provenance": {
@@ -400,6 +478,32 @@ window.BR_AI_PLATES = [
         "date": "2026-08-15",
         "promptId": "p7-overhead-push-press-power",
         "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-15, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p8-box-jump",
+    "webp": "assets/plates/ai/p8-box-jump.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p8-box-jump",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
+      }
+    }
+  },
+  {
+    "id": "p9-lateral-bound",
+    "webp": "assets/plates/ai/p9-lateral-bound.webp",
+    "provenance": {
+      "webp": {
+        "generator": "Google AI Studio (Gemini Nano Banana image generation)",
+        "provider": "Google",
+        "date": "2026-08-17",
+        "promptId": "p9-lateral-bound",
+        "licenseAssertion": "I generated this output in my authorized account, reviewed the provider terms on 2026-08-17, and have the rights required to publish it in this project."
       }
     }
   },
