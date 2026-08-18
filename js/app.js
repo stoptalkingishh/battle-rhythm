@@ -528,6 +528,22 @@
 
   function getSessions() { return load(KEYS.sessions, []); }
   function saveSessions(list) { store(KEYS.sessions, list); }
+  function seedPresets() {
+    var presets = window.BR_PRESET_WORKOUTS || [];
+    if (!presets.length) return;
+    var hidden = load("br_presets_hidden", []);
+    var existing = getSessions();
+    var ids = {};
+    existing.forEach(function (s) { ids[s.id] = true; });
+    var added = false;
+    presets.forEach(function (p) {
+      if (ids[p.id] || hidden.indexOf(p.id) !== -1) return;
+      existing.push(JSON.parse(JSON.stringify(p)));
+      ids[p.id] = true;
+      added = true;
+    });
+    if (added) saveSessions(existing);
+  }
   function getRegiments() { return load(KEYS.regiments, []); }
   function saveRegiments(list) { store(KEYS.regiments, list); }
 
@@ -660,9 +676,13 @@
       if (item.type === "exercise") gridFields.push(machineField(item));
       var actions = el("div", { style: "display:flex;align-items:center;gap:6px;" });
       if (item.type === "exercise") {
-        actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview workout guide", "aria-label": "Preview " + item.label, onclick: function () { openExerciseModal(item.ref); } }));
+        if (EX.some(function (e) { return e.id === item.ref; })) {
+          actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview workout guide", "aria-label": "Preview " + item.label, onclick: function () { openExerciseModal(item.ref); } }));
+        }
       } else if (item.type === "drill") {
-        actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview drill guide", "aria-label": "Preview " + item.label, onclick: function () { openDrillModal(item.ref); } }));
+        if ((DOC.drills || []).some(function (d) { return d.id === item.ref; })) {
+          actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview drill guide", "aria-label": "Preview " + item.label, onclick: function () { openDrillModal(item.ref); } }));
+        }
       }
       actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
         phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
@@ -771,6 +791,10 @@
           el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; renderBuilder(); } }),
           el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } }),
           el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", "aria-label": "Delete " + s.name, onclick: function () {
+            if ((window.BR_PRESET_WORKOUTS || []).some(function (p) { return p.id === s.id; })) {
+              var hidden = load("br_presets_hidden", []);
+              if (hidden.indexOf(s.id) === -1) { hidden.push(s.id); store("br_presets_hidden", hidden); }
+            }
             saveSessions(getSessions().filter(function (x) { return x.id !== s.id; }));
             saveRegiments(getRegiments().map(function (regiment) {
               regiment.days.forEach(function (day) {
@@ -1376,6 +1400,7 @@
   function init() {
     if (!window.BR_EXERCISES) { console.error("exercises.js failed to load"); }
     if (!window.BR_DOCTRINE) { console.error("doctrine.js failed to load"); }
+    seedPresets();
     bindEvents();
     nav(initialView());
   }
