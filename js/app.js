@@ -1567,15 +1567,13 @@
       r.name = $("#regiment-name").value.trim();
       r.period = $("#regiment-period").value;
       if (!r.name) { toast("Name the regiment"); return; }
-      requirePassword(function () {
-        var all = getRegiments();
-        var idx = all.findIndex(function (x) { return x.id === r.id; });
-        if (idx === -1) all.push(r); else all[idx] = r;
-        saveRegiments(all);
-        toast("Regiment saved");
-        STATE.regiment = null;
-        renderBuilder();
-      });
+      var all = getRegiments();
+      var idx = all.findIndex(function (x) { return x.id === r.id; });
+      if (idx === -1) all.push(r); else all[idx] = r;
+      saveRegiments(all);
+      toast("Regiment saved");
+      STATE.regiment = null;
+      renderBuilder();
     });
 
     $("#track-date").addEventListener("change", function () { STATE.date = this.value; renderTrackerActive(); renderTrackerLog(); });
