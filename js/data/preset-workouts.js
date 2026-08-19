@@ -1,6 +1,7 @@
 window.BR_PRESET_WORKOUTS = [
   {
     id: "pw-1-upper-strength",
+    tags: ["Upper Body", "Strength", "Gym"],
     name: "Workout 1 (Upper Body Strength)",
     duration: 60,
     focus: "muscular-strength",
@@ -42,6 +43,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-2-zone2-cardio",
+    tags: ["Cardio", "Zone 2", "Run"],
     name: "Workout 2 (Zone 2 Cardio Run)",
     duration: 42,
     focus: "aerobic-endurance",
@@ -74,6 +76,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-3-lower-strength",
+    tags: ["Lower Body", "Strength", "Gym"],
     name: "Workout 3 (Lower Body Strength)",
     duration: 60,
     focus: "muscular-strength",
@@ -115,6 +118,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-4-400m-sprints",
+    tags: ["Sprint", "Track", "Anaerobic"],
     name: "Workout 4 (400m Track Sprints)",
     duration: 35,
     focus: "anaerobic-endurance",
@@ -148,6 +152,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-5-zone2-core",
+    tags: ["Cardio", "Core", "Run"],
     name: "Workout 5 (Zone 2 Run & Core)",
     duration: 55,
     focus: "aerobic-endurance",
@@ -182,6 +187,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-6-ramp-recovery",
+    tags: ["Warmup", "Recovery", "Mobility"],
     name: "Workout 6 (RAMP Warmup & Recovery Standard)",
     duration: 25,
     focus: "mobility-stability",
@@ -217,6 +223,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-7-lower-emphasis",
+    tags: ["Lower Body", "Strength", "Gym"],
     name: "Workout 7 (Lower Body Emphasis)",
     duration: 45,
     focus: "muscular-strength",
@@ -253,6 +260,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-8-agr-rock-road",
+    tags: ["Run", "Cardio", "Road"],
     name: "Workout 8 (AGR Rock Road Route)",
     duration: 35,
     focus: "aerobic-endurance",
@@ -285,6 +293,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-9-200m-8",
+    tags: ["Sprint", "Track", "Anaerobic"],
     name: "Workout 9 (Track 200m Sprints - 8 Sets)",
     duration: 30,
     focus: "anaerobic-endurance",
@@ -318,6 +327,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-10-200m-10",
+    tags: ["Sprint", "Track", "Anaerobic"],
     name: "Workout 10 (Track 200m Sprints - 10 Sets)",
     duration: 35,
     focus: "anaerobic-endurance",
@@ -351,6 +361,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-11-3060",
+    tags: ["Sprint", "Track", "Interval"],
     name: "Workout 11 (Track 30/60 Intervals)",
     duration: 30,
     focus: "anaerobic-endurance",
@@ -384,6 +395,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-12-hill-sprints",
+    tags: ["Sprint", "Hill", "Anaerobic"],
     name: "Workout 12 (Hill Sprints)",
     duration: 30,
     focus: "anaerobic-endurance",
@@ -417,6 +429,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-13-etm-anaerobic",
+    tags: ["Cardio", "ETM", "Anaerobic"],
     name: "Workout 13 (ETM Anaerobic Interval Protocol)",
     duration: 35,
     focus: "anaerobic-endurance",
@@ -450,6 +463,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-14-treadmill-pace",
+    tags: ["Treadmill", "Cardio", "Pace"],
     name: "Workout 14 (Treadmill Pace Conditioning)",
     duration: 45,
     focus: "aerobic-endurance",
@@ -482,6 +496,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-15-prep-2mile",
+    tags: ["Prep", "Run", "AFT"],
     name: "Workout 15 (Prep Drills & 2-Mile Run)",
     duration: 40,
     focus: "aerobic-endurance",
@@ -516,6 +531,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-16-cold-weather",
+    tags: ["Run", "Cardio", "Cold-Weather"],
     name: "Workout 16 (Outdoor Cold-Weather Acclimation Run)",
     duration: 35,
     focus: "aerobic-endurance",
@@ -548,6 +564,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-17-gym-strength",
+    tags: ["Strength", "Gym", "Free Weights"],
     name: "Workout 17 (Gaffney Gym Free Weights / Strength)",
     duration: 50,
     focus: "muscular-strength",
@@ -584,6 +601,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-18-pretest-stretch",
+    tags: ["Mobility", "Recovery", "Warmup"],
     name: "Workout 18 (Pre-Test Dynamic Stretch Routine)",
     duration: 20,
     focus: "mobility-stability",
@@ -619,6 +637,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-19-combatives",
+    tags: ["Combat", "Combatives", "Hand-to-Hand"],
     name: "Workout 19 (Combatives Instruction)",
     duration: 45,
     focus: "power",
@@ -651,6 +670,7 @@ window.BR_PRESET_WORKOUTS = [
   },
   {
     id: "pw-20-profile-lowimpact",
+    tags: ["Low-Impact", "Cardio", "Recovery"],
     name: "Workout 20 (Profile Low-Impact Option)",
     duration: 45,
     focus: "aerobic-endurance",

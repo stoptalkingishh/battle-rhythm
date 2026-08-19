@@ -45,7 +45,10 @@
     view: "home",
     filter: { q: "", component: "all", aft: "all", equipment: "all" },
     session: null,
+    sessionReadOnly: false,
     regiment: null,
+    groupFilter: null,
+    editingGroup: null,
     date: todayStr()
   };
 
@@ -364,25 +367,49 @@
       ]));
     });
 
+    renderGroupFilter("#home-group-filter", renderHome);
+
     var savedHost = $("#home-saved-sessions");
     savedHost.innerHTML = "";
-    var saved = getSessions();
+    var saved = filteredSessions();
     $("#home-sessions-empty").classList.toggle("hidden", saved.length > 0);
-    var presets = window.BR_PRESET_WORKOUTS || [];
-    function isPreset(sid) { return presets.some(function (p) { return p.id === sid; }); }
     saved.forEach(function (s) {
       var count = 0;
       PHASE_ORDER.forEach(function (k) { if (s.phases[k]) count += s.phases[k].items.length; });
+      var tags = sessionTags(s);
+      var titleEl = [el("span", { text: s.name }), isPreset(s) ? el("span", { class: "tags tag-preset", text: "Preset" }) : null].filter(Boolean);
+      if (tags.length) titleEl = titleEl.concat(tags.slice(0, 3).map(function (t) { return el("span", { class: "tags", text: t }); }));
       savedHost.appendChild(rowEl(
         el("span", { text: "S", style: "font-family:var(--font-display);font-size:1.2rem;" }),
-        [el("span", { text: s.name }), isPreset(s.id) ? el("span", { class: "tags tag-preset", text: "Preset" }) : null].filter(Boolean),
+        titleEl,
         s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + " | " + count + " items",
-        [
-          el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; nav("builder"); } }),
-          el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } })
-        ]
+        sessionActions(s)
       ));
     });
+  }
+
+  function sessionActions(s, inHome) {
+    if (isPreset(s)) {
+      return [
+        el("button", { class: "btn btn-ghost btn-sm", text: "View", onclick: function () { STATE.session = s; STATE.sessionReadOnly = true; nav("builder"); } }),
+        el("button", { class: "btn btn-ghost btn-sm", text: "Duplicate", onclick: function () { STATE.session = duplicateSession(s); STATE.sessionReadOnly = false; nav("builder"); } }),
+        el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } })
+      ];
+    }
+    return [
+      el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; STATE.sessionReadOnly = false; nav("builder"); } }),
+      el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } }),
+      el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", "aria-label": "Delete " + s.name, onclick: function () {
+        saveSessions(getSessions().filter(function (x) { return x.id !== s.id; }));
+        saveRegiments(getRegiments().map(function (regiment) {
+          regiment.days.forEach(function (day) {
+            day.sessions = day.sessions.filter(function (sessionId) { return sessionId !== s.id; });
+          });
+          return regiment;
+        }));
+        if (inHome) renderHome(); else renderBuilder();
+      } })
+    ];
   }
 
   /* ==================== LIBRARY ==================== */
@@ -567,6 +594,128 @@
   function getRegiments() { return load(KEYS.regiments, []); }
   function saveRegiments(list) { store(KEYS.regiments, list); }
 
+  /* ---- password protection ---- */
+  function getSettings() { return load("br_settings", {}); }
+  function saveSettings(s) { store("br_settings", s); }
+  function hashPw(str) {
+    var h = 5381;
+    var s = String(str || "");
+    for (var i = 0; i < s.length; i++) { h = ((h << 5) + h) + s.charCodeAt(i); h = h & h; }
+    return "h" + (h >>> 0).toString(36) + "." + s.length;
+  }
+  function hasPassword() { return !!getSettings().pwHash; }
+  function passwordMatches(input) {
+    var cfg = getSettings();
+    return !!cfg.pwHash && hashPw(input) === cfg.pwHash;
+  }
+  var pendingAuth = null;
+  function requirePassword(onSuccess) {
+    pendingAuth = onSuccess;
+    if (!hasPassword()) {
+      toast("Set a master password in Settings first");
+      openSettings();
+      return;
+    }
+    showPw();
+  }
+  function openSettings() {
+    var has = hasPassword();
+    $("#settings-status").textContent = has ? "A master password is set." : "No master password yet. Set one to protect builder changes.";
+    $("#settings-new-pw").value = "";
+    $("#settings-confirm-pw").value = "";
+    $("#settings-modal").classList.remove("hidden");
+  }
+
+  /* ---- groups (saved tag bundles) ---- */
+  function getGroups() { return load("br_groups", []); }
+  function saveGroups(list) { store("br_groups", list); }
+  function isPreset(s) { return (window.BR_PRESET_WORKOUTS || []).some(function (p) { return p.id === s.id; }); }
+  function sessionTags(s) {
+    var t = s && s.tags ? s.tags : [];
+    return t.map(function (x) { return String(x).trim(); }).filter(Boolean);
+  }
+  function allTags() {
+    var seen = {};
+    getSessions().forEach(function (s) { sessionTags(s).forEach(function (t) { seen[t] = 1; }); });
+    return Object.keys(seen).sort();
+  }
+  function sessionMatchesGroup(s, group) {
+    if (!group || !group.tags || !group.tags.length) return true;
+    var st = sessionTags(s);
+    return group.tags.some(function (t) { return st.indexOf(t) !== -1; });
+  }
+  function filteredSessions() {
+    var all = getSessions();
+    if (!STATE.groupFilter) return all;
+    var group = getGroups().find(function (g) { return g.id === STATE.groupFilter; });
+    return all.filter(function (s) { return sessionMatchesGroup(s, group); });
+  }
+
+  function duplicateSession(s) {
+    var copy = JSON.parse(JSON.stringify(s));
+    copy.id = uid();
+    copy.name = (s.name || "Session") + " (copy)";
+    copy.safetyConfirmed = false;
+    return copy;
+  }
+
+  function showPw() {
+    $("#pw-input").value = "";
+    $("#pw-error").textContent = "";
+    $("#pw-modal").classList.remove("hidden");
+    setTimeout(function () { $("#pw-input").focus(); }, 30);
+  }
+
+  /* ---- groups modal ---- */
+  function openGroupsModal() {
+    STATE.editingGroup = null;
+    resetGroupForm();
+    renderGroupsModal();
+    $("#groups-modal").classList.remove("hidden");
+  }
+  function selectedGroupTags() {
+    return Array.prototype.slice.call($("#group-tag-picker").querySelectorAll("button.chip.active"))
+      .map(function (c) { return c.getAttribute("data-tag"); });
+  }
+  function resetGroupForm() {
+    $("#group-name").value = "";
+    var cfg = getSettings();
+    var chips = el("div", {});
+    allTags().forEach(function (t) {
+      chips.appendChild(el("button", { class: "chip", "data-tag": t, "aria-pressed": "false", text: t, onclick: function () { this.classList.toggle("active"); this.setAttribute("aria-pressed", this.classList.contains("active")); } }));
+    });
+    $("#group-tag-picker").innerHTML = "";
+    $("#group-tag-picker").appendChild(chips);
+    renderBuilder();
+    renderHome();
+  }
+  function renderGroupsModal() {
+    var host = $("#groups-list");
+    host.innerHTML = "";
+    var groups = getGroups();
+    if (!groups.length) { host.appendChild(el("p", { class: "card-muted", text: "No groups yet." })); return; }
+    groups.forEach(function (g) {
+      host.appendChild(rowEl(
+        el("span", { text: "G", style: "font-family:var(--font-display);font-size:1.1rem;" }),
+        el("span", { text: g.name }),
+        (g.tags || []).join(", "),
+        [
+          el("button", { class: "btn btn-ghost btn-sm", text: "Select", onclick: function () {
+            STATE.editingGroup = g.id;
+            STATE.groupFilter = g.id;
+            $("#group-name").value = g.name;
+            Array.prototype.slice.call($("#group-tag-picker").querySelectorAll(".chip")).forEach(function (c) {
+              var on = (g.tags || []).indexOf(c.getAttribute("data-tag")) !== -1;
+              c.classList.toggle("active", on);
+              c.setAttribute("aria-pressed", String(on));
+            });
+          } })
+        ]
+      ));
+    });
+  }
+
+
   function blankSession() {
     return {
       id: uid(),
@@ -577,6 +726,7 @@
       format: "session",
       circuit: { rounds: 3, work: "45 sec", rest: "30 sec" },
       notes: "",
+      tags: [],
       safetyConfirmed: false,
       phases: {
         prep: { name: "Preparation", items: [newItemFromDrill("pd", "prep")] },
@@ -656,9 +806,10 @@
     });
   }
 
-  function itemField(item, field, placeholder) {
+  function itemField(item, field, placeholder, readOnly) {
     var input = el("input", {
       class: "input", type: "text", value: item[field] || "", placeholder: placeholder,
+      disabled: !!readOnly,
       oninput: function () { item[field] = input.value; }
     });
     return el("label", { style: "display:flex;flex-direction:column;gap:3px;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);" }, [
@@ -666,8 +817,8 @@
     ]);
   }
 
-  function machineField(item) {
-    var select = el("select", { class: "select", "aria-label": "Target machine for " + item.label });
+  function machineField(item, readOnly) {
+    var select = el("select", { class: "select", "aria-label": "Target machine for " + item.label, disabled: !!readOnly });
     select.appendChild(el("option", { value: "none", text: "No machine (free weight / bodyweight)" }));
     MACHINE_OPTIONS.forEach(function (o) {
       var opt = el("option", { value: o.value, text: o.label });
@@ -680,7 +831,7 @@
     ]);
   }
 
-  function renderPhaseItems(phase) {
+  function renderPhaseItems(phase, readOnly) {
     var wrap = el("div", {});
     if (!phase.items.length) {
       wrap.appendChild(el("p", { class: "card-muted", style: "font-size:.8rem;", text: "No items yet." }));
@@ -688,12 +839,12 @@
     }
     phase.items.forEach(function (item) {
       var gridFields = [
-        itemField(item, "sets", "Sets"),
-        itemField(item, "reps", "Reps/Time"),
-        itemField(item, "duration", "Duration"),
-        itemField(item, "rest", "Rest")
+        itemField(item, "sets", "Sets", readOnly),
+        itemField(item, "reps", "Reps/Time", readOnly),
+        itemField(item, "duration", "Duration", readOnly),
+        itemField(item, "rest", "Rest", readOnly)
       ];
-      if (item.type === "exercise") gridFields.push(machineField(item));
+      if (item.type === "exercise") gridFields.push(machineField(item, readOnly));
       var actions = el("div", { style: "display:flex;align-items:center;gap:6px;" });
       if (item.type === "exercise") {
         if (EX.some(function (e) { return e.id === item.ref; })) {
@@ -704,10 +855,12 @@
           actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview drill guide", "aria-label": "Preview " + item.label, onclick: function () { openDrillModal(item.ref); } }));
         }
       }
-      actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
-        phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
-        renderSessionEditor();
-      } }));
+      if (!readOnly) {
+        actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
+          phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
+          renderSessionEditor();
+        } }));
+      }
       var block = el("div", { class: "phase-item" }, [
         el("div", { class: "phase-item-row" }, [
           el("p", { class: "phase-item-name", text: item.label }),
@@ -720,7 +873,8 @@
     return wrap;
   }
 
-  function phaseAdder(key) {
+  function phaseAdder(key, readOnly) {
+    if (readOnly) return el("div", {});
     var wrap = el("div", { class: "phase-add", style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center;" });
     var select = el("select", { class: "select", style: "flex:1;min-width:180px;" });
     select.appendChild(el("option", { value: "", text: "Choose an exercise or drill..." }));
@@ -762,6 +916,7 @@
     if (!STATE.session) { editor.classList.add("hidden"); return; }
     editor.classList.remove("hidden");
     var s = STATE.session;
+    var readOnly = STATE.sessionReadOnly || isPreset(s);
     $("#session-name").value = s.name;
     $("#session-duration").value = s.duration;
     $("#session-focus").value = s.focus;
@@ -774,9 +929,31 @@
     $("#circuit-rest").value = s.circuit.rest;
     $("#circuit-fields").classList.toggle("hidden", s.format !== "circuit");
     $("#session-notes").value = s.notes;
+    $("#session-tags").value = sessionTags(s).join(", ");
     $("#session-safety-confirm").checked = !!s.safetyConfirmed;
     var exists = getSessions().some(function (x) { return x.id === s.id; });
-    $("#session-save").textContent = exists ? "Update Session" : "Save Session";
+
+    var lockBanner = $("#session-lock-banner");
+    if (readOnly) {
+      lockBanner.classList.remove("hidden");
+      lockBanner.innerHTML = "";
+      lockBanner.appendChild(el("p", { style: "margin:0;", text: "This is a locked built-in workout. View it, duplicate it to edit, or copy it to your notes." }));
+    } else {
+      lockBanner.classList.add("hidden");
+    }
+
+    ["session-name", "session-duration", "session-focus", "session-rpe", "session-format",
+     "circuit-rounds", "circuit-work", "circuit-rest", "session-notes", "session-tags", "session-safety-confirm"]
+      .forEach(function (id) { $("#" + id).disabled = readOnly; });
+
+    if (readOnly) {
+      $("#session-save").style.display = "none";
+      $("#session-duplicate").style.display = "";
+    } else {
+      $("#session-save").style.display = "";
+      $("#session-duplicate").style.display = "none";
+      $("#session-save").textContent = exists ? "Update Session" : "Save Session";
+    }
 
     var host = $("#session-structure");
     host.innerHTML = "";
@@ -788,48 +965,54 @@
           el("h4", { class: "phase-item-name", text: phase.name }),
           el("span", { class: "tags", text: key === "activity" ? "core of session" : (key === "prep" ? "dynamic warm-up" : "cool-down") })
         ]),
-        renderPhaseItems(phase),
-        el("div", { style: "margin-top:10px;" }, [phaseAdder(key)])
+        renderPhaseItems(phase, readOnly),
+        el("div", { style: "margin-top:10px;" }, [phaseAdder(key, readOnly)])
       ]);
       host.appendChild(card);
     });
   }
 
   function renderSessionsList() {
-    var all = getSessions();
+    var all = filteredSessions();
     var host = $("#sessions-list");
     host.innerHTML = "";
     $("#sessions-empty").classList.toggle("hidden", all.length > 0);
-    var presets = window.BR_PRESET_WORKOUTS || [];
-    function isPreset(sid) { return presets.some(function (p) { return p.id === sid; }); }
+    renderGroupFilter("#session-group-filter", renderBuilder);
     all.forEach(function (s) {
       var count = 0;
       PHASE_ORDER.forEach(function (k) { if (s.phases[k]) count += s.phases[k].items.length; });
+      var tags = sessionTags(s);
+      var sub = s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + " | " + count + " items";
+      var titleEl = [el("span", { text: s.name }), isPreset(s) ? el("span", { class: "tags tag-preset", text: "Preset" }) : null].filter(Boolean);
+      if (tags.length) titleEl = titleEl.concat(tags.slice(0, 3).map(function (t) { return el("span", { class: "tags", text: t }); }));
       host.appendChild(rowEl(
         el("span", { text: "S", style: "font-family:var(--font-display);font-size:1.2rem;" }),
-        [el("span", { text: s.name }), isPreset(s.id) ? el("span", { class: "tags tag-preset", text: "Preset" }) : null]
-          .filter(Boolean),
-        s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + " | " + count + " items",
-        [
-          el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.session = s; renderBuilder(); } }),
-          el("button", { class: "btn btn-ghost btn-sm", text: "Copy", onclick: function () { openCopyModal(sessionPlainText(s)); } }),
-          el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", "aria-label": "Delete " + s.name, onclick: function () {
-            if ((window.BR_PRESET_WORKOUTS || []).some(function (p) { return p.id === s.id; })) {
-              var hidden = load("br_presets_hidden", []);
-              if (hidden.indexOf(s.id) === -1) { hidden.push(s.id); store("br_presets_hidden", hidden); }
-            }
-            saveSessions(getSessions().filter(function (x) { return x.id !== s.id; }));
-            saveRegiments(getRegiments().map(function (regiment) {
-              regiment.days.forEach(function (day) {
-                day.sessions = day.sessions.filter(function (sessionId) { return sessionId !== s.id; });
-              });
-              return regiment;
-            }));
-            renderBuilder();
-          } })
-        ]
+        titleEl,
+        sub,
+        sessionActions(s, false)
       ));
     });
+  }
+
+  function renderGroupFilter(sel, onSelect) {
+    var host = $(sel);
+    if (!host) return;
+    host.innerHTML = "";
+    var groups = getGroups();
+    var allChip = el("button", { class: "chip" + (STATE.groupFilter ? "" : " active"), "aria-pressed": String(!STATE.groupFilter), text: "All sessions", onclick: function () { STATE.groupFilter = null; onSelect(); } });
+    host.appendChild(allChip);
+    groups.forEach(function (g) {
+      var chip = el("button", {
+        class: "chip" + (STATE.groupFilter === g.id ? " active" : ""),
+        "aria-pressed": String(STATE.groupFilter === g.id),
+        text: g.name,
+        onclick: function () { STATE.groupFilter = g.id; onSelect(); }
+      });
+      host.appendChild(chip);
+    });
+    if (!groups.length) {
+      host.appendChild(el("button", { class: "chip", text: "+ Manage Groups", onclick: function () { openGroupsModal(); } }));
+    }
   }
 
   function renderBuilder() {
@@ -1315,8 +1498,9 @@
     $("#filter-aft").addEventListener("change", function () { STATE.filter.aft = this.value; renderLibrary(); });
     $("#filter-equipment").addEventListener("change", function () { STATE.filter.equipment = this.value; renderLibrary(); });
 
-    $("#new-session-btn").addEventListener("click", function () { STATE.session = blankSession(); renderBuilder(); });
-    $("#session-cancel").addEventListener("click", function () { STATE.session = null; renderBuilder(); });
+    $("#new-session-btn").addEventListener("click", function () { STATE.session = blankSession(); STATE.sessionReadOnly = false; renderBuilder(); });
+    $("#session-cancel").addEventListener("click", function () { STATE.session = null; STATE.sessionReadOnly = false; renderBuilder(); });
+    $("#session-duplicate").addEventListener("click", function () { if (STATE.session) { STATE.session = duplicateSession(STATE.session); STATE.sessionReadOnly = false; renderBuilder(); } });
 
     function syncSessionFromForm() {
       if (!STATE.session) return;
@@ -1331,9 +1515,10 @@
         rest: $("#circuit-rest").value.trim() || "30 sec"
       };
       STATE.session.notes = $("#session-notes").value.trim();
+      STATE.session.tags = $("#session-tags").value.split(/[,;]/).map(function (x) { return x.trim(); }).filter(Boolean);
       STATE.session.safetyConfirmed = $("#session-safety-confirm").checked;
     }
-    ["session-name", "session-duration", "session-focus", "session-rpe", "session-format", "circuit-rounds", "circuit-work", "circuit-rest", "session-notes"].forEach(function (id) {
+    ["session-name", "session-duration", "session-focus", "session-rpe", "session-format", "circuit-rounds", "circuit-work", "circuit-rest", "session-notes", "session-tags"].forEach(function (id) {
       $("#" + id).addEventListener("input", syncSessionFromForm);
     });
     $("#session-format").addEventListener("change", function () {
@@ -1345,6 +1530,7 @@
 
     $("#session-save").addEventListener("click", function () {
       if (!STATE.session) return;
+      if (STATE.sessionReadOnly || isPreset(STATE.session)) { toast("Built-in workouts are locked. Duplicate to edit."); return; }
       syncSessionFromForm();
       var s = STATE.session;
       if (!s.name) { toast("Name the session"); return; }
@@ -1357,13 +1543,16 @@
         if (s.rpe > 5) { toast("Active-recovery circuits require a target RPE of 5 or lower"); return; }
         if (s.phases.activity.items.length < 2) { toast("Add at least two activity stations to the circuit"); return; }
       }
-      var all = getSessions();
-      var idx = all.findIndex(function (x) { return x.id === s.id; });
-      if (idx === -1) all.push(s); else all[idx] = s;
-      saveSessions(all);
-      toast("Session saved");
-      STATE.session = null;
-      renderBuilder();
+      requirePassword(function () {
+        var all = getSessions();
+        var idx = all.findIndex(function (x) { return x.id === s.id; });
+        if (idx === -1) all.push(s); else all[idx] = s;
+        saveSessions(all);
+        toast("Session saved");
+        STATE.session = null;
+        STATE.sessionReadOnly = false;
+        renderBuilder();
+      });
     });
 
     $("#new-regiment-btn").addEventListener("click", function () { STATE.regiment = blankRegiment(); renderBuilder(); });
@@ -1378,13 +1567,15 @@
       r.name = $("#regiment-name").value.trim();
       r.period = $("#regiment-period").value;
       if (!r.name) { toast("Name the regiment"); return; }
-      var all = getRegiments();
-      var idx = all.findIndex(function (x) { return x.id === r.id; });
-      if (idx === -1) all.push(r); else all[idx] = r;
-      saveRegiments(all);
-      toast("Regiment saved");
-      STATE.regiment = null;
-      renderBuilder();
+      requirePassword(function () {
+        var all = getRegiments();
+        var idx = all.findIndex(function (x) { return x.id === r.id; });
+        if (idx === -1) all.push(r); else all[idx] = r;
+        saveRegiments(all);
+        toast("Regiment saved");
+        STATE.regiment = null;
+        renderBuilder();
+      });
     });
 
     $("#track-date").addEventListener("change", function () { STATE.date = this.value; renderTrackerActive(); renderTrackerLog(); });
@@ -1399,6 +1590,85 @@
     });
     $("#copy-modal-close").addEventListener("click", closeCopyModal);
     $("#copy-btn").addEventListener("click", function () { doCopy(copyModalText); });
+
+    /* password + settings + groups bindings */
+    $("#settings-btn").addEventListener("click", function () { openSettings(); });
+    $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
+    $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
+    $("#settings-save-pw").addEventListener("click", function () {
+      var np = $("#settings-new-pw").value;
+      var cp = $("#settings-confirm-pw").value;
+      if (np || cp) {
+        if (np.length < 4) { toast("Password must be at least 4 characters"); return; }
+        if (np !== cp) { toast("Passwords do not match"); return; }
+      }
+      var cfg = getSettings();
+      if (np) { cfg.pwHash = hashPw(np); } else if (!cfg.pwHash) { toast("Enter a new password"); return; }
+      saveSettings(cfg);
+      $("#settings-new-pw").value = "";
+      $("#settings-confirm-pw").value = "";
+      $("#settings-modal").classList.add("hidden");
+      toast("Master password " + (np ? "set" : "kept"));
+      if (pendingAuth) { showPw(); }
+    });
+
+    $("#pw-modal-close").addEventListener("click", function () { $("#pw-modal").classList.add("hidden"); pendingAuth = null; });
+    $("#pw-cancel").addEventListener("click", function () { $("#pw-modal").classList.add("hidden"); pendingAuth = null; });
+    $("#pw-submit").addEventListener("click", function () {
+      var val = $("#pw-input").value;
+      if (passwordMatches(val)) {
+        $("#pw-modal").classList.add("hidden");
+        var cb = pendingAuth; pendingAuth = null;
+        if (cb) cb();
+      } else {
+        $("#pw-error").textContent = "Incorrect password";
+        $("#pw-input").value = "";
+        setTimeout(function () { $("#pw-input").focus(); }, 30);
+      }
+    });
+    $("#pw-input").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#pw-submit").click(); });
+
+    $("#manage-groups-btn").addEventListener("click", function () { openGroupsModal(); });
+    $("#groups-modal-close").addEventListener("click", function () { $("#groups-modal").classList.add("hidden"); });
+    $("#group-add").addEventListener("click", function () {
+      var name = $("#group-name").value.trim();
+      var tags = selectedGroupTags();
+      if (!name) { toast("Name the group"); return; }
+      if (!tags.length) { toast("Pick at least one tag"); return; }
+      var groups = getGroups();
+      groups.push({ id: uid(), name: name, tags: tags });
+      saveGroups(groups);
+      resetGroupForm();
+      renderGroupsModal();
+      renderBuilder();
+      renderHome();
+    });
+    $("#group-update").addEventListener("click", function () {
+      var name = $("#group-name").value.trim();
+      var editing = getGroups().find(function (g) { return g.id === STATE.editingGroup; });
+      if (!editing) { toast("Select a group to update"); return; }
+      var tags = selectedGroupTags();
+      if (!name) { toast("Name the group"); return; }
+      if (!tags.length) { toast("Pick at least one tag"); return; }
+      editing.name = name;
+      editing.tags = tags;
+      saveGroups(getGroups());
+      resetGroupForm();
+      renderGroupsModal();
+      renderBuilder();
+      renderHome();
+    });
+    $("#group-delete").addEventListener("click", function () {
+      if (!STATE.editingGroup) { toast("Select a group to delete"); return; }
+      saveGroups(getGroups().filter(function (g) { return g.id !== STATE.editingGroup; }));
+      if (STATE.groupFilter === STATE.editingGroup) STATE.groupFilter = null;
+      STATE.editingGroup = null;
+      resetGroupForm();
+      renderGroupsModal();
+      renderBuilder();
+      renderHome();
+    });
+
     $$(".modal").forEach(function (m) {
       if (m) m.addEventListener("click", function (ev) {
         if (ev.target.classList.contains("modal")) {
