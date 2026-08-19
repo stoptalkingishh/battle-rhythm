@@ -402,6 +402,21 @@
     if (hasAnatomyPlate) root.classList.add("has-anatomy-plate");
 
     if (!guide) {
+      if (hasAnatomyPlate) {
+        var figure0 = node("figure");
+        figure0.className = "coach-figure";
+        var plate0 = anatomyPlate(exercise, card);
+        plate0.addEventListener("error", function () {
+          var fig = node("figure");
+          fig.className = "coach-figure";
+          fig.appendChild(diagram(exercise, {}, []));
+          figure0.replaceWith(fig);
+          root.classList.remove("has-anatomy-plate");
+          appendMotionControls(fig);
+        }, { once: true });
+        figure0.appendChild(plate0);
+        root.appendChild(figure0);
+      }
       if (cues.length) {
         var cueContent = node("div");
         cueContent.className = "coach-steps";

@@ -1,7 +1,7 @@
 "use strict";
 
 (function () {
-  var EX = window.BR_EXERCISES || [];
+  var EX = (window.BR_EXERCISES || []).concat(window.BR_ATP_EXERCISES || []);
   var DOC = window.BR_DOCTRINE || {};
   var GUIDES = window.BR_MOVEMENT_GUIDES || {};
 
