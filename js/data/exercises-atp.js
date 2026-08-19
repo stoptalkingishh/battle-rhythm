@@ -2101,9 +2101,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hold the straps for balance support",
+      "Squat to full depth with a tall chest",
+      "Drive up through the midfoot"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2118,9 +2118,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hold the straps in a decline plank",
+      "Curl the body up by bending the elbows",
+      "Keep the core braced; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2135,9 +2135,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "In a decline I position, raise the arms",
+      "Sweep through T and Y positions",
+      "Keep the shoulders down and core braced"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2152,9 +2152,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "In an incline position, place feet in the straps",
+      "Rise onto the balls of the feet",
+      "Lower the heels with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2169,9 +2169,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Grip the straps in a plank position",
+      "Lower the chest toward the handles",
+      "Keep the body braced; press back up"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2186,9 +2186,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hold the straps for balance",
+      "Step out laterally into a side lunge",
+      "Push back to standing with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2203,9 +2203,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hold the straps for balance",
+      "Squat down on one leg",
+      "Drive back up, keeping the knee tracking"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2220,9 +2220,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang from the straps in a decline position",
+      "Pull the chest toward the handles",
+      "Keep the body braced; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2237,9 +2237,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "In a plank with feet in the straps",
+      "Tuck the knees toward the chest",
+      "Extend to a pike, then return with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2249,14 +2249,14 @@ window.BR_ATP_EXERCISES = [
   },
   {
     id: "atp-st2-straight-arm-pull",
-    name: "ST2.6 Suspended Straight-Arm",
+    name: "ST2.6 Suspended Straight-Arm Pull",
     component: "muscular-strength",
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with straight arms from the straps",
+      "Pull the straps down toward the torso",
+      "Keep the body braced; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2266,14 +2266,14 @@ window.BR_ATP_EXERCISES = [
   },
   {
     id: "atp-st2-suspended-alternating-grip",
-    name: "ST2.6 Suspended Alternating",
+    name: "ST2.6 Suspended Alternating-Grip Pull-Up",
     component: "muscular-strength",
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with one over, one under grip",
+      "Pull the chest toward the handles",
+      "Lower with control and switch grips"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2283,14 +2283,14 @@ window.BR_ATP_EXERCISES = [
   },
   {
     id: "atp-st2-suspended-flexed-arm-hang",
-    name: "ST2.6 Suspended Flexed Arm",
+    name: "ST2.6 Suspended Flexed-Arm Hang",
     component: "muscular-strength",
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with elbows bent and chest up",
+      "Hold at the top of the pull position",
+      "Keep the core braced; breathe steadily"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2305,9 +2305,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with both heels hooked in the straps",
+      "Pull the body up toward the handles",
+      "Keep the body braced; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2317,14 +2317,14 @@ window.BR_ATP_EXERCISES = [
   },
   {
     id: "atp-st2-suspended-leg-tuck",
-    name: "Suspended Leg Tuck",
+    name: "ST2.6 Suspended Leg Tuck",
     component: "muscular-strength",
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with legs extended from the straps",
+      "Tuck the knees toward the chest",
+      "Keep the shoulders engaged; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2339,9 +2339,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Hang with arms extended from the straps",
+      "Pull the chin above the handles",
+      "Keep the core braced; lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
@@ -2356,9 +2356,9 @@ window.BR_ATP_EXERCISES = [
     equipment: "Suspension straps",
     muscles: "Full body, core",
     cues: [
-      "Set feet/straps at the right angle",
-      "Keep a braced, straight body line",
-      "Move through full range with control"
+      "Lie supine with heels in the straps",
+      "Drive the hips up and curl the heels in",
+      "Extend and lower with control"
     ],
     programming: "2-6 sets x 3-6 reps @ 85-100% 1RM, or 8-12 reps for hypertrophy (Table 6-4)",
     safety: "Apply risk management (ATP 5-19); use spotters/racks at near-max loads; respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).",
