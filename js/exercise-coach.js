@@ -6,6 +6,12 @@
   var MUSCLE_MAPS = window.BR_MUSCLE_MAPS || {};
   var WORKOUT_CARDS = window.BR_WORKOUT_CARDS || {};
   var AI_PLATES = window.BR_AI_PLATES || [];
+  var ATP_FIGURES = window.BR_ATP_FIGURES || {};
+  function atpSource(exercise) {
+    var fig = ATP_FIGURES[exercise && exercise.id];
+    if (!fig) return null;
+    return window.BR_ATPF ? window.BR_ATPF(exercise.id) : ("assets/plates/atp/" + fig + ".webp");
+  }
   var TARGETS = {
     "chest": { label: "Chest", front: [44, 48, 32, 16], back: [44, 48, 32, 16] },
     "shoulders": { label: "Shoulders", front: [35, 43, 50, 9], back: [35, 43, 50, 9] },
@@ -336,6 +342,10 @@
   }
 
   function workoutCard(exercise) {
+    var atp = atpSource(exercise);
+    if (atp) {
+      return { src: atp, alt: (exercise && exercise.name) + " — official ATP 7-22.02 figure" };
+    }
     var card = WORKOUT_CARDS[exercise && exercise.id];
     if (!card && Object.prototype.toString.call(WORKOUT_CARDS) === "[object Array]") {
       card = WORKOUT_CARDS.find(function (item) { return item.id === exercise.id; });
