@@ -445,13 +445,29 @@
       if (f.aft !== "all" && !(e.aft || []).some(function (a) { return a === f.aft; })) return false;
       if (f.equipment !== "all" && e.equipment !== f.equipment) return false;
       if (f.q) {
-        var q = f.q.toLowerCase();
+        var q = expandAliases(f.q.toLowerCase());
         var hay = (e.name + " " + (e.muscles || "") + " " + (e.drill || "") + " " + (e.equipment || "") + " " + (e.cues || []).join(" ") + " " + (e.programming || "")).toLowerCase();
         if (hay.indexOf(q) === -1) return false;
       }
       return true;
     });
   }
+
+  function expandAliases(q) {
+    return ALIASES.reduce(function (memo, pair) { return memo.replace(pair[0], pair[1]); }, q);
+  }
+  var ALIASES = [
+    [/med ?ball/g, "medicine ball"],
+    [/tricep/g, "triceps"],
+    [/lat ?pulldown|lat ?pull ?down/g, "lat pulldown"],
+    [/ohp|overhead press/g, "overhead push-press"],
+    [/bw/g, "bodyweight"],
+    [/pullup|pull ?up/g, "pull-up"],
+    [/plank/g, "plank"],
+    [/sqt|squats/g, "squat"],
+    [/dumbbell/g, "dumbbell"],
+    [/db /g, "dumbbell"]
+  ];
 
   function exerciseCard(ex) {
     var cues = (ex.cues || []).slice(0, 2).map(function (c) { return "&bull; " + esc(c); }).join("<br>");
