@@ -388,7 +388,7 @@
         el("span", { text: "S", style: "font-family:var(--font-display);font-size:1.2rem;" }),
         titleEl,
         s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + " | " + count + " items",
-        sessionActions(s)
+        sessionActions(s, true)
       ));
     });
   }
@@ -1689,8 +1689,8 @@
 
     /* password + settings + groups bindings */
     $("#settings-btn").addEventListener("click", function () { openSettings(); });
-    $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
-    $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
+    $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
+    $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
     $("#settings-save-pw").addEventListener("click", function () {
       var np = $("#settings-new-pw").value;
       var cp = $("#settings-confirm-pw").value;
