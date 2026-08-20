@@ -54,7 +54,12 @@
 
   var STOPWATCH = { elapsed: 0, startedAt: 0, frame: null, laps: [], running: false };
 
-  function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  function store(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    if (window.BRCloud && window.BRCloud.isActive()) {
+      try { window.BRCloud.mirror(key); } catch (e) {}
+    }
+  }
   function load(key, def) { try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; } }
   function uid() { return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function todayStr() {
@@ -639,7 +644,84 @@
     $("#settings-status").textContent = has ? "A master password is set." : "No master password yet. Set one to protect builder changes.";
     $("#settings-new-pw").value = "";
     $("#settings-confirm-pw").value = "";
+    renderDriveSection();
     $("#settings-modal").classList.remove("hidden");
+  }
+
+  /* ---- Google Drive backup section (Settings modal) ---- */
+  function renderDriveSection() {
+    var statusEl = $("#drive-status");
+    var areaEl = $("#drive-auth-area");
+    if (!statusEl || !areaEl) return;
+    var cloud = window.BRCloud;
+    if (!cloud || !window.BRDrive || !window.BRDrive.isDriveConfigured()) {
+      statusEl.textContent = "Not configured on this build. Add Google API keys in js/config.js to back up workouts to your Drive.";
+      areaEl.innerHTML = "";
+      return;
+    }
+    var st = cloud.getStatus();
+    var user = cloud.user();
+    if (st === "syncing") {
+      statusEl.textContent = "Syncing with Google Drive…";
+      areaEl.innerHTML = "";
+      return;
+    }
+    if (user) {
+      areaEl.innerHTML = "";
+      var info = document.createElement("div");
+      info.style.cssText = "display:flex;align-items:center;gap:10px;";
+      if (user.picture) {
+        var img = document.createElement("img");
+        img.src = user.picture;
+        img.alt = "";
+        img.width = 28;
+        img.height = 28;
+        img.style.cssText = "border-radius:50%;";
+        info.appendChild(img);
+      }
+      info.appendChild(el("span", { text: user.name || user.email || "Google user" }));
+      areaEl.appendChild(info);
+      var meta = document.createElement("span");
+      meta.className = "card-muted";
+      meta.style.cssText = "font-size:.72rem;";
+      meta.textContent = cloud.getLastSync()
+        ? "Last synced " + new Date(cloud.getLastSync()).toLocaleTimeString()
+        : (st === "error" ? "Sync failed (offline?) — will retry on next save." : "Backups go to your private “Battle Rhythm” Drive folder.");
+      areaEl.appendChild(meta);
+      var signOutBtn = document.createElement("button");
+      signOutBtn.className = "btn btn-ghost btn-sm";
+      signOutBtn.textContent = "Sign out";
+      signOutBtn.addEventListener("click", function () {
+        cloud.signOut().catch(function () {});
+      });
+      areaEl.appendChild(signOutBtn);
+    } else {
+      statusEl.textContent = "Sign in to back up your workouts to your own Google Drive in a private “Battle Rhythm” folder.";
+      var signInBtn = document.createElement("button");
+      signInBtn.className = "btn btn-gold btn-sm";
+      signInBtn.textContent = "Continue with Google";
+      signInBtn.addEventListener("click", function () {
+        signInBtn.disabled = true;
+        signInBtn.textContent = "Signing in…";
+        cloud.signIn().then(function () {
+          renderDriveSection();
+        }).catch(function (err) {
+          statusEl.textContent = (err && err.message) ? err.message : "Sign-in failed. Try again.";
+          renderDriveSection();
+        });
+      });
+      areaEl.innerHTML = "";
+      areaEl.appendChild(signInBtn);
+    }
+  }
+
+  function refreshView() {
+    var v = STATE.view;
+    if (v === "home") renderHome();
+    else if (v === "library") renderLibrary();
+    else if (v === "builder") renderBuilder();
+    else if (v === "tracker") renderTracker();
+    else if (v === "doctrine") renderDoctrine();
   }
 
   /* ---- groups (saved tag bundles) ---- */
@@ -1721,6 +1803,12 @@
     seedPresets();
     bindEvents();
     nav(initialView());
+    if (window.BRCloud) {
+      window.BRCloud.init(function (dataChanged) {
+        if (dataChanged && !hasOpenModal()) refreshView();
+        renderDriveSection();
+      });
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

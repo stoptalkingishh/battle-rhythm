@@ -2,7 +2,7 @@
 
 An unofficial Army **H2F (Holistic Health and Fitness)** workout planning and tracking app — built for H2F Instructors and unit leaders to compose training sessions and regiments grounded in **FM 7-22** doctrine, and for Soldiers to track them and copy the plan to their notes app.
 
-Runs entirely client-side on GitHub Pages. No build step, no backend — sessions, regiments, and tracker data persist in your browser's `localStorage`.
+Runs entirely client-side on GitHub Pages. No build step, no backend — sessions, regiments, and tracker data persist in your browser's `localStorage`, with an optional Google Drive backup (sign in from Settings and workouts sync to a private "Battle Rhythm" folder in your own Drive).
 
 ## Features
 
@@ -17,15 +17,35 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 
 The AFT (**Army Fitness Test**) replaced the historic Army Combat Fitness Test on **1 June 2025** per Army Directive 2025-06. It has **five events** — MDL, HRP, SDC, PLK, 2MR — the Standing Power Throw is not a current AFT event. The Combat Field Test (CFT) is in its initial implementation period for designated combat specialties under AD 2026-07; consult current Army policy for applicability and standards.
 
+## Google Drive backup
+
+Sessions, regiments, tracker logs, and tag groups can be backed up to your own Google Drive (same mechanism as the `openquiz` app). With the keys below configured, the Settings modal gains a **Google Drive backup** section:
+
+- **Continue with Google** signs you in via Google Identity Services (scope limited to `drive.file` — only files this app creates).
+- Data is stored as JSON files in a per-user **"Battle Rhythm"** folder: `sessions.json`, `regiments.json`, `tracker.json`, `groups.json`.
+- Storage stays **local-first**: every save is mirrored to Drive when signed in (debounced), and on sign-in/restore Drive data is pulled and merged back in (Drive wins on id collision; local-only rows are kept). If the keys are missing or you're signed out, the app works identically offline in guest mode.
+- The master password hash is intentionally **not** synced — it stays local to the device.
+
+To enable it:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com), create/select a project, enable the **Google Drive API**.
+2. Create an **OAuth 2.0 Client ID** of type *Web application* and add this site's origin (e.g. `https://stoptalkingishh.github.io`) under **Authorized JavaScript origins**.
+3. Create an **API key**.
+4. Fill both into `js/config.js` (`BR_GOOGLE_CLIENT_ID`, `BR_GOOGLE_API_KEY`) and deploy. Both are public client-side identifiers, the same way `openquiz` bakes `NEXT_PUBLIC_GOOGLE_*` into its static build.
+
 ## Repository layout
 
 ```text
 index.html                        App shell, nav, modals; cache-busted script tags
 css/styles.css                    All styles
 js/app.js                         Views, state, localStorage, builder/tracker logic
+js/config.js                      Google client ID + API key for Drive backup (blank = guest mode)
+js/drive.js                       Google Identity Services auth + Drive v3 storage layer
+js/cloud.js                       Hybrid sync: local-first mirror + pull/merge on sign-in
 js/exercise-coach.js              Inline muscle-map coach figure renderer
 js/run-visual.js                  Run-track visualization for run events
 js/data/exercises.js              80 exercise schema entries
+js/data/exercises-atp.js          163 exercise schema entries from ATP 7-22.02
 js/data/doctrine.js               Doctrine content (components, drills, AFT, programming)
 js/data/movement-guides.js        Coach-figure pose/pattern definitions
 js/data/muscle-maps.js            Muscle map geometry used by the coach figure
@@ -34,10 +54,13 @@ js/data/aft-standards.js          AFT standards tables
 assets/plates/ai/*.webp           Approved AI anatomy plates (60 registered)
 assets/plates/ai/registry.js      Browser registry for approved AI plates
 assets/plates/svg/*.svg           Generated SVG fallback cards for every exercise
+assets/plates/atp/*.webp          Official public-domain ATP 7-22.02 figures
 assets/plates/ai-image-prompts.json  Master prompt store (80 prompts, source of truth)
 assets/plates/workout-cards.json  Manifest for card generation + plate intake
 scripts/generate-workout-cards.mjs  Regenerates SVG cards + js/data/workout-cards.js
 scripts/import-ai-plates.mjs      Local AI-plate import/validation tool
+scripts/extract-atp-figures.py    Extracts public-domain figures from the ATP PDF
+scripts/generate-atp-exercises.py Regenerates js/data/exercises-atp.js
 blender/                          Source-only MakeHuman/Blender render pipeline (kept for reference)
 research/                         Web-reference research docs behind the exercise data
 ```
