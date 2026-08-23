@@ -20,6 +20,7 @@
   var MUSC = window.BR_MUSCLE_GROUPS || null;
   var ADAPT = window.BR_HISTORY_ADAPTER || null;
   var PROG = window.BR_PROGRESSION || null;
+  var WLOCK = window.BR_WAKELOCK || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -1326,6 +1327,7 @@
     STOPWATCH.startedAt = performance.now();
     STOPWATCH.running = true;
     STOPWATCH.frame = requestAnimationFrame(updateStopwatch);
+    if (WLOCK) WLOCK.request(); /* keep the screen awake while the work runs */
     renderStopwatch();
   }
 
@@ -1342,6 +1344,7 @@
     STOPWATCH.laps = [];
     if (STOPWATCH.frame !== null) cancelAnimationFrame(STOPWATCH.frame);
     STOPWATCH.frame = null;
+    if (WLOCK) WLOCK.release();
     renderStopwatch();
   }
 
