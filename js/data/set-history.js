@@ -180,9 +180,10 @@
     (Array.isArray(actual.sets) ? actual.sets : []).forEach(function (set) {
       var w = Number(set && set.weight) || 0;
       var r = Number(set && set.reps) || 0;
-      if (set && set.duration) sets.push({ sec: Number(set.duration) || 0, done: true });
-      else if (set && set.distance) sets.push({ min: Number(set.distance) || 0, speed: 0, done: true });
-      else sets.push({ w: w, r: r, done: true });
+      var warm = !!(set && set.warmup);
+      if (set && set.duration) sets.push({ sec: Number(set.duration) || 0, done: true, warmup: warm });
+      else if (set && set.distance) sets.push({ min: Number(set.distance) || 0, speed: 0, done: true, warmup: warm });
+      else sets.push({ w: w, r: r, done: true, warmup: warm });
     });
     var scalarW = Number(actual.weight) || 0;
     var scalarR = Number(actual.reps) || 0;

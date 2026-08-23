@@ -1565,6 +1565,7 @@
       var a = r.actual || {};
       if (Array.isArray(a.sets) && a.sets.length) {
         a.sets.forEach(function (x) {
+          if (x && x.warmup) { t.sets += 1; return; } /* count the set, drop it from reps/volume */
           var w = Number(x && x.weight) || 0;
           var rp = Number(x && x.reps) || 0;
           if (w > 0) t.volume += w * rp;
@@ -1615,42 +1616,80 @@
     var kind = TS_OK ? TS.resultKind(item) : "generic";
     var a = (res && res.actual) || {};
     var form = el("div", { class: "log-form hidden" });
-    var grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;" });
+    var inputs = {};
     var fieldBox = function (label, input) {
       return el("label", { style: "font-size:.72rem;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;margin:0;" }, [el("span", { text: label }), input]);
     };
     function textInput(val, ph) { return el("input", { class: "input", type: "text", value: val || "", placeholder: ph || "" }); }
-    var inputs = {};
+
+    var rowsHost, rows = [];
+    function renderRows() {
+      rowsHost.innerHTML = "";
+      rows.forEach(function (row) {
+        var wIn = textInput(row.weight, "Weight");
+        var rIn = textInput(row.reps, "Reps");
+        wIn.addEventListener("input", function () { row.weight = wIn.value; });
+        rIn.addEventListener("input", function () { row.reps = rIn.value; });
+        var warm = el("label", { style: "font-size:.72rem;color:var(--text-muted);display:flex;align-items:center;gap:5px;" }, [
+          el("input", { type: "checkbox", checked: !!row.warmup }),
+          el("span", { text: "Warm-up" })
+        ]);
+        warm.querySelector("input").addEventListener("change", function () { row.warmup = warm.querySelector("input").checked; });
+        var remove = el("button", { class: "btn btn-ghost btn-sm", type: "button", text: "\u00d7" });
+        remove.addEventListener("click", function () { rows.splice(rows.indexOf(row), 1); renderRows(); });
+        rowsHost.appendChild(el("div", { style: "display:flex;gap:8px;align-items:end;flex-wrap:wrap;" }, [fieldBox("Weight", wIn), fieldBox("Reps", rIn), warm, remove]));
+      });
+      var add = el("button", { class: "btn btn-ghost btn-sm", type: "button", text: "+ Set" });
+      add.addEventListener("click", function () { rows.push({ weight: "", reps: "", warmup: false }); renderRows(); });
+      rowsHost.appendChild(el("div", { style: "margin-top:6px;" }, [add]));
+    }
+
     if (kind === "strength") {
-      inputs.weight = textInput(a.weight, "Weight");
-      inputs.reps = textInput(a.reps, "Reps");
-      grid.appendChild(fieldBox("Weight / load", inputs.weight));
-      grid.appendChild(fieldBox("Reps", inputs.reps));
+      if (Array.isArray(a.sets) && a.sets.length) {
+        rows = a.sets.map(function (x) { return { weight: String(x ? (x.weight || "") : ""), reps: String(x ? (x.reps || "") : ""), warmup: !!(x && x.warmup) }; });
+      } else {
+        rows = [{ weight: a.weight || "", reps: a.reps || "", warmup: false }];
+      }
+      rowsHost = el("div", {});
+      form.appendChild(rowsHost);
+      renderRows();
     } else if (kind === "timed") {
       inputs.duration = textInput(a.duration, "e.g. 30 sec");
       inputs.distance = textInput(a.distance, "e.g. 400m");
-      grid.appendChild(fieldBox("Actual duration", inputs.duration));
-      grid.appendChild(fieldBox("Distance / result", inputs.distance));
+      form.appendChild(el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;" }, [
+        fieldBox("Actual duration", inputs.duration),
+        fieldBox("Distance / result", inputs.distance)
+      ]));
     } else {
       inputs.notesFree = textInput(a.notes, "e.g. 3 rounds, full depth");
-      grid.appendChild(fieldBox("Actual result", inputs.notesFree));
+      form.appendChild(el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;" }, [fieldBox("Actual result", inputs.notesFree)]));
     }
+
     inputs.rpe = textInput(a.rpe, "e.g. 8");
     inputs.rir = textInput(a.rir, "e.g. -1r");
-    grid.appendChild(fieldBox("RPE (optional)", inputs.rpe));
-    grid.appendChild(fieldBox("RIR (optional)", inputs.rir));
-    form.appendChild(grid);
+    form.appendChild(el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:8px;" }, [
+      fieldBox("RPE (optional)", inputs.rpe),
+      fieldBox("RIR (optional)", inputs.rir)
+    ]));
+
     var save = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Save result" });
     save.addEventListener("click", function () {
       var saved = ensureLogEntry(date, s);
       var r = saved.entry.results[item.id];
       if (!r) { r = saved.entry.results[item.id] = TS_OK ? TS.newResult(item) : { done: false, actual: {} }; }
       var act = r.actual || (r.actual = {});
-      if (inputs.weight) act.weight = inputs.weight.value.trim();
-      if (inputs.reps) act.reps = inputs.reps.value.trim();
-      if (inputs.duration) act.duration = inputs.duration.value.trim();
-      if (inputs.distance) act.distance = inputs.distance.value.trim();
-      if (inputs.notesFree) act.notes = inputs.notesFree.value.trim();
+      if (kind === "strength") {
+        var out = rows.filter(function (row) { return String(row.weight || "").trim() || String(row.reps || "").trim(); })
+          .map(function (row) { return { weight: String(row.weight || "").trim(), reps: String(row.reps || "").trim(), warmup: !!row.warmup }; });
+        act.sets = out;
+        var first = out.find(function (x) { return !x.warmup; }) || out[0];
+        if (first) { act.weight = first.weight; act.reps = first.reps; }
+        else { act.weight = ""; act.reps = ""; }
+      } else {
+        if (inputs.duration) act.duration = inputs.duration.value.trim();
+        if (inputs.distance) act.distance = inputs.distance.value.trim();
+        if (inputs.notesFree) act.notes = inputs.notesFree.value.trim();
+      }
       if (inputs.rpe) act.rpe = inputs.rpe.value.trim();
       if (inputs.rir) act.rir = inputs.rir.value.trim();
       r.done = true;
@@ -1667,7 +1706,7 @@
       toast("Cleared result for " + item.label);
       renderTrackerActive();
     });
-    form.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:8px;" }, [clearBtn, save]));
+    form.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:12px;" }, [clearBtn, save]));
     return form;
   }
 

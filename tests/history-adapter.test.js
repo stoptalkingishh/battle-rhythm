@@ -31,7 +31,7 @@ test("workoutsFromLogs turns logged sessions into normalized entries", () => {
   assert.ok(ws[0].t > 0, "uses completedAt as the sort key");
   assert.equal(ws[0].entries.length, 1);
   assert.equal(ws[0].entries[0].id, "i1");
-  assert.deepEqual(ws[0].entries[0].sets[0], { w: 100, r: 5, done: true });
+  assert.deepEqual(ws[0].entries[0].sets[0], { w: 100, r: 5, done: true, warmup: false });
 });
 
 test("workoutsFromLogs skips incomplete sessions unless asked to include them", () => {

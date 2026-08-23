@@ -81,7 +81,7 @@ test("bestWeightFor and bestWeightForEntry ignore warm-up and undone rows", () =
 
 test("setsFromActual adapts stored Battle Rhythm actuals into normalized sets", () => {
   const strength = SH.setsFromActual({ sets: [{ weight: "135", reps: "5" }, { weight: "185", reps: "3" }] });
-  assert.deepEqual(strength, [{ w: 135, r: 5, done: true }, { w: 185, r: 3, done: true }]);
+  assert.deepEqual(strength, [{ w: 135, r: 5, done: true, warmup: false }, { w: 185, r: 3, done: true, warmup: false }]);
   const scalar = SH.setsFromActual({ sets: [], reps: "8", weight: "100" });
   assert.deepEqual(scalar, [{ w: 100, r: 8, done: true }]);
   const timed = SH.setsFromActual({ sets: [], duration: "90" });
