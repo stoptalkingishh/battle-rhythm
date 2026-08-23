@@ -14,6 +14,13 @@
   var TRACKER_SCHEMA = (TS && TS.SCHEMA_VERSION) || 2;
   var TS_OK = TS && typeof TS.newEntry === "function";
 
+  /* openGym-adoption modules (load lazily; view guards for their absence). */
+  var SET_H = window.BR_SET_HISTORY || null;
+  var ONE_RM = window.BR_ONE_RM || null;
+  var MUSC = window.BR_MUSCLE_GROUPS || null;
+  var ADAPT = window.BR_HISTORY_ADAPTER || null;
+  var CHART = window.BRChart || null;
+
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
     "muscular-endurance": { label: "Muscular Endurance", badge: "badge-me" },
@@ -162,11 +169,12 @@
     else if (name === "builder") renderBuilder();
     else if (name === "tracker") renderTracker();
     else if (name === "doctrine") renderDoctrine();
+    else if (name === "progress") renderProgress();
     try { if (window.location.hash !== "#" + name) history.replaceState(null, "", "#" + name); } catch (e) {}
   }
   function initialView() {
     var h = (window.location.hash || "").replace("#", "");
-    var valid = ["home", "library", "builder", "tracker", "doctrine"];
+    var valid = ["home", "library", "builder", "tracker", "doctrine", "progress"];
     return valid.indexOf(h) !== -1 ? h : "home";
   }
 
@@ -508,6 +516,7 @@
       el("h3", { class: "card-title", text: ex.name }),
       el("p", { class: "card-muted", html: cues, style: "font-size:.82rem;" }),
       el("div", { class: "tag-row", style: "margin-top:10px;" }, (ex.aft || []).map(function (a) { return tag("AFT " + a); })),
+      muscleTagRow(ex),
       el("p", { class: "card-muted", style: "font-size:.74rem;margin:14px 0 0;color:var(--gold);", text: "Open workout guide" })
     ]);
     card.addEventListener("click", function () { openExerciseModal(ex.id); });
@@ -518,6 +527,16 @@
       }
     });
     return card;
+  }
+
+  /* Muscle-target tags for an exercise card (openGym-style body-part highlight). */
+  function muscleTagRow(ex) {
+    if (!MUSC) return null;
+    var mus = MUSC.musclesOf(ex);
+    var tags = (mus.primary || []).map(function (id) { return tag(MUSC.labelOf(id)); })
+      .concat((mus.secondary || []).map(function (id) { return tag(MUSC.labelOf(id) + " (secondary)"); }));
+    if (!tags.length) return null;
+    return el("div", { class: "tag-row", style: "margin-top:8px;" }, tags);
   }
 
   function renderLibrary() {
@@ -767,6 +786,7 @@
     else if (v === "builder") renderBuilder();
     else if (v === "tracker") renderTracker();
     else if (v === "doctrine") renderDoctrine();
+    else if (v === "progress") renderProgress();
   }
 
   /* ---- groups (saved tag bundles) ---- */
@@ -1851,6 +1871,88 @@
     $("#footer-disclaimer").textContent = DOC.disclaimer || "";
   }
 
+  /* ==================== PROGRESS (openGym-style charts) ==================== */
+
+  function progressData() {
+    if (!ONE_RM || !ADAPT || !SET_H) return { workouts: [], ids: [] };
+    var logs = getLogs();
+    return {
+      workouts: ADAPT.workoutsFromLogs(logs),
+      ids: ADAPT.exercisesWithSets(logs)
+    };
+  }
+
+  function renderProgress() {
+    if (!ONE_RM || !ADAPT || !SET_H || !CHART) {
+      var emptyEl = $("#progress-empty");
+      if (emptyEl) emptyEl.textContent = "Progress modules not loaded.";
+      return;
+    }
+    var select = $("#progress-ex");
+    var exIndex = {};
+    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var P = progressData();
+    var opts = P.ids.map(function (id) {
+      var ex = exIndex[id];
+      return { id: id, label: ex ? ex.name : id };
+    }).sort(function (a, b) { return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; });
+
+    select.innerHTML = "";
+    if (!opts.length) {
+      select.innerHTML = '<option value="">No logged weight sets yet</option>';
+      $("#progress-chart").innerHTML = '<div class="chart-empty">Complete sets in the Tracker and they will show up here.</div>';
+      $("#progress-best").textContent = "";
+      $("#progress-history").innerHTML = "";
+      $("#progress-empty").textContent = "No logged history yet.";
+      return;
+    }
+    opts.forEach(function (o) { select.appendChild(el("option", { value: o.id, text: o.label })); });
+    var current = STATE.progressEx;
+    if (!opts.some(function (o) { return o.id === current; })) current = opts[0].id;
+    select.value = current;
+    renderProgressFor(current);
+  }
+
+  function renderProgressFor(exId) {
+    if (!exId) return;
+    var P = progressData();
+    var exIndex = {};
+    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var points = ONE_RM.e1rmSeries(P.workouts, exId);
+    var best = ONE_RM.best1RM(P.workouts, exId);
+    var chartEl = $("#progress-chart");
+    if (!points.length) {
+      chartEl.innerHTML = '<div class="chart-empty">No estimable sets (weight + reps) for this exercise yet.</div>';
+    } else {
+      CHART.lineChart(chartEl, { points: points, h: 170, unit: "", goal: null, ariaLabel: exId + " estimated 1RM" });
+    }
+    $("#progress-best").textContent = best
+      ? "All-time best estimated 1RM: " + best.est + " (from " + best.w + "\u00d7" + best.r + " on " + (best.d || "") + ")."
+      : "No estimated 1RM yet \u2014 log weight sets with reps in the Tracker.";
+
+    var tbody = $("#progress-history");
+    var empty = $("#progress-empty");
+    tbody.innerHTML = "";
+    var rows = 0;
+    P.workouts.forEach(function (w) {
+      var entry = (w.entries || []).filter(function (e) { return e.id === exId; })[0];
+      if (!entry) return;
+      var sets = entry.sets || [];
+      var volume = SET_H.workoutVolume({ entries: [entry] });
+      var reps = sets.reduce(function (n, s) { return n + (Number(s.r) || 0); }, 0);
+      var bestIn = ONE_RM.bestSetOf(entry);
+      tbody.appendChild(el("tr", {}, [
+        el("td", { text: w.d }),
+        el("td", { text: String(sets.length) }),
+        el("td", { text: String(reps) }),
+        el("td", { text: String(volume) }),
+        el("td", { text: bestIn ? String(bestIn.est) : "\u2014" })
+      ]));
+      rows++;
+    });
+    empty.textContent = rows ? "" : "No logged history for this exercise yet.";
+  }
+
   /* ==================== INIT / EVENTS ==================== */
 
   function bindEvents() {
@@ -1866,6 +1968,8 @@
     $("#filter-component").addEventListener("change", function () { STATE.filter.component = this.value; renderLibrary(); });
     $("#filter-aft").addEventListener("change", function () { STATE.filter.aft = this.value; renderLibrary(); });
     $("#filter-equipment").addEventListener("change", function () { STATE.filter.equipment = this.value; renderLibrary(); });
+    var pex = $("#progress-ex");
+    if (pex) pex.addEventListener("change", function () { STATE.progressEx = pex.value; renderProgressFor(pex.value); });
 
     $("#new-session-btn").addEventListener("click", function () { STATE.session = blankSession(); STATE.sessionReadOnly = false; renderBuilder(); });
     $("#session-cancel").addEventListener("click", function () { STATE.session = null; STATE.sessionReadOnly = false; renderBuilder(); });

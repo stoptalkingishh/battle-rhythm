@@ -1882,3 +1882,7 @@ textarea {
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+/* Progress charts (openGym adoption) */
+.chart-svg{width:100%;height:auto;display:block;max-width:640px;}
+.chart-empty{padding:26px 14px;text-align:center;color:var(--text-muted);font-size:.85rem;border:1px dashed var(--border);border-radius:8px;}
