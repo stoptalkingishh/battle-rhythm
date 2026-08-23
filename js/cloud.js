@@ -1,28 +1,41 @@
 "use strict";
 /* Hybrid Drive sync layer bridging the app's localStorage storage to Drive.
  *
- * The app stores under br_* keys via synchronous store()/load(). This module
- * keeps localStorage as the fast sync source of truth and:
- *   - mirrors each save to a per-collection JSON file in the user's Drive
- *     ("Battle Rhythm" folder) when signed in, and
- *   - on sign-in / session restore, pulls Drive data and merges it back into
- *     localStorage (Drive wins on id collision, local-only rows are kept), then
- *     pushes the merged result so both stay in step.
+ * The app stores under br_* keys via synchronous store()/load(). Keeping that
+ * contract, localStorage remains the fast device-local cache and this module
+ * layers a durable, offline-safe write path on top:
  *
- * Not synced: br_settings (master-password hash stays local-only) and
- * br_presets_hidden (recomputed). Exposes window.BRCloud.
+ *   - Outbox (append-only, persisted in localStorage under brsync_outbox):
+ *     every save while signed in appends a pending op for its collection. An
+ *     op is only removed after Drive *confirms* the write (ok + modifiedTime),
+ *     so failed or offline writes stay queued and retried instead of silently
+ *     dropping. The outbox compacts to at most one op per collection.
+ *
+ *   - Reconcile before overwrite: each collection flushes by first reading the
+ *     current Drive modifiedTime + data. If Drive changed since our last
+ *     verified write (brsync_mtime_*), the remote is merged into local
+ *     (Drive wins on id collisions, local-only rows kept) before pushing, so a
+ *     collection changed elsewhere is never blindly overwritten.
+ *
+ *   - User-visible sync state (free text via getStatus): off | guest |
+ *     syncing | pending (offline changes queued) | ready (synced). Settings and
+ *     the master-password hash (br_settings / br_presets_hidden) are never
+ *     synced and stay device-local.
+ *
+ * Merge/outbox/retry math is pure and lives in js/sync-core.js (window.BRSync
+ * in the browser, also unit-tested in Node). Exposes window.BRCloud.
  */
 (function () {
-  var FILE_MAP = {
-    br_sessions: "sessions.json",
-    br_regiments: "regiments.json",
-    br_tracker: "tracker.json",
-    br_groups: "groups.json"
-  };
+  var BRSync = window.BRSync;
+  if (!BRSync) { console.error("sync-core.js must load before cloud.js"); BRSync = { FILE_MAP: {} }; }
+  var FILE_MAP = BRSync.FILE_MAP || {};
 
-  var status = "idle"; // idle | off | guest | syncing | ready | error
+  var status = "idle"; // idle | off | guest | syncing | pending | ready
   var lastSync = "";
+  var lastError = "";
   var onSync = null;
+  var flushing = false;
+  var pendingFlushAgain = false;
 
   function isActive() {
     return Boolean(window.BRDrive) && window.BRDrive.isDriveConfigured() &&
@@ -43,101 +56,174 @@
   }
   function writeJson(key, value) { localSet(key, JSON.stringify(value)); }
 
-  /* Merge arrays of {id}-carrying rows: Drive (remote) wins on collision,
-   * local-only rows are kept so guest data is never lost. */
-  function mergeById(remote, local) {
-    var map = {};
-    (local || []).forEach(function (x) { if (x && x.id) map[x.id] = x; });
-    (remote || []).forEach(function (x) { if (x && x.id) map[x.id] = x; });
-    return Object.keys(map).map(function (id) { return map[id]; });
+  /* ---------------- Outbox persistence ---------------- */
+
+  function readOutbox() {
+    var raw = localGet("brsync_outbox");
+    if (!raw) return [];
+    try {
+      var o = JSON.parse(raw);
+      return Array.isArray(o) ? o : [];
+    } catch (e) { return []; }
+  }
+  function saveOutbox(outbox) { localSet("brsync_outbox", JSON.stringify(outbox)); }
+
+  function outboxOp(key, file) {
+    var ts = new Date().toISOString();
+    return {
+      opId: "op" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
+      key: key,
+      file: file,
+      ts: ts,
+      attempts: 0
+    };
   }
 
-  /* Tracker logs are { date: { sessions: { sessionId: entry } } }. */
-  function mergeLogs(remote, local) {
-    var out = {};
-    var dates = {};
-    var i, keys = Object.keys(local || {});
-    for (i = 0; i < keys.length; i++) dates[keys[i]] = 1;
-    keys = Object.keys(remote || {});
-    for (i = 0; i < keys.length; i++) dates[keys[i]] = 1;
-    Object.keys(dates).forEach(function (d) {
-      var l = (local || {})[d] || { sessions: {} };
-      var r = (remote || {})[d] || { sessions: {} };
-      var byId = {};
-      Object.keys(l.sessions || {}).forEach(function (sid) { byId[sid] = l.sessions[sid]; });
-      Object.keys(r.sessions || {}).forEach(function (sid) { byId[sid] = r.sessions[sid]; });
-      out[d] = { sessions: byId };
-    });
-    return out;
-  }
+  function pendingCount() { return BRSync.pendingCount(readOutbox()); }
+  function hasPending() { return pendingCount() > 0; }
 
-  function mergeFor(key, remote, local) {
-    if (key === "br_tracker") return mergeLogs(remote, local);
-    return mergeById(remote, local);
-  }
-
-  function fallbackFor(key) { return key === "br_tracker" ? {} : []; }
-  function hasData(key, val) {
-    return key === "br_tracker" ? Object.keys(val || {}).length > 0 : (val && val.length) > 0;
-  }
+  function mtimeKey(file) { return "brsync_mtime_" + file; }
 
   function emit(dataChanged) {
     if (onSync) { try { onSync(!!dataChanged); } catch (e) {} }
   }
 
-  function pullAll() {
-    return Promise.all(Object.keys(FILE_MAP).map(function (key) {
-      return window.BRDrive.readDriveFile(FILE_MAP[key]).then(function (remote) {
-        if (!remote) return;
-        writeJson(key, mergeFor(key, remote, readJson(key, fallbackFor(key))));
+  /* Recompute the advisory status the settings panel shows. */
+  function appraise() {
+    if (!window.BRDrive || !window.BRDrive.isDriveConfigured()) { status = "off"; return; }
+    if (hasPending()) { status = "pending"; return; }
+    if (isActive()) { status = "ready"; }
+    else { status = "guest"; }
+  }
+
+  /* ---------------- Flush (per-collection, reconcile-first) ----------------
+   * Reads the current Drive modifiedTime + data. If Drive changed since our
+   * last verified write, merge remote into local (nothing dropped), persist the
+   * merged value locally, then overwrite Drive with the merged value. Only when
+   * Drive confirms (ok + modifiedTime) do we advance our base modifiedTime and
+   * let the caller prune the outbox — i.e. durability is confirmed against
+   * Drive, never assumed. */
+  function flushCollection(key) {
+    var file = FILE_MAP[key];
+    if (!file) return Promise.resolve({ ok: false, reconciled: false, dataChanged: false });
+    if (!isActive()) {
+      return Promise.resolve({ ok: false, reconciled: false, dataChanged: false });
+    }
+    var local = readJson(key, BRSync.fallbackFor(key));
+    var lastMTime = localGet(mtimeKey(file)) || "";
+    return window.BRDrive.readDriveFile(file).then(function (remoteRes) {
+      if (!remoteRes || remoteRes.available === false) {
+        lastError = "Drive read failed";
+        return { ok: false, reconciled: false, dataChanged: false };
+      }
+      var remoteData = remoteRes ? remoteRes.data : null;
+      var remoteMTime = remoteRes ? remoteRes.modifiedTime : "";
+      var rec = BRSync.reconcile(lastMTime, remoteMTime, remoteData, local, key);
+      var dataChanged = String(JSON.stringify(rec.data)) !== String(JSON.stringify(local));
+      if (dataChanged) writeJson(key, rec.data); /* absorb remote before pushing */
+      if (!BRSync.shouldWriteRemote(key, rec.data, remoteData)) {
+        return { ok: true, reconciled: rec.remoteChanged, dataChanged: dataChanged };
+      }
+      return window.BRDrive.writeDriveFile(file, rec.data).then(function (res) {
+        if (res && res.ok && res.modifiedTime) {
+          localSet(mtimeKey(file), res.modifiedTime || "");
+          lastSync = new Date().toISOString();
+          return { ok: true, reconciled: rec.remoteChanged, dataChanged: dataChanged };
+        }
+        lastError = "Drive write not confirmed";
+        return { ok: false, reconciled: rec.remoteChanged, dataChanged: dataChanged };
+      }, function () {
+        lastError = "Drive write failed";
+        return { ok: false, reconciled: rec.remoteChanged, dataChanged: dataChanged };
       });
-    }));
-  }
-
-  function pushAll() {
-    return Promise.all(Object.keys(FILE_MAP).map(function (key) {
-      var val = readJson(key, fallbackFor(key));
-      if (!hasData(key, val)) return true;
-      return window.BRDrive.writeDriveFile(FILE_MAP[key], val);
-    }));
-  }
-
-  /* Pull Drive -> local (Drive wins), then push merged local -> Drive. */
-  function syncNow() {
-    return pullAll().then(pushAll);
-  }
-
-  /* Mirror a single collection save to Drive. Writes are debounced per key so
-   * a burst of tracker/session saves coalesce into one Drive write (latest
-   * value wins), keeping the Drive API quiet during a workout. */
-  var pendingMirror = {};
-  var mirrorTimer = {};
-  function mirror(key) {
-    if (!isActive() || !FILE_MAP[key]) return Promise.resolve(false);
-    pendingMirror[key] = readJson(key, fallbackFor(key));
-    if (mirrorTimer[key]) return Promise.resolve(false);
-    return new Promise(function (resolve) {
-      mirrorTimer[key] = setTimeout(function () {
-        mirrorTimer[key] = null;
-        var val = pendingMirror[key];
-        pendingMirror[key] = null;
-        status = "syncing";
-        emit(false);
-        window.BRDrive.writeDriveFile(FILE_MAP[key], val)
-          .then(function (ok) {
-            status = ok ? "ready" : "error";
-            if (ok) lastSync = new Date().toISOString();
-            emit(false);
-            resolve(ok);
-          })
-          .catch(function () {
-            status = "error";
-            emit(false);
-            resolve(false);
-          });
-      }, 800);
+    }, function () {
+      lastError = "Drive read failed";
+      return { ok: false, reconciled: false, dataChanged: false };
     });
   }
+
+  function applyFlushResult(key, res) {
+    if (res.ok) {
+      saveOutbox(BRSync.pruneFlushed(readOutbox(), [key]).outbox);
+    } else {
+      saveOutbox(BRSync.markAttempted(readOutbox(), key));
+    }
+    return res.ok;
+  }
+
+  /* Flush every collection with a pending op. Failed/offline ops stay queued
+   * (attempts bumped) and are retried on the next trigger. Serialized so a
+   * burst of saves coalesces into one flush pass. */
+  function flushPending() {
+    if (!isActive()) return Promise.resolve(false);
+    if (flushing) { pendingFlushAgain = true; return Promise.resolve(false); }
+    flushing = true;
+    status = "syncing";
+    emit(false);
+    var keys = BRSync.pendingKeys(readOutbox());
+    var step = function (i) {
+      if (i >= keys.length) {
+        flushing = false;
+        if (pendingFlushAgain) { pendingFlushAgain = false; return flushPending(); }
+        appraise();
+        emit(true);
+        return Promise.resolve(hasPending() === false);
+      }
+      return flushCollection(keys[i]).then(function (res) {
+        applyFlushResult(keys[i], res);
+        return step(i + 1);
+      });
+    };
+    return step(0);
+  }
+
+  /* Full reconcile of every collection with Drive (bootstrap / sign-in /
+   * explicit sync): pull, merge changed remotes, push merged, advance base
+   * modifiedTimes. Leaves the outbox untouched but any collection that has a
+   * pending op still re-flushes via flushPending afterwards. */
+  function syncNow() {
+    if (!isActive()) return Promise.resolve(false);
+    var keys = Object.keys(FILE_MAP);
+    var step = function (i) {
+      if (i >= keys.length) {
+        appraise();
+        emit(true);
+        return Promise.resolve(true);
+      }
+      return flushCollection(keys[i]).then(function (res) {
+        applyFlushResult(keys[i], res);
+        return step(i + 1);
+      });
+    };
+    var prev = status;
+    status = "syncing";
+    emit(false);
+    return step(0).then(function (ok) { if (ok) lastSync = new Date().toISOString(); return ok; });
+  }
+
+  /* ---------------- Save mirroring (drive-first, offline-safe) ---------------- */
+
+  var mirrorTimers = {};
+
+  /* Mirror a single collection save to Drive. Appends a durable outbox op
+   * synchronously (so a save is never silently dropped even if we are offline
+   * right now), then schedules a debounced flush. Latest value wins because the
+   * flush reads the current localStorage value at flush time. */
+  function mirror(key) {
+    var file = FILE_MAP[key];
+    if (!isActive() || !file) return Promise.resolve(false);
+    saveOutbox(BRSync.pushOp(readOutbox(), outboxOp(key, file)));
+    if (status === "ready") status = "pending";
+    if (!mirrorTimers[key]) {
+      mirrorTimers[key] = setTimeout(function () {
+        mirrorTimers[key] = null;
+        flushPending();
+      }, 800);
+    }
+    return Promise.resolve(false);
+  }
+
+  /* ---------------- Session lifecycle ---------------- */
 
   function init(cb) {
     onSync = cb || onSync;
@@ -148,15 +234,17 @@
     }
     status = "syncing";
     emit(false);
+    var onOnline = function () {
+      if (isActive()) flushPending().then(function () { appraise(); emit(false); });
+    };
+    if (typeof window !== "undefined" && !window.__brOnlineBound) {
+      window.__brOnlineBound = true;
+      window.addEventListener("online", onOnline);
+    }
     return window.BRDrive.restoreDriveSession().then(function (user) {
       if (user) {
-        status = "ready";
         return syncNow().then(function () {
-          lastSync = new Date().toISOString();
-          emit(true);
-          return user;
-        }).catch(function () {
-          status = "error";
+          if (hasPending()) { status = "pending"; } else { status = "ready"; }
           emit(true);
           return user;
         });
@@ -177,24 +265,32 @@
     emit(false);
     return window.BRDrive.signInToDrive().then(function (user) {
       return syncNow().then(function () {
-        status = "ready";
-        lastSync = new Date().toISOString();
+        appraise();
         emit(true);
         return user;
-      }).catch(function () {
-        status = "ready";
+      }, function () {
+        appraise();
         emit(true);
         return user;
       });
     }).catch(function (err) {
-      status = "error";
+      lastError = (err && err.message) || "Sign-in failed";
+      status = pendingErr();
       emit(true);
       throw err;
     });
   }
 
+  function pendingErr() {
+    if (hasPending()) return "pending";
+    if (isActive()) return "ready";
+    return "guest";
+  }
+
   function signOut() {
     return window.BRDrive.signOutFromDrive().then(function () {
+      /* Outbox is kept device-local so queued changes are not silently lost on
+       * sign-out; they flush on the next sign-in. */
       status = "guest";
       lastSync = "";
       emit(true);
@@ -204,6 +300,8 @@
   function user() { return window.BRDrive ? window.BRDrive.getDriveUser() : null; }
   function getStatus() { return status; }
   function getLastSync() { return lastSync; }
+  function getLastError() { return lastError; }
+  function retry() { return flushPending(); }
 
   window.BRCloud = {
     isActive: isActive,
@@ -212,8 +310,12 @@
     signOut: signOut,
     mirror: mirror,
     syncNow: syncNow,
+    flushPending: flushPending,
+    retry: retry,
     user: user,
     getStatus: getStatus,
-    getLastSync: getLastSync
+    getLastSync: getLastSync,
+    getLastError: getLastError,
+    getPendingCount: pendingCount
   };
 })();

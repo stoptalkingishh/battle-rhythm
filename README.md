@@ -23,8 +23,19 @@ Sessions, regiments, tracker logs, and tag groups can be backed up to your own G
 
 - **Continue with Google** signs you in via Google Identity Services (scope limited to `drive.file` — only files this app creates).
 - Data is stored as JSON files in a per-user **"Battle Rhythm"** folder: `sessions.json`, `regiments.json`, `tracker.json`, `groups.json`.
-- Storage stays **local-first**: every save is mirrored to Drive when signed in (debounced), and on sign-in/restore Drive data is pulled and merged back in (Drive wins on id collision; local-only rows are kept). If the keys are missing or you're signed out, the app works identically offline in guest mode.
+
+### Storage & sync (source of truth, offline-first)
+
+`localStorage` is the **fast device-local cache and the source the UI renders from**; Drive is the **durable sync target**. Records are never silently lost:
+
+- **Guest mode (no keys / not signed in):** fully offline, everything lives in `localStorage`, no sign-in UI — identical behaviour to before. Nothing is written to Drive.
+- **Signed in — durable writes:** every save appends a pending op to a small, append-only **outbox** (persisted in `localStorage` under `brsync_outbox`) and schedules a debounced flush. An op is only removed after Drive **confirms** the upload *and* returns the file's new `modifiedTime`; a failed or offline write stays queued with its attempt count bumped and is retried on the next save, the next `online` event, or a manual **Sync now** in Settings.
+- **No silent overwrite — reconcile first:** before it overwrites a collection, the cloud layer reads the current Drive `modifiedTime`. If it differs from the last modifiedTime this device wrote, the remote collection is **merged into local** (Drive wins id collisions; local-only rows are kept) before anything is pushed, so a collection changed from another device/browser is reconciled rather than clobbered.
+- **Healthy conflict/`modifiedTime` plumbing:** `js/drive.js` reads and writes expose `modifiedTime`; the cloud layer records the last verified base modifiedTime per file (`brsync_mtime_*`) so it can detect a changed remote.
+- **Bootstrap restore:** if `localStorage` is cleared or empty but Drive has records, sign-in pulls Drive into local (local-only reconciliation keeps both). Sign-out keeps the outbox device-local so queued changes flush on the next sign-in.
 - The master password hash is intentionally **not** synced — it stays local to the device.
+
+Sync state is surfaced in the Settings → *Google Drive backup* section: `syncing`, `pending` (N offline changes queued, + a Sync now button), `ready` (synced), `guest`, and `off`.
 
 To enable it:
 
@@ -40,8 +51,9 @@ index.html                        App shell, nav, modals; cache-busted script ta
 css/styles.css                    All styles
 js/app.js                         Views, state, localStorage, builder/tracker logic
 js/config.js                      Google client ID + API key for Drive backup (blank = guest mode)
-js/drive.js                       Google Identity Services auth + Drive v3 storage layer
-js/cloud.js                       Hybrid sync: local-first mirror + pull/merge on sign-in
+js/drive.js                       Google Identity Services auth + Drive v3 storage layer (reads/writes expose modifiedTime)
+js/cloud.js                       Hybrid sync: durable outbox, retry/online replay, reconcile-before-overwrite
+js/sync-core.js                   Pure merge/outbox/reconcile logic (window.BRSync); unit-tested in Node
 js/exercise-coach.js              Inline muscle-map coach figure renderer
 js/run-visual.js                  Run-track visualization for run events
 js/data/exercises.js              80 exercise schema entries
@@ -75,6 +87,12 @@ The exercise guide modal shows the AI plate first, falling back to the SVG card 
 ## Development workflow
 
 - **Cache busting:** every script/link tag in `index.html` carries `?v=battle-rhythm-N`. Bump N on any change so GitHub Pages serves fresh assets.
+- **Tests (pure sync logic):** the queue/merge/reconcile math lives in `js/sync-core.js` (no browser deps) and is unit-tested with Node's built-in `node:test` — no installs, no build step:
+
+  ```bash
+  npm test          # runs tests/sync-core.test.js
+  npm run check     # node --check syntax pass over the core JS files
+  ```
 - **Exercise data:** edit `js/data/exercises.js`, `js/data/movement-guides.js`, and add a manifest entry to `assets/plates/workout-cards.json`, then regenerate the SVG cards and `js/data/workout-cards.js`:
 
   ```bash

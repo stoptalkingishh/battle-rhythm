@@ -250,53 +250,90 @@
       pageSize: 1
     }).then(function (res) {
       var f = res && res.result && res.result.files && res.result.files[0];
-      return (f && f.id) || null;
-    }).catch(function () { return null; });
+      return { id: (f && f.id) || null, available: true };
+    }).catch(function (err) {
+      console.error("Drive file lookup failed:", err);
+      return { id: null, available: false };
+    });
   }
 
   /* Serialize Drive writes so concurrent saves can't overwrite each other. */
   var writeQueues = {};
 
   function queuedWrite(key, fn) {
-    var prev = writeQueues[key] || Promise.resolve(true);
-    var next = prev.then(fn).catch(function () { return false; });
+    var prev = writeQueues[key] || Promise.resolve({ ok: true, modifiedTime: "" });
+    var next = prev.then(fn).catch(function () { return { ok: false, modifiedTime: "" }; });
     writeQueues[key] = next;
     return next;
   }
 
+  function emptyRead(available) {
+    return { data: null, modifiedTime: "", id: null, available: available !== false };
+  }
+
+  /* Fetch a file's metadata (id + modifiedTime). The alt:media content request
+   * does not carry metadata, so reads follow it up with a cheap metadata call. */
+  function fetchMetadata(fileId) {
+    return window.gapi.client.drive.files
+      .get({ fileId: fileId, fields: "id,modifiedTime" })
+      .then(function (res) {
+        var m = (res && res.result) || {};
+        return { id: m.id || fileId, modifiedTime: m.modifiedTime || "" };
+      })
+      .catch(function (err) {
+        console.error("Drive metadata fetch failed:", err);
+        return { id: fileId, modifiedTime: "", available: false };
+      });
+  }
+
+  /* Read a Drive file. Resolves to { data, modifiedTime, id }. When the file,
+   * the folder, the token, or Drive is unavailable, data is null (callers
+   * treat data == null as "no remote file"). */
   function readDriveFile(fileName) {
-    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
+    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(emptyRead(false));
     return getDriveToken().then(function (token) {
-      if (!token) return null;
+      if (!token) return emptyRead(false);
       return ensureFolder().then(function (folderId) {
-        if (!folderId) return null;
-        return findFileId(folderId, fileName).then(function (fileId) {
-          if (!fileId) return null;
+        if (!folderId) return emptyRead(false);
+        return findFileId(folderId, fileName).then(function (found) {
+          if (!found.available) return emptyRead(false);
+          var fileId = found.id;
+          if (!fileId) return emptyRead();
           return window.gapi.client.request({
             path: "/drive/v3/files/" + fileId,
             method: "GET",
             params: { alt: "media" }
           }).then(function (res) {
             var text = typeof res.body === "string" ? res.body : JSON.stringify(res.result || res);
-            return JSON.parse(text);
+            var data = JSON.parse(text);
+            return fetchMetadata(fileId).then(function (meta) {
+              return { data: data, modifiedTime: meta.modifiedTime, id: meta.id, available: meta.available !== false };
+            });
           }).catch(function (err) {
             console.error("Drive read failed:", err);
-            return null;
+            return emptyRead(false);
           });
         });
       });
     });
   }
 
+  /* Write a Drive file. Resolves to { ok, modifiedTime } where ok is true only
+   * after Drive confirms the upload and modifiedTime is the new Drive
+   * modifiedTime (used by the cloud layer to reconcile changed remotes). */
   function writeDriveFile(fileName, data) {
-    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(false);
+    if (!isDriveConfigured() || typeof window === "undefined") {
+      return Promise.resolve({ ok: false, modifiedTime: "" });
+    }
     var key = (currentUser ? currentUser.id : "") + ":" + fileName;
     return queuedWrite(key, function () {
       return getDriveToken().then(function (token) {
-        if (!token) return false;
+        if (!token) return { ok: false, modifiedTime: "" };
         return ensureFolder().then(function (folderId) {
-          if (!folderId) return false;
-          return findFileId(folderId, fileName).then(function (fileId) {
+          if (!folderId) return { ok: false, modifiedTime: "" };
+          return findFileId(folderId, fileName).then(function (found) {
+            if (!found.available) return { ok: false, modifiedTime: "" };
+            var fileId = found.id;
             function upload(id) {
               return window.gapi.client.request({
                 path: "/upload/drive/v3/files/" + id,
@@ -306,20 +343,25 @@
                 body: JSON.stringify(data)
               });
             }
+            function afterUpload(id) {
+              return fetchMetadata(id).then(function (meta) {
+                return { ok: Boolean(meta.available !== false && meta.modifiedTime), modifiedTime: meta.modifiedTime || "", id: meta.id };
+              });
+            }
             if (fileId) {
-              return upload(fileId).then(function () { return true; });
+              return upload(fileId).then(function () { return afterUpload(fileId); });
             }
             return window.gapi.client.drive.files.create({
               resource: { name: fileName, parents: [folderId], mimeType: "application/json" },
               fields: "id"
             }).then(function (created) {
               var newFileId = created && created.result && created.result.id;
-              if (!newFileId) return false;
-              return upload(newFileId).then(function () { return true; });
+              if (!newFileId) return { ok: false, modifiedTime: "" };
+              return upload(newFileId).then(function () { return afterUpload(newFileId); });
             });
           }).catch(function (err) {
             console.error("Drive write failed:", err);
-            return false;
+            return { ok: false, modifiedTime: "" };
           });
         });
       });

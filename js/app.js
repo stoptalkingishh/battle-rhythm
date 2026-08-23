@@ -680,14 +680,34 @@
         info.appendChild(img);
       }
       info.appendChild(el("span", { text: user.name || user.email || "Google user" }));
+      statusEl.textContent = "";
       areaEl.appendChild(info);
       var meta = document.createElement("span");
       meta.className = "card-muted";
       meta.style.cssText = "font-size:.72rem;";
-      meta.textContent = cloud.getLastSync()
-        ? "Last synced " + new Date(cloud.getLastSync()).toLocaleTimeString()
-        : (st === "error" ? "Sync failed (offline?) — will retry on next save." : "Backups go to your private “Battle Rhythm” Drive folder.");
-      areaEl.appendChild(meta);
+      var pending = 0;
+      if (cloud.getPendingCount) { try { pending = cloud.getPendingCount() || 0; } catch (e) {} }
+      if (pending > 0) {
+        meta.textContent = pending + " offline change" + (pending === 1 ? "" : "s") +
+          " pending — saved on this device, syncing to Drive when back online.";
+        var syncNowBtn = document.createElement("button");
+        syncNowBtn.className = "btn btn-gold btn-sm";
+        syncNowBtn.textContent = "Sync now";
+        syncNowBtn.addEventListener("click", function () {
+          syncNowBtn.disabled = true;
+          syncNowBtn.textContent = "Syncing…";
+          (cloud.flushPending ? cloud.flushPending() : cloud.syncNow()).then(function () {
+            renderDriveSection();
+          }).catch(function () { renderDriveSection(); });
+        });
+        areaEl.appendChild(meta);
+        areaEl.appendChild(syncNowBtn);
+      } else {
+        meta.textContent = cloud.getLastSync()
+          ? "Last synced " + new Date(cloud.getLastSync()).toLocaleTimeString()
+          : (st === "error" ? "Sync failed (offline?) — will retry on next save." : "Backups go to your private “Battle Rhythm” Drive folder.");
+        areaEl.appendChild(meta);
+      }
       var signOutBtn = document.createElement("button");
       signOutBtn.className = "btn btn-ghost btn-sm";
       signOutBtn.textContent = "Sign out";
