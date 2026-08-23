@@ -1462,6 +1462,14 @@
       })
     ]);
     host.appendChild(header);
+    var totals = sessionTotals(entry);
+    if (totals.sets || totals.reps || totals.volume) {
+      host.appendChild(el("div", { class: "tracker-live-summary", style: "display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--gold);margin:2px 0 12px;" }, [
+        el("span", { text: totals.sets + " sets" }),
+        el("span", { text: totals.reps + " reps" }),
+        totals.volume ? el("span", { text: "volume " + totals.volume }) : null
+      ]));
+    }
     if (s.notes) host.appendChild(el("p", { class: "card-muted", style: "font-size:.82rem;margin:0 0 12px;", text: s.notes }));
 
     /* ---- session-level result logging (actual RPE, elapsed time, notes) ---- */
@@ -1545,6 +1553,33 @@
       if (setTimer) activeTimers.push(setTimer);
     }
     if (box.childNodes.length) row.appendChild(box);
+  }
+
+  /* Live aggregate of the session's logged items: sets / reps / volume. */
+  function sessionTotals(entry) {
+    var t = { sets: 0, reps: 0, volume: 0 };
+    var results = (entry && entry.results) || {};
+    Object.keys(results).forEach(function (id) {
+      var r = results[id];
+      if (!r || r.done !== true) return;
+      var a = r.actual || {};
+      if (Array.isArray(a.sets) && a.sets.length) {
+        a.sets.forEach(function (x) {
+          var w = Number(x && x.weight) || 0;
+          var rp = Number(x && x.reps) || 0;
+          if (w > 0) t.volume += w * rp;
+          t.reps += rp;
+        });
+        t.sets += a.sets.length;
+      } else {
+        var w = Number(a.weight) || 0;
+        var rp = Number(a.reps) || 0;
+        if (rp) t.sets += 1;
+        t.reps += rp;
+        if (w > 0) t.volume += w * rp;
+      }
+    });
+    return t;
   }
 
   function buildSessionResultForm(entry, date, s) {
