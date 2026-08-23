@@ -1207,6 +1207,61 @@ textarea {
   cursor: pointer;
 }
 
+/* Schema v2: item rows are now result-aware (completion icon + logged actuals) */
+.tracker-item .tracker-toggle {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--gold-tint);
+  color: var(--gold);
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+
+.tracker-item .tracker-toggle:hover {
+  border-color: var(--gold);
+}
+
+.tracker-item.done .tracker-toggle {
+  color: var(--ok);
+  background: rgba(75,191,115,.12);
+  border-color: rgba(75,191,115,.3);
+}
+
+.tracker-actual {
+  margin: 6px 0 0;
+  font-size: .8rem;
+  color: var(--gold);
+}
+
+.session-result-form {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.log-form {
+  display: block;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-hover);
+}
+
+.log-form.hidden {
+  display: none;
+}
+
 .session-stopwatch {
   margin-bottom: 20px;
 }

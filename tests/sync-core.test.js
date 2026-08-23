@@ -27,6 +27,15 @@ test("mergeLogs: unions dates and session ids, no id-level data loss", () => {
   assert.equal(merged["2026-01-01"].sessions.s1.reps, 10, "remote wins per-session collision");
 });
 
+test("mergeLogs preserves schema metadata without treating it as a date", () => {
+  const remote = { schemaVersion: 2, "2026-01-01": { sessions: { s1: {} } } };
+  const local = { schemaVersion: 1, "2026-01-02": { sessions: { s2: {} } } };
+  const merged = S.mergeLogs(remote, local);
+  assert.equal(merged.schemaVersion, 2);
+  assert.deepEqual(Object.keys(merged).sort(), ["2026-01-01", "2026-01-02", "schemaVersion"]);
+  assert.equal(S.hasData("br_tracker", { schemaVersion: 2 }), false);
+});
+
 /* ---------------- Outbox queue compaction / retry ---------------- */
 
 function op(key, ts) { return { opId: key + "-" + ts, key, file: S.fileFor(key), ts, attempts: 0 }; }

@@ -28,9 +28,10 @@
   }
 
   function hasData(key, val) {
-    return key === "br_tracker"
-      ? Object.keys(val || {}).length > 0
-      : (val && val.length) > 0;
+    if (key === "br_tracker") {
+      return Object.keys(val || {}).some(function (name) { return name !== "schemaVersion"; });
+    }
+    return (val && val.length) > 0;
   }
 
   /* Avoid creating empty files on first sync, but preserve explicit deletions:
@@ -53,10 +54,16 @@
   function mergeLogs(remote, local) {
     var out = {};
     var dates = {};
+    var remoteVersion = Number(remote && remote.schemaVersion) || 0;
+    var localVersion = Number(local && local.schemaVersion) || 0;
     var i, keys = Object.keys(local || {});
-    for (i = 0; i < keys.length; i++) dates[keys[i]] = 1;
+    for (i = 0; i < keys.length; i++) {
+      if (keys[i] !== "schemaVersion") dates[keys[i]] = 1;
+    }
     keys = Object.keys(remote || {});
-    for (i = 0; i < keys.length; i++) dates[keys[i]] = 1;
+    for (i = 0; i < keys.length; i++) {
+      if (keys[i] !== "schemaVersion") dates[keys[i]] = 1;
+    }
     Object.keys(dates).forEach(function (d) {
       var l = (local || {})[d] || { sessions: {} };
       var r = (remote || {})[d] || { sessions: {} };
@@ -65,6 +72,7 @@
       Object.keys(r.sessions || {}).forEach(function (sid) { byId[sid] = r.sessions[sid]; });
       out[d] = { sessions: byId };
     });
+    if (remoteVersion || localVersion) out.schemaVersion = Math.max(remoteVersion, localVersion);
     return out;
   }
 

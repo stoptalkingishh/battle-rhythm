@@ -9,7 +9,9 @@
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
   var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker" };
-  var TRACKER_SCHEMA = 1;
+  var TS = window.BRTrackerSchema || {};
+  var TRACKER_SCHEMA = (TS && TS.SCHEMA_VERSION) || 2;
+  var TS_OK = TS && typeof TS.newEntry === "function";
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -278,7 +280,7 @@
 
   function trackedSessionPlainText(s, date, entry) {
     var lines = sessionPlainText(s, fmtDate(date)).split("\n");
-    var done = entry && entry.done || {};
+    var results = (entry && entry.results) || {};
     lines.splice(4, 0, "Tracker status: " + (entry && entry.complete ? "Completed" : "In progress"));
     lines.push("");
     lines.push("TRACKED RESULTS:");
@@ -286,9 +288,22 @@
       var phase = s.phases[key];
       if (!phase || !phase.items.length) return;
       phase.items.forEach(function (item) {
-        lines.push((done[item.id] ? "[x] " : "[ ] ") + item.label + (itemText(item) ? " - " + itemText(item) : ""));
+        var r = results[item.id];
+        var done = !!(r && r.done);
+        var line = (done ? "[x] " : "[ ] ") + item.label;
+        var act = TS_OK && r ? TS.actualSummary(r) : "";
+        if (act) line += " - actual: " + act;
+        else if (itemText(item)) line += " - " + itemText(item);
+        lines.push(line);
       });
     });
+    if (entry) {
+      var meta = [];
+      if (entry.rpeActual) meta.push("RPE actual: " + entry.rpeActual);
+      if (entry.durationActual) meta.push("Duration actual: " + entry.durationActual);
+      if (entry.notes) meta.push("Notes: " + entry.notes);
+      if (meta.length) { lines.push(""); lines.push("SESSION RESULTS: " + meta.join("  |  ")); }
+    }
     return lines.join("\n");
   }
 
@@ -1302,21 +1317,33 @@
   function getLogs() {
     var v = load(KEYS.logs, null);
     if (typeof v !== "object" || v === null) v = {};
+    if (TS_OK && TS.needsMigration && TS.needsMigration(v)) {
+      /* Explicit v1 -> v2 migration, preserving existing workout history. */
+      v = TS.migrateToV2(v);
+    }
     Object.keys(v).forEach(function (date) {
+      if (date === "schemaVersion") return;
       if (typeof v[date] !== "object" || v[date] === null || typeof v[date].sessions !== "object") {
         v[date] = { sessions: {} };
       }
     });
     return v;
   }
-  function saveLogs(logs) { store(KEYS.logs, logs); }
+  function saveLogs(logs) {
+    if (logs && typeof logs === "object") logs.schemaVersion = TRACKER_SCHEMA;
+    store(KEYS.logs, logs);
+  }
   function snapshotSession(session) { return JSON.parse(JSON.stringify(session)); }
   function ensureLogEntry(date, session) {
     var logs = getLogs();
     if (typeof logs[date] !== "object" || logs[date] === null) logs[date] = { sessions: {} };
     if (!logs[date].sessions) logs[date].sessions = {};
     if (!logs[date].sessions[session.id]) {
-      logs[date].sessions[session.id] = { done: {}, complete: false, snapshot: snapshotSession(session) };
+      if (TS_OK) {
+        logs[date].sessions[session.id] = TS.newEntry(snapshotSession(session));
+      } else {
+        logs[date].sessions[session.id] = { schema: 2, complete: false, startedAt: null, completedAt: null, rpeActual: "", durationActual: "", notes: "", snapshot: snapshotSession(session), results: {} };
+      }
     }
     return { logs: logs, entry: logs[date].sessions[session.id] };
   }
@@ -1356,13 +1383,13 @@
     if (!s) { host.innerHTML = ""; return; }
     var date = $("#track-date").value || STATE.date;
     var logs = getLogs();
-    var entry = logs[date] && logs[date].sessions && logs[date].sessions[s.id] || { done: {}, complete: false };
+    var entry = logs[date] && logs[date].sessions && logs[date].sessions[s.id] || (TS_OK && TS.newEntry ? TS.newEntry(snapshotSession(s)) : { schema: 2, complete: false, results: {} });
 
     host.innerHTML = "";
     var header = el("div", { style: "display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;" }, [
       el("div", {}, [
         el("h3", { class: "card-title", text: s.name }),
-        el("p", { class: "card-muted", style: "margin:0;font-size:.8rem;", text: s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) })
+        el("p", { class: "card-muted", style: "margin:0;font-size:.8rem;", text: s.duration + " min | RPE " + s.rpe + " | " + componentLabel(s.focus) + (TS_OK && TS.entrySummary(entry) ? " | " + TS.entrySummary(entry) : "") })
       ]),
       el("button", {
         class: "btn " + (entry.complete ? "btn-gold" : "btn-ghost") + " btn-sm",
@@ -1370,6 +1397,10 @@
         onclick: function () {
           var saved = ensureLogEntry(date, s);
           saved.entry.complete = !saved.entry.complete;
+          if (saved.entry.complete) {
+            saved.entry.completedAt = new Date().toISOString();
+            if (!saved.entry.startedAt) saved.entry.startedAt = new Date().toISOString();
+          }
           saveLogs(saved.logs);
           renderTrackerActive();
           renderTrackerLog();
@@ -1379,6 +1410,9 @@
     host.appendChild(header);
     if (s.notes) host.appendChild(el("p", { class: "card-muted", style: "font-size:.82rem;margin:0 0 12px;", text: s.notes }));
 
+    /* ---- session-level result logging (actual RPE, elapsed time, notes) ---- */
+    host.appendChild(buildSessionResultForm(entry, date, s));
+
     var progressTotal = 0, progressDone = 0;
     PHASE_ORDER.forEach(function (key) {
       var phase = s.phases[key];
@@ -1386,21 +1420,37 @@
       host.appendChild(el("h4", { style: "font-family:var(--font-display);text-transform:uppercase;letter-spacing:.06em;font-size:.8rem;color:var(--gold);margin:14px 0 8px;", text: phase.name }));
       phase.items.forEach(function (item) {
         progressTotal++;
-        var done = !!entry.done[item.id];
+        var res = entry.results && entry.results[item.id];
+        var done = !!(res && res.done);
         if (done) progressDone++;
-        var row = el("button", { class: "list-item tracker-item" + (done ? " done" : ""), type: "button", "aria-pressed": String(done) }, [
-          el("span", { style: "font-size:1.05rem;width:20px;text-align:center;color:" + (done ? "var(--ok)" : "var(--text-muted)") + ";", text: done ? "\u2713" : "\u25CB" }),
-          el("div", { class: "content" }, [
-            el("h4", { style: "margin:0;", text: item.label }),
-            el("p", { class: "card-muted", style: "margin:0;font-size:.76rem;", text: itemText(item) || "" })
-          ])
+        var row = el("div", { class: "list-item tracker-item" + (done ? " done" : "") });
+        var toggle = el("button", { class: "tracker-toggle", type: "button", "aria-pressed": String(done), "aria-label": "Mark " + esc(item.label) + " " + (done ? "incomplete" : "complete") }, [
+          el("span", { style: "font-size:1.05rem;text-align:center;color:" + (done ? "var(--ok)" : "var(--text-muted)") + ";", text: done ? "\u2713" : "\u25CB" })
         ]);
-        row.addEventListener("click", function () {
+        toggle.addEventListener("click", function () {
           var saved = ensureLogEntry(date, s);
-          saved.entry.done[item.id] = !saved.entry.done[item.id];
+          var r = saved.entry.results[item.id];
+          if (!r) { r = saved.entry.results[item.id] = TS_OK ? TS.newResult(item) : { done: false, actual: null }; }
+          r.done = !r.done;
+          if (!saved.entry.startedAt) saved.entry.startedAt = new Date().toISOString();
           saveLogs(saved.logs);
           renderTrackerActive();
         });
+        row.appendChild(toggle);
+        var actualTxt = TS_OK && res ? TS.actualSummary(res) : "";
+        row.appendChild(el("div", { class: "content" }, [
+          el("h4", { style: "margin:0;", text: item.label }),
+          el("p", { class: "card-muted", style: "margin:0;font-size:.76rem;", text: itemText(item) || " " }),
+          actualTxt ? el("p", { class: "tracker-actual", text: "Actual: " + actualTxt }) : null
+        ]));
+        var form = buildResultForm(item, res, date, s);
+        row.appendChild(form);
+        var logBtn = el("button", { class: "btn btn-ghost btn-sm", type: "button", text: TS_OK && res && TS.actualSummary(res) ? "Edit" : "Log" });
+        logBtn.addEventListener("click", function () {
+          form.classList.toggle("hidden");
+          logBtn.textContent = form.classList.contains("hidden") ? (TS_OK && res && TS.actualSummary(res) ? "Edit" : "Log") : "Hide";
+        });
+        row.appendChild(el("div", { class: "actions", style: "display:flex;gap:6px;align-items:center;" }, [logBtn]));
         host.appendChild(row);
       });
     });
@@ -1413,9 +1463,98 @@
       ]),
       el("div", { class: "progress", role: "progressbar", "aria-label": "Session completion", "aria-valuemin": "0", "aria-valuemax": "100", "aria-valuenow": String(pct) }, [el("div", { class: "progress-bar", style: "width:" + pct + "%;" })]),
       el("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:14px;" }, [
-        el("button", { class: "btn btn-ghost btn-sm", text: "Copy to Notes", onclick: function () { openCopyModal(trackedSessionPlainText(s, date, entry)); } })
+        el("button", { class: "btn btn-ghost btn-sm", text: "Copy to Notes", onclick: function () { openCopyModal(trackedSessionPlainText(s, date, ensureLogEntry(date, s).entry)); } })
       ])
     ]));
+  }
+
+  function buildSessionResultForm(entry, date, s) {
+    var box = el("div", { class: "session-result-form" });
+    var grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;" });
+    var fieldBox = function (label, input) {
+      return el("label", { class: "field", style: "margin:0;" }, [el("span", { class: "field-label", text: label }), input]);
+    };
+    function textInput(val, ph) { return el("input", { class: "input", type: "text", value: val || "", placeholder: ph || "" }); }
+    var rpeIn = textInput(entry.rpeActual, "e.g. 8");
+    var durIn = textInput(entry.durationActual, "e.g. 42 min");
+    var notesIn = textInput(entry.notes, "How did it feel?");
+    grid.appendChild(fieldBox("Actual RPE", rpeIn));
+    grid.appendChild(fieldBox("Elapsed time", durIn));
+    grid.appendChild(fieldBox("Session notes", notesIn));
+    box.appendChild(grid);
+    var save = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Save session" });
+    save.addEventListener("click", function () {
+      var saved = ensureLogEntry(date, s);
+      saved.entry.rpeActual = rpeIn.value.trim();
+      saved.entry.durationActual = durIn.value.trim();
+      saved.entry.notes = notesIn.value.trim();
+      if (!saved.entry.startedAt) saved.entry.startedAt = new Date().toISOString();
+      saveLogs(saved.logs);
+      toast("Session results saved");
+      renderTrackerActive();
+    });
+    box.appendChild(el("div", { style: "display:flex;justify-content:flex-end;margin-top:8px;" }, [save]));
+    return box;
+  }
+
+  function buildResultForm(item, res, date, s) {
+    var kind = TS_OK ? TS.resultKind(item) : "generic";
+    var a = (res && res.actual) || {};
+    var form = el("div", { class: "log-form hidden" });
+    var grid = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;" });
+    var fieldBox = function (label, input) {
+      return el("label", { style: "font-size:.72rem;color:var(--text-muted);display:flex;flex-direction:column;gap:3px;margin:0;" }, [el("span", { text: label }), input]);
+    };
+    function textInput(val, ph) { return el("input", { class: "input", type: "text", value: val || "", placeholder: ph || "" }); }
+    var inputs = {};
+    if (kind === "strength") {
+      inputs.weight = textInput(a.weight, "Weight");
+      inputs.reps = textInput(a.reps, "Reps");
+      grid.appendChild(fieldBox("Weight / load", inputs.weight));
+      grid.appendChild(fieldBox("Reps", inputs.reps));
+    } else if (kind === "timed") {
+      inputs.duration = textInput(a.duration, "e.g. 30 sec");
+      inputs.distance = textInput(a.distance, "e.g. 400m");
+      grid.appendChild(fieldBox("Actual duration", inputs.duration));
+      grid.appendChild(fieldBox("Distance / result", inputs.distance));
+    } else {
+      inputs.notesFree = textInput(a.notes, "e.g. 3 rounds, full depth");
+      grid.appendChild(fieldBox("Actual result", inputs.notesFree));
+    }
+    inputs.rpe = textInput(a.rpe, "e.g. 8");
+    inputs.rir = textInput(a.rir, "e.g. -1r");
+    grid.appendChild(fieldBox("RPE (optional)", inputs.rpe));
+    grid.appendChild(fieldBox("RIR (optional)", inputs.rir));
+    form.appendChild(grid);
+    var save = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Save result" });
+    save.addEventListener("click", function () {
+      var saved = ensureLogEntry(date, s);
+      var r = saved.entry.results[item.id];
+      if (!r) { r = saved.entry.results[item.id] = TS_OK ? TS.newResult(item) : { done: false, actual: {} }; }
+      var act = r.actual || (r.actual = {});
+      if (inputs.weight) act.weight = inputs.weight.value.trim();
+      if (inputs.reps) act.reps = inputs.reps.value.trim();
+      if (inputs.duration) act.duration = inputs.duration.value.trim();
+      if (inputs.distance) act.distance = inputs.distance.value.trim();
+      if (inputs.notesFree) act.notes = inputs.notesFree.value.trim();
+      if (inputs.rpe) act.rpe = inputs.rpe.value.trim();
+      if (inputs.rir) act.rir = inputs.rir.value.trim();
+      r.done = true;
+      if (!saved.entry.startedAt) saved.entry.startedAt = new Date().toISOString();
+      saveLogs(saved.logs);
+      toast("Saved result for " + item.label);
+      renderTrackerActive();
+    });
+    var clearBtn = el("button", { class: "btn btn-danger btn-sm", type: "button", text: "Clear" });
+    clearBtn.addEventListener("click", function () {
+      var saved = ensureLogEntry(date, s);
+      saved.entry.results[item.id] = TS_OK ? TS.newResult(item) : { done: false, actual: {} };
+      saveLogs(saved.logs);
+      toast("Cleared result for " + item.label);
+      renderTrackerActive();
+    });
+    form.appendChild(el("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:8px;" }, [clearBtn, save]));
+    return form;
   }
 
   function renderTrackerLog() {
@@ -1435,7 +1574,7 @@
     $("#tracker-empty").classList.toggle("hidden", entries.length > 0);
     entries.forEach(function (en) {
       var doneCount = 0, total = 0;
-      PHASE_ORDER.forEach(function (k) { var p = en.s.phases[k]; if (p) { total += p.items.length; p.items.forEach(function (i) { if (en.e.done[i.id]) doneCount++; }); } });
+      PHASE_ORDER.forEach(function (k) { var p = en.s.phases[k]; if (p) { total += p.items.length; p.items.forEach(function (i) { var r = en.e.results && en.e.results[i.id]; if (r && r.done) doneCount++; }); } });
       var pct = total ? Math.round((doneCount / total) * 100) : 0;
       host.appendChild(rowEl(
         el("span", { text: en.e.complete ? "\u2713" : String(pct) + "%", style: "font-family:var(--font-display);font-size:1rem;" }),
