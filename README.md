@@ -12,6 +12,7 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 - **Tracker** — check off exercises, mark sessions complete, and review your training log with a stopwatch.
 - **Copy to Notes** — generate a clean text summary of any exercise, session, or regiment and copy it straight into your notes app (Apple Notes, Google Keep, etc.).
 - **Doctrine tab** — the Army Fitness Test (AFT) five events, session structure, drills, load/HR zones, periodization, weekly splits, sample templates, training strategies, safety & compliance, and all sources.
+- **Personal AFT history** — record dated event results and personal notes in your own Drive-synced data. These records are not official scores or medical readiness determinations.
 
 ## Current doctrine
 

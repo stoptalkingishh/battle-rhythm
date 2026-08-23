@@ -18,7 +18,8 @@
     br_sessions: "sessions.json",
     br_regiments: "regiments.json",
     br_tracker: "tracker.json",
-    br_groups: "groups.json"
+    br_groups: "groups.json",
+    br_aft_results: "aft-results.json"
   };
 
   function fileFor(key) { return FILE_MAP[key] || null; }

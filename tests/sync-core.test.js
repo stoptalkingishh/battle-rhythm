@@ -18,6 +18,18 @@ test("mergeById: Drive wins collisions, local-only rows kept", () => {
   assert.equal(byId.c.v, 1, "local-only row kept");
 });
 
+test("br_aft_results maps to aft-results.json and merges as id-row array", () => {
+  assert.equal(S.fileFor("br_aft_results"), "aft-results.json");
+  assert.equal(S.fallbackFor("br_aft_results").length, 0, "returns a fresh array by default");
+  const remote = [{ id: "a", value: "285" }, { id: "b", value: "40" }];
+  const local = [{ id: "a", value: "300" }, { id: "c", value: "12:00" }];
+  const merged = S.mergeById(remote, local);
+  assert.equal(merged.length, 3);
+  const byId = Object.fromEntries(merged.map((x) => [x.id, x]));
+  assert.equal(byId.a.value, "285", "remote wins on id collision");
+  assert.equal(byId.c.value, "12:00", "local-only entry kept");
+});
+
 test("mergeLogs: unions dates and session ids, no id-level data loss", () => {
   const remote = { "2026-01-01": { sessions: { s1: { reps: 10 }, s2: { reps: 5 } } } };
   const local = { "2026-01-01": { sessions: { s1: { reps: 99 }, s3: { reps: 7 } } }, "2026-01-02": { sessions: { s4: { reps: 3 } } } };
@@ -157,11 +169,12 @@ test("reconcile: tracker merge applies via mergeFor", () => {
   assert.deepEqual(r.data["2026-01-01"].sessions.s1.reps, 8);
 });
 
-test("FILE_MAP is the existing compatible mapping", () => {
+test("FILE_MAP keeps the existing compatible mappings and adds AFT results", () => {
   assert.deepEqual(S.FILE_MAP, {
     br_sessions: "sessions.json",
     br_regiments: "regiments.json",
     br_tracker: "tracker.json",
-    br_groups: "groups.json"
+    br_groups: "groups.json",
+    br_aft_results: "aft-results.json"
   });
 });

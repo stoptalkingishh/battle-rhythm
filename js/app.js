@@ -8,8 +8,9 @@
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
-  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker", trackerActive: "br_tracker_active" };
+  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker", aft: "br_aft_results", trackerActive: "br_tracker_active" };
   var TS = window.BRTrackerSchema || {};
+  var AFT_RESULTS = window.BRAFTResults || null;
   var TRACKER_SCHEMA = (TS && TS.SCHEMA_VERSION) || 2;
   var TS_OK = TS && typeof TS.newEntry === "function";
 
@@ -640,6 +641,8 @@
   /* ---- password protection ---- */
   function getSettings() { return load("br_settings", {}); }
   function saveSettings(s) { store("br_settings", s); }
+  function getAftResults() { return AFT_RESULTS ? AFT_RESULTS.normalizeList(load(KEYS.aft, [])) : []; }
+  function saveAftResults(list) { store(KEYS.aft, list); }
   function hashPw(str) {
     var h = 5381;
     var s = String(str || "");
@@ -1650,6 +1653,59 @@
 
   /* ==================== DOCTRINE ==================== */
 
+  function resetAftResultForm() {
+    $("#aft-result-id").value = "";
+    $("#aft-result-date").value = todayStr();
+    $("#aft-result-value").value = "";
+    $("#aft-result-note").value = "";
+    var event = $("#aft-result-event").value;
+    $("#aft-result-unit").value = AFT_RESULTS.defaultUnit(event);
+  }
+
+  function renderAftResults() {
+    if (!AFT_RESULTS) return;
+    var eventSelect = $("#aft-result-event");
+    var selected = eventSelect.value;
+    eventSelect.innerHTML = "";
+    AFT_RESULTS.EVENTS.forEach(function (event) {
+      eventSelect.appendChild(el("option", { value: event.code, text: event.code + " — " + event.name }));
+    });
+    if (selected && AFT_RESULTS.eventFor(selected)) eventSelect.value = selected;
+    if (!$("#aft-result-date").value) resetAftResultForm();
+
+    var rows = AFT_RESULTS.sortByDate(getAftResults());
+    $("#aft-results-summary").textContent = rows.length
+      ? rows.length + " personal result" + (rows.length === 1 ? "" : "s") + " recorded."
+      : "No personal AFT results recorded yet.";
+    var list = $("#aft-results-list");
+    list.innerHTML = "";
+    rows.forEach(function (record) {
+      var event = AFT_RESULTS.eventFor(record.event);
+      list.appendChild(el("div", { class: "exercise-card" }, [
+        el("div", { class: "exercise-card-main" }, [
+          el("h3", { class: "card-title", text: record.event + " — " + (event ? event.name : record.event) }),
+          el("p", { class: "card-muted", text: fmtDate(record.date) + " · " + record.value + (record.unit ? " " + record.unit : "") }),
+          record.note ? el("p", { class: "card-muted", style: "margin-top:4px;", text: record.note }) : null
+        ]),
+        el("div", { class: "exercise-card-actions" }, [
+          el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () {
+            $("#aft-result-id").value = record.id;
+            $("#aft-result-event").value = record.event;
+            $("#aft-result-date").value = record.date;
+            $("#aft-result-value").value = record.value;
+            $("#aft-result-unit").value = record.unit || "";
+            $("#aft-result-note").value = record.note || "";
+            $("#aft-result-value").focus();
+          } }),
+          el("button", { class: "btn btn-danger btn-sm", text: "Delete", onclick: function () {
+            saveAftResults(AFT_RESULTS.remove(getAftResults(), record.id));
+            renderAftResults();
+          } })
+        ])
+      ]));
+    });
+  }
+
   function renderDoctrine() {
     if (!DOC.aft) return;
     var sum = DOC.aft.summary || {};
@@ -1671,6 +1727,7 @@
     });
     var cft = (DOC.aft.events || []).find(function (e) { return e.code === "cft"; });
     $("#cft-note").innerHTML = cft ? "<strong>" + esc(cft.name) + "</strong><br>" + esc(stripPar(cft.description)) + "<br><span style='font-size:.76rem;'>" + esc(cft.citation) + "</span>" : "";
+    renderAftResults();
 
     var sess = $("#doctrine-session");
     sess.innerHTML = "";
@@ -1887,6 +1944,28 @@
       STATE.regiment = null;
       renderBuilder();
     });
+
+    $("#aft-result-event").addEventListener("change", function () {
+      $("#aft-result-unit").value = AFT_RESULTS.defaultUnit(this.value);
+    });
+    $("#aft-result-form").addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!AFT_RESULTS) return;
+      var saved = AFT_RESULTS.upsert(getAftResults(), {
+        id: $("#aft-result-id").value,
+        event: $("#aft-result-event").value,
+        date: $("#aft-result-date").value,
+        value: $("#aft-result-value").value,
+        unit: $("#aft-result-unit").value,
+        note: $("#aft-result-note").value
+      });
+      if (!saved.changed) { toast("Enter an AFT event, date, and result."); return; }
+      saveAftResults(saved.list);
+      resetAftResultForm();
+      renderAftResults();
+      toast("AFT result saved");
+    });
+    $("#aft-result-cancel").addEventListener("click", resetAftResultForm);
 
     $("#track-date").addEventListener("change", function () { STATE.date = this.value; saveTrackerActive(); renderTrackerActive(); renderTrackerLog(); });
     $("#track-session").addEventListener("change", function () { saveTrackerActive(); renderTrackerActive(); });

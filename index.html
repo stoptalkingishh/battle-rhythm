@@ -337,6 +337,28 @@
       </div>
 
       <div class="section-head">
+        <div>
+          <h2 class="section-title">Your recorded AFT results</h2>
+          <p class="section-sub">Keep your own dated event results in your Battle Rhythm Drive data. These are personal records, not an official score or medical readiness determination.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <form id="aft-result-form">
+          <input id="aft-result-id" type="hidden" />
+          <div class="form-grid">
+            <div class="field"><label class="field-label" for="aft-result-event">Event</label><select class="select" id="aft-result-event"></select></div>
+            <div class="field"><label class="field-label" for="aft-result-date">Date</label><input class="input" id="aft-result-date" type="date" required /></div>
+            <div class="field"><label class="field-label" for="aft-result-value">Result</label><input class="input" id="aft-result-value" placeholder="e.g. 12:45 or 245" required /></div>
+            <div class="field"><label class="field-label" for="aft-result-unit">Unit</label><input class="input" id="aft-result-unit" placeholder="e.g. reps, lb, min:sec" /></div>
+          </div>
+          <div class="field" style="margin-top:10px;"><label class="field-label" for="aft-result-note">Personal note (optional)</label><input class="input" id="aft-result-note" maxlength="500" /></div>
+          <div style="display:flex;gap:10px;margin-top:12px;"><button class="btn btn-gold btn-sm" type="submit">Save result</button><button class="btn btn-ghost btn-sm" id="aft-result-cancel" type="button">Clear</button></div>
+        </form>
+      </div>
+      <p class="card-muted" id="aft-results-summary"></p>
+      <div class="list" id="aft-results-list"></div>
+
+      <div class="section-head">
         <div><h2 class="section-title">Session Structure</h2></div>
       </div>
       <div class="card card-accent">
@@ -531,6 +553,7 @@
   <script src="js/data/atp-figures.js?v=battle-rhythm-29"></script>
   <script src="js/exercise-coach.js?v=battle-rhythm-29"></script>
   <script src="js/data/preset-workouts.js?v=battle-rhythm-29"></script>
+  <script src="js/data/aft-results.js?v=battle-rhythm-32"></script>
   <script src="js/data/tracker-schema.js?v=battle-rhythm-30"></script>
   <script src="js/data/timer-core.js?v=battle-rhythm-30"></script>
   <script src="js/config.js?v=battle-rhythm-29"></script>
@@ -538,6 +561,6 @@
   <script src="js/drive.js?v=battle-rhythm-29"></script>
   <script src="js/cloud.js?v=battle-rhythm-29"></script>
   <script src="js/timer.js?v=battle-rhythm-30"></script>
-  <script src="js/app.js?v=battle-rhythm-31"></script>
+  <script src="js/app.js?v=battle-rhythm-32"></script>
 </body>
 </html>
