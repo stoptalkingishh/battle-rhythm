@@ -5,6 +5,6 @@
   "description": "Battle Rhythm training app. No build system; browser scripts loaded directly from index.html. Pure sync logic is unit-tested with Node built-in node:test.",
   "scripts": {
     "test": "node --test",
-    "check": "node --check js/sync-core.js && node --check js/data/tracker-schema.js && node --check js/drive.js && node --check js/cloud.js && node --check js/app.js && echo 'All files: syntax OK'"
+    "check": "node --check js/sync-core.js && node --check js/data/tracker-schema.js && node --check js/data/timer-core.js && node --check js/timer.js && node --check js/drive.js && node --check js/cloud.js && node --check js/app.js && echo 'All files: syntax OK'"
   }
 }

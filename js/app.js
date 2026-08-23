@@ -8,7 +8,7 @@
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
-  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker" };
+  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker", trackerActive: "br_tracker_active" };
   var TS = window.BRTrackerSchema || {};
   var TRACKER_SCHEMA = (TS && TS.SCHEMA_VERSION) || 2;
   var TS_OK = TS && typeof TS.newEntry === "function";
@@ -55,6 +55,13 @@
   };
 
   var STOPWATCH = { elapsed: 0, startedAt: 0, frame: null, laps: [], running: false };
+
+  /* Reusable guided-workout timers. TIMER_CREATE inits a widget (js/timer.js)
+   * per item; activeTimers lets us tear down every instance when the tracker
+   * re-renders so intervals never leak or run against detached DOM. */
+  var TIMER_CORE = window.BRTimerCore || null;
+  var TIMER_CREATE = (window.BRTimer && typeof window.BRTimer.create === "function") ? window.BRTimer.create : null;
+  var activeTimers = [];
 
   function store(key, val) {
     try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
@@ -1348,9 +1355,23 @@
     return { logs: logs, entry: logs[date].sessions[session.id] };
   }
 
+  var TIMER_STATE_PREFIX = "br_timer_state:";
+
+  /* Durable active-session recovery: remember which session the tracker was
+   * open on (and for which date) so a reload drops you back where you left off.
+   * No backend or analytics — just a small browser-local record. */
+  function loadTrackerActive() { return load(KEYS.trackerActive, null); }
+  function saveTrackerActive() {
+    var sel = $("#track-session");
+    if (!sel || !sel.value) return;
+    store(KEYS.trackerActive, { sessionId: sel.value, date: ($("#track-date").value || STATE.date) });
+  }
+
   function renderTracker() {
     var dateInput = $("#track-date");
-    if (!dateInput.value) dateInput.value = STATE.date;
+    var savedActive = loadTrackerActive();
+    if (savedActive && savedActive.date) { dateInput.value = savedActive.date; STATE.date = savedActive.date; }
+    else if (!dateInput.value) dateInput.value = STATE.date;
     var sel = $("#track-session");
     var sessions = getSessions();
     sel.innerHTML = "";
@@ -1366,6 +1387,10 @@
     }
     appendGroup("Built-in workouts", groupPresets);
     appendGroup("Your sessions", groupCustom);
+    /* Restore the previously selected active session, falling back to the first option. */
+    if (savedActive && savedActive.sessionId && sessions.some(function (x) { return x.id === savedActive.sessionId; })) {
+      sel.value = savedActive.sessionId;
+    }
     if (!sessions.length) {
       sel.appendChild(el("option", { value: "", text: "No sessions yet" }));
       $("#tracker-active").innerHTML = '<div class="empty-state"><p>Build a session first, then track it here.</p></div>';
@@ -1384,6 +1409,11 @@
     var date = $("#track-date").value || STATE.date;
     var logs = getLogs();
     var entry = logs[date] && logs[date].sessions && logs[date].sessions[s.id] || (TS_OK && TS.newEntry ? TS.newEntry(snapshotSession(s)) : { schema: 2, complete: false, results: {} });
+
+    /* Tear down any live workout timers before we wipe the container; each
+     * widget clears its own interval so nothing keeps ticking detached DOM. */
+    activeTimers.forEach(function (t) { if (t && typeof t.destroy === "function") t.destroy(); });
+    activeTimers = [];
 
     host.innerHTML = "";
     var header = el("div", { style: "display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;" }, [
@@ -1451,6 +1481,7 @@
           logBtn.textContent = form.classList.contains("hidden") ? (TS_OK && res && TS.actualSummary(res) ? "Edit" : "Log") : "Hide";
         });
         row.appendChild(el("div", { class: "actions", style: "display:flex;gap:6px;align-items:center;" }, [logBtn]));
+        buildItemTimers(item, row, s);
         host.appendChild(row);
       });
     });
@@ -1466,6 +1497,30 @@
         el("button", { class: "btn btn-ghost btn-sm", text: "Copy to Notes", onclick: function () { openCopyModal(trackedSessionPlainText(s, date, ensureLogEntry(date, s).entry)); } })
       ])
     ]));
+  }
+
+  /* Attach bounded guided-workout timers to a tracker item when the plan
+   * declares a rest period and/or a timed set (a duration). Parsing + clamping
+   * live in the pure BRTimerCore module; an unparseable or 0 value adds no
+   * widget. Each instance is tracked so re-render tears it down cleanly. */
+  function buildItemTimers(item, row, session) {
+    if (!TIMER_CORE || !TIMER_CREATE) return;
+    var restSec = TIMER_CORE.fromDurationStr(item.rest);
+    var timedSec = TIMER_CORE.fromDurationStr(item.duration);
+    if (!restSec && !timedSec) return;
+    /* A stable per-workout/per-item storage key lets a running or paused timer
+     * self-recover across reloads (durable active-session recovery). */
+    var base = session ? TIMER_STATE_PREFIX + session.id + ":" + item.id + ":" : null;
+    var box = el("div", { class: "tracker-timers" });
+    if (restSec) {
+      var restTimer = TIMER_CREATE({ mount: box, variant: "rest", label: "Rest", seconds: restSec, storageKey: base ? base + "rest" : null });
+      if (restTimer) activeTimers.push(restTimer);
+    }
+    if (timedSec) {
+      var setTimer = TIMER_CREATE({ mount: box, variant: "set", label: "Timed set", seconds: timedSec, storageKey: base ? base + "set" : null });
+      if (setTimer) activeTimers.push(setTimer);
+    }
+    if (box.childNodes.length) row.appendChild(box);
   }
 
   function buildSessionResultForm(entry, date, s) {
@@ -1833,8 +1888,8 @@
       renderBuilder();
     });
 
-    $("#track-date").addEventListener("change", function () { STATE.date = this.value; renderTrackerActive(); renderTrackerLog(); });
-    $("#track-session").addEventListener("change", function () { renderTrackerActive(); });
+    $("#track-date").addEventListener("change", function () { STATE.date = this.value; saveTrackerActive(); renderTrackerActive(); renderTrackerLog(); });
+    $("#track-session").addEventListener("change", function () { saveTrackerActive(); renderTrackerActive(); });
     $("#stopwatch-start").addEventListener("click", startStopwatch);
     $("#stopwatch-lap").addEventListener("click", lapStopwatch);
     $("#stopwatch-reset").addEventListener("click", resetStopwatch);
