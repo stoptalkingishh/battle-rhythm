@@ -19,6 +19,7 @@
   var ONE_RM = window.BR_ONE_RM || null;
   var MUSC = window.BR_MUSCLE_GROUPS || null;
   var ADAPT = window.BR_HISTORY_ADAPTER || null;
+  var PROG = window.BR_PROGRESSION || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -1929,6 +1930,7 @@
     $("#progress-best").textContent = best
       ? "All-time best estimated 1RM: " + best.est + " (from " + best.w + "\u00d7" + best.r + " on " + (best.d || "") + ")."
       : "No estimated 1RM yet \u2014 log weight sets with reps in the Tracker.";
+    suggestNext(P.workouts, exId);
 
     var tbody = $("#progress-history");
     var empty = $("#progress-empty");
@@ -1954,6 +1956,35 @@
   }
 
   /* ==================== INIT / EVENTS ==================== */
+
+  function suggestNext(workouts, exId) {
+    var el2 = $("#progress-next");
+    if (!el2) return;
+    el2.textContent = "";
+    if (!PROG) return;
+    var lastE = null;
+    for (var i = (workouts || []).length - 1; i >= 0; i--) {
+      var en = ((workouts[i] || {}).entries || []).filter(function (e) { return e.id === exId; })[0];
+      if (en && (en.sets || []).some(function (s) { return s.done; })) { lastE = en; break; }
+    }
+    if (!lastE) return;
+    var done = (lastE.sets || []).filter(function (s) { return s.done && !SET_H.isWarmupRow(s); });
+    if (!done.length) return;
+    var timed = done.some(function (s) { return (s.sec || 0) > 0; });
+    var w = done.reduce(function (m, s) { return Math.max(m, Number(s.w) || 0); }, 0);
+    var cfg = timed
+      ? { id: exId, mode: "time", prog: "time", sets: done.length, weight: w,
+          sec: done.reduce(function (m, s) { return Math.max(m, Number(s.sec) || 0); }, 0) }
+      : { id: exId, mode: "reps", prog: "linear", sets: done.length, reps: done.reduce(function (m, s) { return Math.max(m, Number(s.r) || 0); }, 0), weight: w, inc: 5 };
+    var p = PROG.nextPrescription(workouts, cfg, {});
+    if (!p || p.kind === "off") return;
+    var head = p.kind === "deload" ? "Deload to" : p.kind === "up" ? "Suggested next" : "Next target";
+    var val = timed ? String(p.sec || cfg.sec) + "s"
+      : p.weight ? String(p.weight) + " \u00d7 " + (p.reps || cfg.reps)
+      : String(p.reps || cfg.reps) + " reps";
+    var growth = (p.sets && p.sets !== cfg.sets) ? " (" + p.sets + " sets)" : "";
+    el2.textContent = head + ": " + val + growth + " (auto progression)";
+  }
 
   function bindEvents() {
     $$("button[data-view]").forEach(function (b) {
