@@ -11,7 +11,7 @@
  *                              complete: bool,
  *                              snapshot: <session plan>
  *                            } } } }
- *   v2 (this PR):           br_tracker = { schemaVersion: 2, "<date>": {
+ *   v2 (actual results):    br_tracker = { schemaVersion: 2, "<date>": {
  *                              sessions: { "<sid>": {
  *                                schema: 2,
  *                                complete, startedAt, completedAt,
@@ -19,18 +19,24 @@
  *                                snapshot,
  *                                results: { "<itemId>": {
  *                                  done: bool,
- *                                  actual: {
- *                                    sets: [{weight,reps,rest}],
+ *                                  actual: { sets: [{weight,reps,rest}],
  *                                    reps, weight,
  *                                    duration, distance,
- *                                    rpe, rir, notes
- *                                  }
+ *                                    rpe, rir, notes }
  *                                } }
  *                              } } } }
+ *   v3 (this PR):           Same shape as v2, plus per-item fields on every
+ *                              planned item in `snapshot.phases.*.items[]`:
+ *                              mode ('reps'|'time'), warmup, perside,
+ *                              bodyweight, superset (groupId), effort (scale).
+ *                              Data is carried forward exactly; v3 only ADDS
+ *                              default item fields. Sets still log weight/reps
+ *                              and rpe/rir, so no existing numbers move.
  *
- * migrateToV2() converts a v1 store in place of a lossy Boolean checklist to
- * the v2 result model, preserving every date, session, done flag, completion
- * state, and snapshot.
+ * migrateToV2() is the single entry-point used by the app. Its name is kept
+ * for backward compatibility, but it upgrades any store below the CURRENT
+ * SCHEMA_VERSION (v3) to v3, preserving every v2 result set rather than
+ * reconstructing it.
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
@@ -39,13 +45,21 @@
     root.BRTrackerSchema = factory();
   }
 })(typeof self !== "undefined" ? self : this, function () {
-  var SCHEMA_VERSION = 2;
+  var SCHEMA_VERSION = 3;
 
   /* H2F session phase keys; keep in canonical order for stable output. */
   var PHASE_ORDER = ["prep", "activity", "recovery"];
 
+  /* Accepted exercise logging modes; v3 addition. */
+  var MODES = ["reps", "time"];
+
   /* ---- helpers ---- */
   function isObj(v) { return v != null && typeof v === "object" && !Array.isArray(v); }
+
+  function clone(v) {
+    try { return JSON.parse(JSON.stringify(v)); }
+    catch (e) { return v; }
+  }
 
   function findItems(snapshot) {
     var out = [];
@@ -57,6 +71,28 @@
       }
     });
     return out;
+  }
+
+  /* Fill the v3 planned-item fields with defaults. Idempotent: fields that
+   * already carry a value are never overwritten, so re-running is a no-op. */
+  function defaultItemFields(it) {
+    if (!isObj(it)) return it;
+    if (!("mode" in it) || (MODES.indexOf(it.mode) === -1 && it.mode !== "")) {
+      /* A planned duration implies a timed exercise; otherwise default to reps. */
+      it.mode = String(it.duration || "").trim() ? "time" : "reps";
+    }
+    if (it.mode !== "time") it.mode = "reps";
+    if (!("warmup" in it)) it.warmup = !!it.warmup;
+    else it.warmup = !!it.warmup;
+    if (!("perside" in it)) it.perside = !!it.perside;
+    else it.perside = !!it.perside;
+    if (!("bodyweight" in it)) it.bodyweight = !!it.bodyweight;
+    else it.bodyweight = !!it.bodyweight;
+    if (!("superset" in it)) it.superset = "";
+    else it.superset = typeof it.superset === "string" ? it.superset : "";
+    if (!("effort" in it)) it.effort = "";
+    else it.effort = typeof it.effort === "string" ? it.effort : "";
+    return it;
   }
 
   /* Which actual-result fields a planned item should capture. */
@@ -71,7 +107,7 @@
   }
 
   function version(raw) {
-    if (isObj(raw) && typeof raw.schemaVersion === "number" && raw.schemaVersion >= 2) {
+    if (isObj(raw) && typeof raw.schemaVersion === "number" && raw.schemaVersion >= 1) {
       return raw.schemaVersion;
     }
     return 1; /* unversioned v1 store */
@@ -84,10 +120,16 @@
   }
 
   function newResult(item) {
-    return { done: false, actual: blankActual() };
+    var r = { done: false, actual: blankActual() };
+    /* Timed exercises log a duration, not reps/weight. */
+    if (isObj(item) && String(item.duration || "").trim()) r.mode = "time";
+    return r;
   }
 
   function newEntry(snapshot) {
+    /* Clone the snapshot before adding item defaults so the caller's copy is
+     * never mutated (migration, in particular, hands us its input). */
+    var snap = isObj(snapshot) ? clone(snapshot) : {};
     var entry = {
       schema: SCHEMA_VERSION,
       complete: false,
@@ -96,18 +138,18 @@
       rpeActual: "",
       durationActual: "",
       notes: "",
-      snapshot: isObj(snapshot) ? snapshot : {},
+      snapshot: snap,
       results: {}
     };
-    findItems(snapshot).forEach(function (item) {
+    findItems(snap).forEach(function (item) {
+      defaultItemFields(item);
       entry.results[item.id] = newResult(item);
     });
     return entry;
   }
 
   /* Human-readable summary of a logged actual result, e.g.
-   * "5 reps x 135", "30 sec", "400m", "done" for bare completion.
-   */
+   * "5 reps x 135", "30 sec", "400m", "done" for bare completion. */
   function actualSummary(res) {
     if (!isObj(res)) return "";
     var parts = [];
@@ -151,7 +193,22 @@
     return Object.keys(results).reduce(function (n, id) { return n + (results[id] && results[id].done ? 1 : 0); }, 0);
   }
 
-  /* Explicit v1 -> v2 migration. Returns a new object; never mutates input. */
+  /* Migrate a v2 entry to v3 in place of reconstructing it: the v2 result sets
+   * are the numbers a user logged, so the upgrade must NEVER drop them. All we
+   * add are the default planned-item fields, which live in the snapshot. */
+  function upV2Entry(e) {
+    var out = clone(e);
+    out.schema = SCHEMA_VERSION;
+    findItems(out.snapshot).forEach(function (it) { defaultItemFields(it); });
+    /* Ensure a results row exists for every planned item, mirroring newEntry. */
+    if (!isObj(out.results)) out.results = {};
+    findItems(out.snapshot).forEach(function (it) {
+      if (!out.results[it.id]) out.results[it.id] = newResult(it);
+    });
+    return out;
+  }
+
+  /* Explicit v1 / unversioned -> current (v3) migration (kept name for app.js). */
   function migrateToV2(raw) {
     var out = { schemaVersion: SCHEMA_VERSION };
     if (!isObj(raw)) return out;
@@ -172,11 +229,16 @@
   }
 
   function migrateEntry(e) {
-    if (e.schema === SCHEMA_VERSION && isObj(e.results)) {
-      /* Already a v2 entry: preserve exactly (idempotence). */
-      return JSON.parse(JSON.stringify(e));
+    /* Already current: preserve exactly (idempotence). */
+    if (e && e.schema === SCHEMA_VERSION && isObj(e.results)) {
+      return clone(e);
     }
-    var entry = newEntry(e.snapshot);
+    /* v2 entry: carry results forward instead of reconstructing them. */
+    if (e && e.schema === 2 && isObj(e.results)) {
+      return upV2Entry(e);
+    }
+    /* v1 / bare entry: rebuild from snapshot, copying metadata + done flags. */
+    var entry = newEntry(e && e.snapshot);
     entry.complete = !!e.complete;
     entry.startedAt = typeof e.startedAt === "string" ? e.startedAt : null;
     entry.completedAt = typeof e.completedAt === "string" ? e.completedAt : null;
@@ -203,6 +265,7 @@
     actualSummary: actualSummary,
     entrySummary: entrySummary,
     doneCount: doneCount,
-    findItems: findItems
+    findItems: findItems,
+    defaultItemFields: defaultItemFields
   };
 });

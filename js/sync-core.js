@@ -19,7 +19,11 @@
     br_regiments: "regiments.json",
     br_tracker: "tracker.json",
     br_groups: "groups.json",
-    br_aft_results: "aft-results.json"
+    br_aft_results: "aft-results.json",
+    br_bodyweight: "bodyweight.json",
+    br_routines: "routines.json",
+    br_week: "week.json",
+    br_exweights: "exweights.json"
   };
 
   function fileFor(key) { return FILE_MAP[key] || null; }

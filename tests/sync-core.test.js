@@ -169,12 +169,16 @@ test("reconcile: tracker merge applies via mergeFor", () => {
   assert.deepEqual(r.data["2026-01-01"].sessions.s1.reps, 8);
 });
 
-test("FILE_MAP keeps the existing compatible mappings and adds AFT results", () => {
+test("FILE_MAP keeps existing mappings and adds AFT + Phase-0 collections", () => {
   assert.deepEqual(S.FILE_MAP, {
     br_sessions: "sessions.json",
     br_regiments: "regiments.json",
     br_tracker: "tracker.json",
     br_groups: "groups.json",
-    br_aft_results: "aft-results.json"
+    br_aft_results: "aft-results.json",
+    br_bodyweight: "bodyweight.json",
+    br_routines: "routines.json",
+    br_week: "week.json",
+    br_exweights: "exweights.json"
   });
 });
