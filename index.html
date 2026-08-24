@@ -222,7 +222,13 @@
         <div id="saved-sessions">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
             <h3 class="section-title" style="font-size:1rem;margin:0;">Saved Sessions</h3>
-            <button class="btn btn-ghost btn-sm" id="manage-groups-btn">+ Manage Groups</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <label class="btn btn-ghost btn-sm" style="display:inline-flex;cursor:pointer;margin:0;">Import plan
+                <input type="file" id="plan-import" accept=".json,application/json" style="display:none;" />
+              </label>
+              <button class="btn btn-ghost btn-sm" id="plan-export">Export plan</button>
+              <button class="btn btn-ghost btn-sm" id="manage-groups-btn">+ Manage Groups</button>
+            </div>
           </div>
           <div class="chip-row" id="session-group-filter" style="margin-bottom:12px;"></div>
           <div class="list" id="sessions-list"></div>
@@ -606,6 +612,7 @@
   <script src="js/data/history-adapter.js?v=battle-rhythm-33"></script>
   <script src="js/data/wakelock.js?v=battle-rhythm-33"></script>
   <script src="js/data/heatmap.js?v=battle-rhythm-33"></script>
+  <script src="js/data/plan-share.js?v=battle-rhythm-33"></script>
   <script src="js/chart.js?v=battle-rhythm-33"></script>
   <script src="js/app.js?v=battle-rhythm-33"></script>
 </body>

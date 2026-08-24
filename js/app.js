@@ -22,6 +22,7 @@
   var PROG = window.BR_PROGRESSION || null;
   var WLOCK = window.BR_WAKELOCK || null;
   var HEAT = window.BR_HEATMAP || null;
+  var PLAN = window.BR_PLAN_SHARE || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -2139,6 +2140,33 @@
     $("#filter-equipment").addEventListener("change", function () { STATE.filter.equipment = this.value; renderLibrary(); });
     var pex = $("#progress-ex");
     if (pex) pex.addEventListener("change", function () { STATE.progressEx = pex.value; renderProgressFor(pex.value); });
+
+    var pexport = $("#plan-export");
+    if (pexport && PLAN) pexport.addEventListener("click", function () {
+      var doc = PLAN.exportPlan(getSessions(), getRegiments());
+      var blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "battle-rhythm-plan.json"; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast("Plan exported");
+    });
+    var pimport = $("#plan-import");
+    if (pimport && PLAN) pimport.addEventListener("change", function (event) {
+      var file = event.target.files && event.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        try {
+          var res = PLAN.importPlan(String(reader.result), { sessions: getSessions(), regiments: getRegiments() });
+          saveSessions(res.sessions); saveRegiments(res.regiments);
+          toast(res.added ? "Imported " + res.added + " new plan" : "Nothing new to import");
+          renderBuilder();
+        } catch (err) { toast("Import failed: " + err.message); }
+        pimport.value = "";
+      };
+      reader.readAsText(file);
+    });
 
     $("#new-session-btn").addEventListener("click", function () { STATE.session = blankSession(); STATE.sessionReadOnly = false; renderBuilder(); });
     $("#session-cancel").addEventListener("click", function () { STATE.session = null; STATE.sessionReadOnly = false; renderBuilder(); });
