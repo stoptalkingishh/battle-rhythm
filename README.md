@@ -7,10 +7,12 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 ## Features
 
 - **Exercise Library** — 80 exercises and activities from FM 7-22 / ATP 7-22.02 across all six H2F components, each with a component tag, form cues, programming, safety notes, AFT-event mapping, and doctrine citation. Every exercise has a visual plate: an AI-generated anatomy illustration where approved, otherwise a generated SVG technical card.
-- **Session Builder** — compose a training session using the doctrinal **preparation → activity → recovery** structure; add exercises and drills, set sets/reps/rest, target RPE and focus component. Preview any exercise or drill in a guide modal from the builder before adding it.
+- **Session Builder** — compose a training session using the doctrinal **preparation → activity → recovery** structure; add exercises and drills, set sets/reps/rest, target RPE and focus component, and pair adjacent exercises into **supersets**. Preview any exercise or drill in a guide modal from the builder before adding it.
 - **Regiments** — group saved sessions across the training week and tag a periodization phase (base / build / peak / recovery).
 - **Tracker** — check off exercises, mark sessions complete, review your training log, and see a **live session summary** (sets / reps / volume) as you log results. Strength results are logged **per set** with an optional **warm-up** mark that keeps them out of volume, 1RM and progression. When you open an empty strength result, it's **pre-filled to your next working weight** from the automatic progression (down to the planned set count).
 - **Screen stays awake** — starting the stopwatch requests the Screen Wake Lock, so the display doesn't sleep mid-session; it's released when you reset the stopwatch.
+- **Body weight** — log daily weigh-ins on the Home tab with a trend chart, a goal line, and gain/loss colored by whether it moves toward your goal.
+- **Weekly plan & reschedule** — assign a saved session to each weekday on the Home tab and move a session to another day without touching the rest of the week.
 - **Copy to Notes** — generate a clean text summary of any exercise, session, or regiment and copy it straight into your notes app (Apple Notes, Google Keep, etc.).
 - **Doctrine tab** — the Army Fitness Test (AFT) five events, session structure, drills, load/HR zones, periodization, weekly splits, sample templates, training strategies, safety & compliance, and all sources.
 - **Personal AFT history** — record dated event results and personal notes in your own Drive-synced data. These records are not official scores or medical readiness determinations.

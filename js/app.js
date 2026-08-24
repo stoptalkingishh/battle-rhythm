@@ -24,6 +24,9 @@
   var HEAT = window.BR_HEATMAP || null;
   var PLAN = window.BR_PLAN_SHARE || null;
   var REC = window.BR_RECOVERY || null;
+  var BW = window.BR_BODYWEIGHT || null;
+  var SS = window.BR_SUPERSETS || null;
+  var WP = window.BR_WEEKLY_PLAN || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -349,9 +352,135 @@
     return lines.join("\n");
   }
 
+  /* ==================== BODY WEIGHT + WEEKLY PLAN (openGym adoption) ==================== */
+
+  function loadBW() { return (load("br_bodyweight", []) || []).map(function (e) { return BW.make(e); }).filter(Boolean); }
+  function saveBW(v) { store("br_bodyweight", v); }
+  function getBWGoal() { try { return JSON.parse(localStorage.getItem("br_bw_goal")); } catch (e) { return null; } }
+  function saveBWGoal(g) { try { localStorage.setItem("br_bw_goal", JSON.stringify(g)); } catch (e) {} }
+
+  function renderBodyWeight() {
+    var host = $("#home-bodyweight");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!BW || !CHART) { host.appendChild(el("p", { class: "card-muted", text: "Body-weight module not loaded." })); return; }
+    var entries = loadBW();
+    var goal = getBWGoal();
+    var unit = (goal && goal.unit) || "lb";
+    var cur = BW.latest(entries);
+
+    var top = el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;" });
+    top.appendChild(el("strong", { text: cur ? ("Current: " + cur.weight + " " + (cur.unit || unit)) : "No weigh-ins yet." }));
+    if (goal) top.appendChild(el("span", { class: "tags", text: "Goal " + goal.value + " " + (goal.unit || unit) }));
+    if (goal && cur) top.appendChild(el("span", { class: "tags", style: "color:" + (BW.towardGoal(goal, cur.weight, cur.change || 0) ? "var(--good)" : "var(--warn)") + ";", text: "On/off track toward goal" }));
+    host.appendChild(top);
+
+    var chartBox = el("div", {});
+    var points = BW.series(entries);
+    if (points.length) CHART.lineChart(chartBox, { points: points, h: 130, unit: unit, goal: goal ? goal.value : null });
+    else chartBox.appendChild(el("p", { class: "card-muted", text: "Log a weigh-in to see your trend." }));
+    host.appendChild(chartBox);
+
+    var dateIn = el("input", { class: "input", type: "date", value: todayStr() });
+    var weightIn = el("input", { class: "input", type: "number", step: "0.1", placeholder: "Weight" });
+    var unitSel = el("select", { class: "select" });
+    ["lb", "kg"].forEach(function (u) { unitSel.appendChild(el("option", { value: u, text: u, selected: u === unit ? "selected" : null })); });
+    var noteIn = el("input", { class: "input", type: "text", placeholder: "Note (optional)" });
+    var logBtn = el("button", { class: "btn btn-gold btn-sm", text: "Log weigh-in" });
+    logBtn.addEventListener("click", function () {
+      var rec = BW.make({ date: dateIn.value, weight: weightIn.value, unit: unitSel.value, note: noteIn.value });
+      if (!rec) { toast("Enter today's date and a positive weight."); return; }
+      var r = BW.upsert(loadBW(), rec);
+      if (!r.changed) { toast("Invalid weigh-in"); return; }
+      saveBW(r.list); renderBodyWeight(); toast("Weigh-in logged");
+    });
+    host.appendChild(el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;" }, [dateIn, weightIn, unitSel, noteIn, logBtn]));
+
+    var goalIn = el("input", { class: "input", type: "number", step: "0.1", placeholder: goal ? String(goal.value) : "Goal weight" });
+    var goalSet = el("button", { class: "btn btn-ghost btn-sm", text: goal ? "Update goal" : "Set goal" });
+    goalSet.addEventListener("click", function () {
+      var v = parseFloat(goalIn.value);
+      if (!isFinite(v) || v <= 0) { toast("Enter a goal weight."); return; }
+      saveBWGoal({ value: v, unit: unit }); renderBodyWeight(); toast("Goal set");
+    });
+    var goalClear = el("button", { class: "btn btn-ghost btn-sm", text: "Clear goal", style: goal ? "" : "display:none;" });
+    goalClear.addEventListener("click", function () { try { localStorage.removeItem("br_bw_goal"); } catch (e) {} renderBodyWeight(); });
+    host.appendChild(el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;" }, [el("span", { class: "card-muted", text: "Goal:" }), goalIn, goalSet, goalClear]));
+
+    var recents = BW.withDeltas(entries, goal).slice(-4).reverse();
+    if (recents.length) {
+      var list = el("div", { class: "list", style: "margin-top:8px;" });
+      recents.forEach(function (e) {
+        var delta = (e.change != null && Math.abs(e.change) > 0.001) ? (e.change > 0 ? "+" + e.change : e.change) : "";
+        var toward = (e.change != null && goal) ? BW.towardGoal(goal, e.weight, e.change) : null;
+        list.appendChild(el("div", { class: "list-item", style: "display:flex;justify-content:space-between;align-items:center;" }, [
+          el("span", { text: e.date + " — " + e.weight + " " + (e.unit || unit) }),
+          el("span", { text: delta + (toward === null ? "" : (toward ? "  toward" : "  away")), style: "color:" + (toward ? "var(--good)" : "var(--text-muted)") + ";" })
+        ]));
+      });
+      host.appendChild(list);
+    }
+  }
+
+  function sessionName(ref) {
+    var s = getSessions().find(function (x) { return x.id === ref; });
+    return s ? s.name : ref;
+  }
+  function saveWeek(p) { store("br_week", p); }
+
+  function renderWeeklyPlan() {
+    var host = $("#home-weekly");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!WP || !getSessions().length) { host.appendChild(el("p", { class: "card-muted", text: "Weekly-plan module not loaded, or no saved sessions yet." })); return; }
+    var plan = load("br_week", {});
+    var sessions = getSessions();
+    var today = WP.activeFor(plan, todayStr());
+    host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 10px;", text: today ? ("Today: " + sessionName(today)) : "Nothing scheduled today." }));
+    var rows = [];
+    WP.WEEKDAY_NAMES.forEach(function (name, wd) {
+      var ref = plan ? plan[wd] : undefined;
+      var sel = el("select", { class: "select", style: "flex:1;min-width:130px;" });
+      sel.appendChild(el("option", { value: "", text: "— no session —" }));
+      sessions.forEach(function (s) { sel.appendChild(el("option", { value: s.id, text: s.name, selected: s.id === ref ? "selected" : null })); });
+      sel.addEventListener("change", function () {
+        var p = sel.value ? WP.assign(plan, wd, sel.value) : WP.clear(plan, wd);
+        saveWeek(p); renderWeeklyPlan();
+      });
+      rows.push(el("div", { style: "display:flex;align-items:center;gap:8px;" }, [
+        el("strong", { style: "min-width:72px;font-size:.8rem;", text: name }), sel
+      ]));
+    });
+    host.appendChild(el("div", { style: "display:grid;gap:6px;" }, rows));
+
+    var busy = WP.weekdays(plan);
+    if (busy.length) {
+      var fromSel = el("select", { class: "select", style: "min-width:120px;" });
+      busy.forEach(function (wd) { fromSel.appendChild(el("option", { value: String(wd), text: WP.WEEKDAY_NAMES[wd] + " (" + sessionName(plan[wd]) + ")" })); });
+      var toSel = el("select", { class: "select", style: "min-width:120px;" });
+      [0, 1, 2, 3, 4, 5, 6].forEach(function (wd) { toSel.appendChild(el("option", { value: String(wd), text: WP.WEEKDAY_NAMES[wd] })); });
+      var mv = el("button", { class: "btn btn-ghost btn-sm", text: "Reschedule" });
+      mv.addEventListener("click", function () {
+        var res = WP.move(plan, Number(fromSel.value), Number(toSel.value));
+        if (!res.ok) { toast("Can't move: " + res.reason); return; }
+        saveWeek(res.plan); renderWeeklyPlan(); toast("Session rescheduled");
+      });
+      host.appendChild(el("div", { style: "display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;" }, [
+        el("span", { class: "card-muted", text: "Reschedule:" }), fromSel, el("span", { text: "→" }), toSel, mv
+      ]));
+    }
+  }
+
   /* ==================== HOME ==================== */
 
   function renderHome() {
+    if (!DOC.overview) return;
+    renderBodyWeight();
+    renderWeeklyPlan();
+    renderHomeInner();
+  }
+
+  function renderHomeInner() {
     if (!DOC.overview) return;
     var first = DOC.overview[0];
     $("#home-hero-sub").textContent = first.text;
@@ -1005,7 +1134,7 @@
       wrap.appendChild(el("p", { class: "card-muted", style: "font-size:.8rem;", text: "No items yet." }));
       return wrap;
     }
-    phase.items.forEach(function (item) {
+    phase.items.forEach(function (item, i) {
       var gridFields = [
         itemField(item, "sets", "Sets", readOnly),
         itemField(item, "reps", "Reps/Time", readOnly),
@@ -1024,8 +1153,23 @@
         }
       }
       if (!readOnly) {
+        if (item.type === "exercise" && i > 0 && SS) {
+          actions.appendChild(el("button", { class: "btn btn-ghost btn-sm", text: "SS↑", title: "Make superset with previous", "aria-label": "Superset " + item.label + " with previous", onclick: function () {
+            var res = SS.pairAdjacent(phase.items, i - 1, i);
+            if (!res || !res.adjacent) { toast("Superset needs adjacent items (place them next to each other)."); return; }
+            phase.items = res.items;
+            renderSessionEditor();
+          } }));
+        }
+        if (item.superset) {
+          actions.appendChild(el("button", { class: "btn btn-ghost btn-sm", text: "unSS", title: "Unpair from superset", "aria-label": "Unpair " + item.label, onclick: function () {
+            var r = SS.unpair(phase.items, i);
+            phase.items = r.items;
+            renderSessionEditor();
+          } }));
+        }
         actions.appendChild(el("button", { class: "btn-icon", text: "x", title: "Remove", "aria-label": "Remove " + item.label, onclick: function () {
-          phase.items = phase.items.filter(function (i) { return i.id !== item.id; });
+          phase.items = phase.items.filter(function (k) { return k.id !== item.id; });
           renderSessionEditor();
         } }));
       }
