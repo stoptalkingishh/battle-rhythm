@@ -23,6 +23,7 @@
   var WLOCK = window.BR_WAKELOCK || null;
   var HEAT = window.BR_HEATMAP || null;
   var PLAN = window.BR_PLAN_SHARE || null;
+  var REC = window.BR_RECOVERY || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -2017,6 +2018,7 @@
     }
     opts.forEach(function (o) { select.appendChild(el("option", { value: o.id, text: o.label })); });
     renderHeat(P.workouts);
+    renderRecovery(P.workouts);
     var current = STATE.progressEx;
     if (!opts.some(function (o) { return o.id === current; })) current = opts[0].id;
     select.value = current;
@@ -2123,6 +2125,43 @@
     });
     legend.appendChild(el("span", { text: "More" }));
     host.appendChild(legend);
+  }
+
+  function renderRecovery(baseWorkouts) {
+    var host = $("#progress-recovery");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!REC || !MUSC) return;
+    var exIndex = {};
+    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var enriched = (baseWorkouts || []).map(function (w) {
+      return {
+        d: w.d, t: w.t,
+        entries: (w.entries || []).map(function (e) {
+          var ex = exIndex[e.id];
+          var mg = ex ? (MUSC.musclesOf(ex).primary || []).concat(MUSC.musclesOf(ex).secondary || []) : [];
+          return { id: e.id, sets: e.sets, muscleGroups: mg };
+        })
+      };
+    });
+    var rec = REC.muscleRecovery(enriched);
+    var ids = Object.keys(rec).filter(function (id) { return id !== "_workout_only"; }).sort();
+    if (!ids.length) { host.appendChild(el("p", { class: "card-muted", text: "Log sets to see muscle recovery." })); return; }
+    host.appendChild(el("p", { class: "card-muted", text: "How fresh each muscle group is for your next session." }));
+    var list = el("div", { class: "list" });
+    ids.forEach(function (id) {
+      var r = rec[id];
+      var color = r.fresh ? "#7fd08b" : r.tired ? "#e07b52" : "#d8b45a";
+      var state = r.fresh ? "Fresh" : r.tired ? "Tired" : "Recovering";
+      list.appendChild(el("div", { class: "list-item", style: "display:flex;align-items:center;gap:10px;" }, [
+        el("span", { style: "width:10px;height:10px;border-radius:50%;background:" + color + ";" }),
+        el("div", { class: "content" }, [
+          el("h4", { style: "margin:0;", text: MUSC.labelOf(id) || id }),
+          el("p", { class: "card-muted", style: "margin:0;font-size:.74rem;", text: state + " - " + Math.round(r.days) + "d since training, fatigue " + Math.round(r.fatigue * 100) + "%" })
+        ])
+      ]));
+    });
+    host.appendChild(list);
   }
 
   function bindEvents() {

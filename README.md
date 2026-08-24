@@ -14,7 +14,7 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 - **Copy to Notes** — generate a clean text summary of any exercise, session, or regiment and copy it straight into your notes app (Apple Notes, Google Keep, etc.).
 - **Doctrine tab** — the Army Fitness Test (AFT) five events, session structure, drills, load/HR zones, periodization, weekly splits, sample templates, training strategies, safety & compliance, and all sources.
 - **Personal AFT history** — record dated event results and personal notes in your own Drive-synced data. These records are not official scores or medical readiness determinations.
-- **Progress** — a per-exercise estimated 1RM chart (Epley/Brzycki/Lombardi) built from what you log in the Tracker, plus a rep/set/volume history table, all-time best estimate, a **12-month activity heatmap**, and an automatic next-set suggestion. Exercise cards also show the muscle groups each lift targets.
+- **Progress** — a per-exercise estimated 1RM chart (Epley/Brzycki/Lombardi) built from what you log in the Tracker, plus a rep/set/volume history table, all-time best estimate, a **12-month activity heatmap**, an automatic next-set suggestion, and a **body-readiness panel** showing how fresh each muscle group is from your recent training. Exercise cards also show the muscle groups each lift targets.
 
 ## Current doctrine
 
