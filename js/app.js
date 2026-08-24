@@ -21,6 +21,7 @@
   var ADAPT = window.BR_HISTORY_ADAPTER || null;
   var PROG = window.BR_PROGRESSION || null;
   var WLOCK = window.BR_WAKELOCK || null;
+  var HEAT = window.BR_HEATMAP || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -2014,6 +2015,7 @@
       return;
     }
     opts.forEach(function (o) { select.appendChild(el("option", { value: o.id, text: o.label })); });
+    renderHeat(P.workouts);
     var current = STATE.progressEx;
     if (!opts.some(function (o) { return o.id === current; })) current = opts[0].id;
     select.value = current;
@@ -2090,6 +2092,36 @@
       : String(p.reps || cfg.reps) + " reps";
     var growth = (p.sets && p.sets !== cfg.sets) ? " (" + p.sets + " sets)" : "";
     el2.textContent = head + ": " + val + growth + " (auto progression)";
+  }
+
+  function heatColor(level) {
+    return ["transparent", "#2f2f2f", "#3f6b4f", "#5f9a6f", "#86d08b"][level] || "transparent";
+  }
+
+  function renderHeat(workouts) {
+    var host = $("#progress-heat");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!HEAT) return;
+    var weeks = HEAT.buildYearGrid(workouts);
+    var grid = el("div", { style: "display:grid;grid-template-rows:repeat(7,9px);grid-auto-flow:column;gap:2px;overflow-x:auto;" });
+    weeks.forEach(function (week) {
+      week.forEach(function (cell) {
+        grid.appendChild(el("span", {
+          style: "width:9px;height:9px;border-radius:2px;background:" + heatColor(cell.level) + ";",
+          title: cell.iso || "",
+          "aria-label": cell.iso || "no training"
+        }));
+      });
+    });
+    host.appendChild(grid);
+    var legend = el("div", { style: "display:flex;gap:6px;align-items:center;font-size:.72rem;color:var(--text-muted);margin-top:8px;" });
+    legend.appendChild(el("span", { text: "Less" }));
+    [0, 1, 2, 3, 4].forEach(function (l) {
+      legend.appendChild(el("span", { style: "width:9px;height:9px;border-radius:2px;background:" + heatColor(l) + ";", "aria-hidden": "true" }));
+    });
+    legend.appendChild(el("span", { text: "More" }));
+    host.appendChild(legend);
   }
 
   function bindEvents() {
