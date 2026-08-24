@@ -13,6 +13,7 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 - **Screen stays awake** — starting the stopwatch requests the Screen Wake Lock, so the display doesn't sleep mid-session; it's released when you reset the stopwatch.
 - **Body weight** — log daily weigh-ins on the Home tab with a trend chart, a goal line, and gain/loss colored by whether it moves toward your goal.
 - **Weekly plan & reschedule** — assign a saved session to each weekday on the Home tab and move a session to another day without touching the rest of the week.
+- **Custom exercises** — add your own movements from the Library (they join the searchable grid and can be added to sessions), plus a missed-session reminder on the Home tab.
 - **Copy to Notes** — generate a clean text summary of any exercise, session, or regiment and copy it straight into your notes app (Apple Notes, Google Keep, etc.).
 - **Doctrine tab** — the Army Fitness Test (AFT) five events, session structure, drills, load/HR zones, periodization, weekly splits, sample templates, training strategies, safety & compliance, and all sources.
 - **Personal AFT history** — record dated event results and personal notes in your own Drive-synced data. These records are not official scores or medical readiness determinations.

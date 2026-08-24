@@ -27,6 +27,9 @@
   var BW = window.BR_BODYWEIGHT || null;
   var SS = window.BR_SUPERSETS || null;
   var WP = window.BR_WEEKLY_PLAN || null;
+  var FP = window.BR_FREESTYLE_PREFILL || null;
+  var CUST = window.BR_CUSTOM || null;
+  var NOTIF = window.BR_NOTIFICATIONS || null;
   var CHART = window.BRChart || null;
 
   var COMPONENTS = {
@@ -473,10 +476,28 @@
 
   /* ==================== HOME ==================== */
 
+  function renderNotifications() {
+    var host = $("#home-notifications");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!NOTIF || !WP) return;
+    var plan = load("br_week", {});
+    var sessions = getSessions();
+    var logs = getLogs();
+    var loggedDates = Object.keys(logs).filter(function (d) { return d !== "schemaVersion"; });
+    var missed = NOTIF.missedSessions(plan, todayStr(), loggedDates, sessions);
+    if (!missed || !missed.length) return;
+    host.appendChild(el("div", { class: "card", style: "border-color:var(--warn);" }, [
+      el("h3", { class: "section-title", style: "font-size:1rem;", text: "You missed " + missed.length + " scheduled session(s)" }),
+      el("p", { class: "card-muted", text: missed.map(function (m) { return m.name || m.ref; }).join(", ") + "\u2003Reschedule them from the Weekly plan above." })
+    ]));
+  }
+
   function renderHome() {
     if (!DOC.overview) return;
     renderBodyWeight();
     renderWeeklyPlan();
+    renderNotifications();
     renderHomeInner();
   }
 
@@ -608,9 +629,47 @@
       STATE.filter.equipment);
   }
 
+  /* ---- custom user exercises (openGym adoption) ---- */
+  function getCustom() {
+    if (!CUST) return [];
+    return (load("br_custom_exercises", []) || []).map(CUST.make).filter(Boolean);
+  }
+  function saveCustom(list) { store("br_custom_exercises", list); }
+  function customLibrary() { return getCustom().map(function (c) { return CUST.toLibraryExercise(c); }); }
+  function allExercises() { return CUST ? EX.concat(customLibrary()) : EX; }
+  function exerciseById(id) {
+    var hit = EX.find(function (e) { return e.id === id; });
+    if (hit || !CUST) return hit || null;
+    return customLibrary().find(function (e) { return e.id === id; }) || null;
+  }
+
+  function renderCustomExercises() {
+    if (!CUST) return;
+    var list = $("#cex-list");
+    var status = $("#cex-status");
+    if (!list || !status) return;
+    list.innerHTML = "";
+    var customs = getCustom();
+    status.textContent = customs.length ? customs.length + " custom exercise(s)" : "";
+    customs.forEach(function (c) {
+      var detail = [c.equipment, c.muscles].filter(Boolean).join(" - ") || "Custom movement";
+      list.appendChild(el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);" }, [
+        el("div", {}, [
+          el("h4", { style: "margin:0;font-size:.95rem;", text: c.name }),
+          el("p", { class: "card-muted", style: "margin:0;font-size:.74rem;", text: detail })
+        ]),
+        el("button", { class: "btn btn-ghost btn-sm", text: "Delete", "aria-label": "Delete " + c.name, onclick: function () {
+          saveCustom(CUST.remove(getCustom(), c.id).list);
+          renderCustomExercises();
+          renderLibrary();
+        } })
+      ]));
+    });
+  }
+
   function filteredExercises() {
     var f = STATE.filter;
-    return EX.filter(function (e) {
+    return allExercises().filter(function (e) {
       if (f.component !== "all" && e.component !== f.component) return false;
       if (f.aft !== "all" && !(e.aft || []).some(function (a) { return a === f.aft; })) return false;
       if (f.equipment !== "all" && e.equipment !== f.equipment) return false;
@@ -675,6 +734,7 @@
 
   function renderLibrary() {
     populateSelects();
+    renderCustomExercises();
     var chips = $("#component-chips");
     chips.innerHTML = "";
     var addChip = function (label, val) {
@@ -694,7 +754,7 @@
     grid.innerHTML = "";
     list.forEach(function (ex) { grid.appendChild(exerciseCard(ex)); });
     $("#library-empty").classList.toggle("hidden", list.length > 0);
-    $("#lib-count").textContent = list.length + " of " + EX.length + " exercises";
+    $("#lib-count").textContent = list.length + " of " + allExercises().length + " exercises";
   }
 
   function openExerciseModal(id) {
@@ -714,7 +774,7 @@
   }
 
   function openGuideModal(kind, id) {
-    var ex = kind === "exercise" ? EX.find(function (e) { return e.id === id; }) : null;
+    var ex = kind === "exercise" ? exerciseById(id) : null;
     var drill = kind === "drill" ? (DOC.drills || []).find(function (d) { return d.id === id; }) : null;
     var item = ex || drill;
     if (!item) return;
@@ -1203,7 +1263,7 @@
         var d = (DOC.drills || []).find(function (x) { return x.id === v.split(":")[1]; });
         if (d) addItemToPhase(STATE.session, key, newItemFromDrill(d.id, key));
       } else {
-        var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
+        var ex = allExercises().find(function (x) { return "exercise:" + x.id === v; });
         if (ex) addItemToPhase(STATE.session, key, newItemFromExercise(ex));
       }
       renderSessionEditor();
@@ -1213,7 +1273,7 @@
       if (!v) { toast("Pick an exercise or drill"); return; }
       if (v.indexOf("drill:") === 0) { openDrillModal(v.split(":")[1]); }
       else {
-        var ex = EX.find(function (x) { return "exercise:" + x.id === v; });
+        var ex = allExercises().find(function (x) { return "exercise:" + x.id === v; });
         if (ex) openExerciseModal(ex.id);
       }
     } });
@@ -2349,6 +2409,19 @@
         pimport.value = "";
       };
       reader.readAsText(file);
+    });
+
+    var cexAdd = $("#cex-add");
+    if (cexAdd && CUST) cexAdd.addEventListener("click", function () {
+      var name = $("#cex-name").value.trim();
+      var rec = CUST.make({ name: name, equipment: $("#cex-equipment").value.trim(), muscles: $("#cex-muscles").value.trim() });
+      if (!rec) { toast("Enter an exercise name."); return; }
+      var res = CUST.upsert(getCustom(), rec);
+      saveCustom(res.list);
+      $("#cex-name").value = ""; $("#cex-equipment").value = ""; $("#cex-muscles").value = "";
+      renderCustomExercises();
+      renderLibrary();
+      toast("Added custom exercise: " + rec.name);
     });
 
     $("#new-session-btn").addEventListener("click", function () { STATE.session = blankSession(); STATE.sessionReadOnly = false; renderBuilder(); });

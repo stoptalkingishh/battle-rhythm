@@ -23,7 +23,8 @@
     br_bodyweight: "bodyweight.json",
     br_routines: "routines.json",
     br_week: "week.json",
-    br_exweights: "exweights.json"
+    br_exweights: "exweights.json",
+    br_custom_exercises: "custom-exercises.json"
   };
 
   function fileFor(key) { return FILE_MAP[key] || null; }

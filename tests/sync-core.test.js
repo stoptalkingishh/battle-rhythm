@@ -179,6 +179,7 @@ test("FILE_MAP keeps existing mappings and adds AFT + Phase-0 collections", () =
     br_bodyweight: "bodyweight.json",
     br_routines: "routines.json",
     br_week: "week.json",
-    br_exweights: "exweights.json"
+    br_exweights: "exweights.json",
+    br_custom_exercises: "custom-exercises.json"
   });
 });

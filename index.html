@@ -83,6 +83,7 @@
 
       <div class="section-head"><div><h2 class="section-title">Weekly plan</h2><p class="section-sub">Assign a saved session to each weekday; reschedule any day.</p></div></div>
       <div class="card" id="home-weekly"></div>
+      <div id="home-notifications"></div>
 
       <div class="section-head">
         <div>
@@ -104,6 +105,19 @@
         </div>
         <span class="tags" id="lib-count"></span>
       </div>
+
+      <div class="card card-accent" style="margin-bottom:20px;" id="custom-exercises-card">
+              <h3 class="section-title" style="font-size:1rem;">Custom exercises</h3>
+              <p class="card-muted" style="margin:4px 0 10px;font-size:.8rem;">Add your own movements — they appear in the library below and can be added to sessions.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input class="input" id="cex-name" placeholder="Name (required)" style="flex:1;min-width:160px;" />
+                <input class="input" id="cex-equipment" placeholder="Equipment" style="max-width:150px;" />
+                <input class="input" id="cex-muscles" placeholder="Muscles, e.g. Chest, triceps" style="flex:1;min-width:180px;" />
+                <button class="btn btn-gold btn-sm" id="cex-add">Add</button>
+              </div>
+              <div class="list" id="cex-list" style="margin-top:12px;"></div>
+              <p class="card-muted" id="cex-status" style="margin:8px 0 0;font-size:.74rem;"></p>
+            </div>
 
       <div class="card" style="margin-bottom:20px;">
         <div class="form-grid">
@@ -628,7 +642,10 @@
   <script src="js/data/bodyweight.js?v=battle-rhythm-34"></script>
   <script src="js/data/supersets.js?v=battle-rhythm-34"></script>
   <script src="js/data/weekly-plan.js?v=battle-rhythm-34"></script>
+  <script src="js/data/freestyle-prefill.js?v=battle-rhythm-35"></script>
+  <script src="js/data/custom-exercises.js?v=battle-rhythm-35"></script>
+  <script src="js/data/notifications.js?v=battle-rhythm-35"></script>
   <script src="js/chart.js?v=battle-rhythm-33"></script>
-  <script src="js/app.js?v=battle-rhythm-34"></script>
+  <script src="js/app.js?v=battle-rhythm-35"></script>
 </body>
 </html>
