@@ -1615,6 +1615,28 @@
     return box;
   }
 
+  /* Suggested working weight/reps for an empty strength result form, derived
+   from the automatic progression engine (last logged session + rule). */
+  function suggestedStrengthSet(itemId) {
+    if (!ADAPT || !PROG || !SET_H) return null;
+    var workouts = ADAPT.workoutsFromLogs(getLogs());
+    var lastE = null;
+    for (var i = workouts.length - 1; i >= 0; i--) {
+      var en = ((workouts[i] || {}).entries || []).filter(function (e) { return e.id === itemId; })[0];
+      if (en && (en.sets || []).some(function (s) { return s.done; })) { lastE = en; break; }
+    }
+    if (!lastE) return null;
+    var done = (lastE.sets || []).filter(function (s) { return s.done && !SET_H.isWarmupRow(s); });
+    if (!done.length) return null;
+    if (done.some(function (s) { return (s.sec || 0) > 0; })) return null; /* timed work: no weight prefill */
+    var w = done.reduce(function (m, s) { return Math.max(m, Number(s.w) || 0); }, 0);
+    if (!w) return null; /* bodyweight work progresses in reps, not load */
+    var r = done.reduce(function (m, s) { return Math.max(m, Number(s.r) || 0); }, 0);
+    var p = PROG.nextPrescription(workouts, { id: itemId, mode: "reps", prog: "linear", sets: done.length, reps: r, weight: w, inc: 5 }, {});
+    if (!p || p.kind === "off" || p.kind === "hold") return null;
+    return { weight: p.weight || w, reps: p.reps || r };
+  }
+
   function buildResultForm(item, res, date, s) {
     var kind = TS_OK ? TS.resultKind(item) : "generic";
     var a = (res && res.actual) || {};
@@ -1651,7 +1673,14 @@
       if (Array.isArray(a.sets) && a.sets.length) {
         rows = a.sets.map(function (x) { return { weight: String(x ? (x.weight || "") : ""), reps: String(x ? (x.reps || "") : ""), warmup: !!(x && x.warmup) }; });
       } else {
-        rows = [{ weight: a.weight || "", reps: a.reps || "", warmup: false }];
+        var sug = (a.weight || a.reps) ? null : suggestedStrengthSet(item.id);
+        if (sug) {
+          var n = Math.max(1, Number(item.sets) || 1);
+          rows = [];
+          for (var k = 0; k < n; k++) rows.push({ weight: String(sug.weight), reps: String(sug.reps), warmup: false });
+        } else {
+          rows = [{ weight: a.weight || "", reps: a.reps || "", warmup: false }];
+        }
       }
       rowsHost = el("div", {});
       form.appendChild(rowsHost);
