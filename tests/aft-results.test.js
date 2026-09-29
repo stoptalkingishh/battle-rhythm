@@ -4,6 +4,8 @@
  */
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
 const AR = require("../js/data/aft-results.js");
 
 /* ---------------- Validation / normalisation ---------------- */
@@ -68,6 +70,67 @@ test("remove drops only the matching id", () => {
   assert.equal(r.changed, true);
   assert.equal(r.list.length, 1);
   assert.equal(r.list[0].id, b.entry.id);
+});
+
+/* remove() and upsert() return a { list, changed } wrapper, but the store
+ * layer persists a bare array (js/app.js saveAftResults -> store(KEYS.aft)).
+ * Persisting the wrapper instead of `.list` was a live data-loss bug: the
+ * object survived the JSON round-trip, getAftResults()'s Array.isArray guard
+ * then returned [] , and the Drive merge threw in mergeById. These tests pin
+ * the contract so a call site cannot regress to storing the wrapper. */
+test("the value a delete persists is a bare array, not the {list,changed} wrapper", () => {
+  const a = AR.upsert([], { event: "MDL", date: "2026-01-01", value: "285" });
+  const b = AR.upsert(a.list, { event: "2MR", date: "2026-01-01", value: "16:00" });
+  const c = AR.upsert(b.list, { event: "SDC", date: "2026-01-02", value: "210" });
+
+  const stored = AR.remove(c.list, b.entry.id).list;
+
+  assert.ok(Array.isArray(stored), "what gets stored must be an array");
+  assert.equal(stored.length, 2, "only the deleted record is dropped");
+  assert.equal(stored.some((r) => r.id === b.entry.id), false, "deleted id is gone");
+
+  // Replay the localStorage round-trip plus getAftResults()'s guards.
+  const roundTripped = JSON.parse(JSON.stringify({ v: stored })).v;
+  const readBack = Array.isArray(roundTripped)
+    ? roundTripped.map((r) => AR.make(r)).filter(Boolean)
+    : [];
+  assert.equal(readBack.length, 2, "survivors still read back after a reload");
+});
+
+test("a delete leaves the store mergeable by the Drive sync layer", () => {
+  const S = require("../js/sync-core.js");
+  const a = AR.upsert([], { event: "MDL", date: "2026-01-01", value: "285" });
+  const b = AR.upsert(a.list, { event: "SDC", date: "2026-01-02", value: "210" });
+  const stored = AR.remove(b.list, b.entry.id).list;
+
+  const merged = S.mergeFor("br_aft_results", stored, a.list);
+  assert.ok(Array.isArray(merged), "merge must not throw on the stored shape");
+  assert.equal(merged.length, 1);
+  assert.equal(merged[0].id, a.entry.id);
+});
+
+/* The two tests above exercise the module contract, which is what makes the
+ * bug invisible from here: they pass whether or not app.js unwraps `.list`.
+ * This one reads the call site itself, so deleting `.list` in app.js fails the
+ * suite rather than silently shipping. upsert/remove return {list, changed};
+ * store() persists a bare array. */
+test("app.js unwraps .list at every AFT mutate-then-store call site", () => {
+  const src = fs.readFileSync(path.join(__dirname, "..", "js", "app.js"), "utf8");
+  // Whole statement, so a nested `.list` is not cut off by the first `)`.
+  const statements = src.split(/;\s*\n/).filter((s) => /\.(upsert|remove)\s*\(/.test(s));
+  const callSites = statements.filter((s) =>
+    /(?:saveAftResults|saveBW|saveCustom)\s*\(/.test(s)
+  );
+
+  assert.ok(callSites.length > 0, "found at least one mutate-then-store call site");
+
+  const offenders = callSites.filter((s) => !/\.(list|entries)\s*\)?\s*\)?\s*;?\s*$/.test(s.trim()));
+  assert.deepEqual(
+    offenders,
+    [],
+    "persisting the {list, changed} wrapper loses every record on read. Unwrap `.list`:\n  " +
+      offenders.join("\n  ")
+  );
 });
 
 /* ---------------- Ordering / insights ---------------- */

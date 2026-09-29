@@ -2059,7 +2059,7 @@
             $("#aft-result-value").focus();
           } }),
           el("button", { class: "btn btn-danger btn-sm", text: "Delete", onclick: function () {
-            saveAftResults(AFT_RESULTS.remove(getAftResults(), record.id));
+            saveAftResults(AFT_RESULTS.remove(getAftResults(), record.id).list);
             renderAftResults();
           } })
         ])
