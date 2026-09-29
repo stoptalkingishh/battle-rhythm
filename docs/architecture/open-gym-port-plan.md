@@ -2,7 +2,25 @@
 
 Target repo: `github.com/stoptalkingishh/battle-rhythm`
 Reference code: `gitea.com/DuarteSantos/openGym` (cloned to `/opt/data/workspaces/opengym2`)
-Status: **planning** · Branch to develop on: `feature/opengym-adoption`
+Status: **shipped** · Phases 0-4 merged to `main` · No `feature/opengym-adoption` branch was ever created
+
+> **What actually landed.** All phases below shipped on `main`; the planned
+> `feature/opengym-adoption` branch was never created, and several files landed
+> under different names than this plan predicted:
+>
+> | Planned | Actually shipped |
+> |---|---|
+> | `js/data/superset.js` | `js/data/supersets.js` |
+> | `js/wakelock.js` | `js/data/wakelock.js` |
+> | `js/data/week.js` | `js/data/weekly-plan.js` |
+> | `js/heatmap.js` | `js/data/heatmap.js` |
+> | `js/push.js` | `js/data/notifications.js` |
+> | `js/data/effort.js` | never built |
+>
+> The per-phase rationale below is left as written — it is still the accurate
+> record of *why* each module was shaped the way it was, even where the
+> filename or the plan itself did not survive contact with the implementation.
+
 
 This document explains **what** we adopt, **why**, and **exactly how** (file-by-file) we
 port each feature into Battle Rhythm's architecture. It is grounded in the real openGym

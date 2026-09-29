@@ -1,5 +1,39 @@
 # Battle Rhythm Drive-First Roadmap
 
+> ## ⚠️ STATUS: NOT ADOPTED — superseded design record
+>
+> **This document was never adopted and does not describe the shipped app.**
+> It is kept only as a record of a design that was considered and rejected.
+> Read it for the reasoning, not as spec.
+>
+> **The offline-first guest model won.** The "Storage & sync" section in
+> [`README.md`](../../README.md) is the source of truth for what the app
+> actually does.
+>
+> This roadmap **directly contradicts** what shipped, on these points:
+>
+> - It lists *"No durable guest-mode records"* as **Prohibited** and requires
+>   a Drive connection before creating any data. **Shipped instead:** full
+>   offline guest mode with no sign-in UI. Everything lives in `localStorage`
+>   and nothing is written to Drive until you opt in. The prohibition was
+>   inverted.
+> - It describes `manifest.json` and `workout-history.json` as the storage
+>   format. **Neither was ever implemented.** The real files are
+>   `sessions.json`, `regiments.json`, `tracker.json` and `groups.json`.
+> - It specifies **Plausible analytics**. **Never implemented.** No analytics
+>   of any kind ship in the app.
+> - It treats Drive as *"the only durable cloud record system"* and local
+>   storage as *"never the durable source of truth"*. **Shipped instead:**
+>   `localStorage` is the source the UI renders from, with Drive as an
+>   optional sync target behind a durable outbox.
+>
+> The reasoning in the sections below is retained because it is a useful
+> record of a rejected design and of the privacy constraints that were still
+> adopted (no backend, no user database, no selling or sharing user data,
+> no silent overwrite of concurrent Drive edits). Treat those constraints as
+> live; treat the storage contract above as historical.
+
+
 ## Purpose
 
 Battle Rhythm remains an unofficial, doctrine-first H2F training planner. FM 7-22, ATP 7-22.01, ATP 7-22.02, Army directives, and the existing doctrine content remain the reference for prescribed training. User-entered results are personal records, not doctrine and not medical advice.
