@@ -344,8 +344,8 @@
     lines.push(r.name.toUpperCase());
     lines.push("Period: " + r.period);
     lines.push("------------------------------------");
-    r.days.forEach(function (day) {
-      if (!day.sessions.length) return;
+    (r.days || []).forEach(function (day) {
+      if (!day.sessions || !day.sessions.length) return;
       lines.push("");
       lines.push(day.name.toUpperCase() + ":");
       day.sessions.forEach(function (sid) {
@@ -842,7 +842,13 @@
 
   /* ==================== BUILDER ==================== */
 
-  function getSessions() { return load(KEYS.sessions, []); }
+  /* Reads go through the plan-share normalizers: a corrupt sessions.json
+   * restored from Drive (or written by an older build) must never reach the
+   * Builder as an unrenderable record. */
+  function getSessions() {
+    var list = load(KEYS.sessions, []);
+    return (PLAN && PLAN.normalizeSessionList) ? PLAN.normalizeSessionList(list) : (Array.isArray(list) ? list : []);
+  }
   function saveSessions(list) { store(KEYS.sessions, list); }
   function seedPresets() {
     var presets = window.BR_PRESET_WORKOUTS || [];
@@ -860,7 +866,10 @@
     });
     if (added) saveSessions(existing);
   }
-  function getRegiments() { return load(KEYS.regiments, []); }
+  function getRegiments() {
+    var list = load(KEYS.regiments, []);
+    return (PLAN && PLAN.normalizeRegimentList) ? PLAN.normalizeRegimentList(list) : (Array.isArray(list) ? list : []);
+  }
   function saveRegiments(list) { store(KEYS.regiments, list); }
 
   /* ---- password protection ---- */
@@ -1447,8 +1456,9 @@
       host.appendChild(el("p", { class: "card-muted", text: "Save some sessions first, then assign them to days." }));
       return;
     }
-    r.days.forEach(function (day) {
+    (r.days || []).forEach(function (day) {
       var chips = el("div", { class: "chip-row" });
+      if (!day.sessions) day.sessions = [];
       saved.forEach(function (s) {
         var active = day.sessions.indexOf(s.id) !== -1;
         var chip = el("button", {
@@ -1479,7 +1489,7 @@
     host.innerHTML = "";
     $("#regiments-empty").classList.toggle("hidden", all.length > 0);
     all.forEach(function (r) {
-      var days = r.days.filter(function (d) { return d.sessions.length; });
+      var days = (r.days || []).filter(function (d) { return d.sessions && d.sessions.length; });
       var sub = days.length ? days.map(function (d) { return d.name + ": " + d.sessions.length + " sessions"; }).join("  |  ") : "No sessions assigned";
       var card = el("div", { class: "card card-accent" }, [
         el("div", { class: "tag-row", style: "margin-bottom:8px;" }, [tag(r.period)]),
@@ -2412,6 +2422,11 @@
     if (pimport && PLAN) pimport.addEventListener("change", function (event) {
       var file = event.target.files && event.target.files[0];
       if (!file) return;
+      if (PLAN.MAX_FILE_BYTES && file.size > PLAN.MAX_FILE_BYTES) {
+        toast("That plan file is too large to import.");
+        pimport.value = "";
+        return;
+      }
       var reader = new FileReader();
       reader.onload = function () {
         try {
