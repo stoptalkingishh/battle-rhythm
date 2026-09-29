@@ -8,7 +8,7 @@
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
 
-  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker", aft: "br_aft_results", trackerActive: "br_tracker_active" };
+  var KEYS = { sessions: "br_sessions", regiments: "br_regiments", logs: "br_tracker", aft: "br_aft_results", trackerActive: "br_tracker_active", bwGoal: "br_bw_goal" };
   var TS = window.BRTrackerSchema || {};
   var AFT_RESULTS = window.BRAFTResults || null;
   var TRACKER_SCHEMA = (TS && TS.SCHEMA_VERSION) || 2;
@@ -31,6 +31,7 @@
   var CUST = window.BR_CUSTOM || null;
   var NOTIF = window.BR_NOTIFICATIONS || null;
   var CHART = window.BRChart || null;
+  var DOM_ATTRS = window.BR_DOM_ATTRS || null;
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -119,10 +120,12 @@
     var node = document.createElement(tag);
     if (attrs) {
       Object.keys(attrs).forEach(function (k) {
+        if (attrs[k] == null) return;
         if (k === "class") node.className = attrs[k];
         else if (k === "html") node.innerHTML = attrs[k];
         else if (k === "text") node.textContent = attrs[k];
         else if (k.indexOf("on") === 0) node.addEventListener(k.slice(2), attrs[k]);
+        else if (DOM_ATTRS) DOM_ATTRS.apply(node, k, attrs[k]);
         else node.setAttribute(k, attrs[k]);
       });
     }
@@ -359,8 +362,9 @@
 
   function loadBW() { return (load("br_bodyweight", []) || []).map(function (e) { return BW.make(e); }).filter(Boolean); }
   function saveBW(v) { store("br_bodyweight", v); }
-  function getBWGoal() { try { return JSON.parse(localStorage.getItem("br_bw_goal")); } catch (e) { return null; } }
-  function saveBWGoal(g) { try { localStorage.setItem("br_bw_goal", JSON.stringify(g)); } catch (e) {} }
+  function getBWGoal() { return BW ? BW.normalizeGoal(load(KEYS.bwGoal, null)) : null; }
+  function saveBWGoal(g) { store(KEYS.bwGoal, BW ? BW.normalizeGoal(g) : g); }
+  function clearBWGoal() { try { localStorage.removeItem(KEYS.bwGoal); } catch (e) {} }
 
   function renderBodyWeight() {
     var host = $("#home-bodyweight");
@@ -370,17 +374,18 @@
     var entries = loadBW();
     var goal = getBWGoal();
     var unit = (goal && goal.unit) || "lb";
-    var cur = BW.latest(entries);
+    var deltas = BW.withDeltas(entries, goal);
+    var cur = deltas.length ? deltas[deltas.length - 1] : null;
 
     var top = el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;" });
     top.appendChild(el("strong", { text: cur ? ("Current: " + cur.weight + " " + (cur.unit || unit)) : "No weigh-ins yet." }));
-    if (goal) top.appendChild(el("span", { class: "tags", text: "Goal " + goal.value + " " + (goal.unit || unit) }));
+    if (goal) top.appendChild(el("span", { class: "tags", text: "Goal " + goal.weight + " " + (goal.unit || unit) }));
     if (goal && cur) top.appendChild(el("span", { class: "tags", style: "color:" + (BW.towardGoal(goal, cur.weight, cur.change || 0) ? "var(--good)" : "var(--warn)") + ";", text: "On/off track toward goal" }));
     host.appendChild(top);
 
     var chartBox = el("div", {});
     var points = BW.series(entries);
-    if (points.length) CHART.lineChart(chartBox, { points: points, h: 130, unit: unit, goal: goal ? goal.value : null });
+    if (points.length) CHART.lineChart(chartBox, { points: points, h: 130, unit: unit, goal: goal ? goal.weight : null });
     else chartBox.appendChild(el("p", { class: "card-muted", text: "Log a weigh-in to see your trend." }));
     host.appendChild(chartBox);
 
@@ -399,18 +404,18 @@
     });
     host.appendChild(el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px;" }, [dateIn, weightIn, unitSel, noteIn, logBtn]));
 
-    var goalIn = el("input", { class: "input", type: "number", step: "0.1", placeholder: goal ? String(goal.value) : "Goal weight" });
+    var goalIn = el("input", { class: "input", type: "number", step: "0.1", placeholder: goal ? String(goal.weight) : "Goal weight" });
     var goalSet = el("button", { class: "btn btn-ghost btn-sm", text: goal ? "Update goal" : "Set goal" });
     goalSet.addEventListener("click", function () {
       var v = parseFloat(goalIn.value);
       if (!isFinite(v) || v <= 0) { toast("Enter a goal weight."); return; }
-      saveBWGoal({ value: v, unit: unit }); renderBodyWeight(); toast("Goal set");
+      saveBWGoal({ weight: v, unit: unit }); renderBodyWeight(); toast("Goal set");
     });
     var goalClear = el("button", { class: "btn btn-ghost btn-sm", text: "Clear goal", style: goal ? "" : "display:none;" });
-    goalClear.addEventListener("click", function () { try { localStorage.removeItem("br_bw_goal"); } catch (e) {} renderBodyWeight(); });
+    goalClear.addEventListener("click", function () { clearBWGoal(); renderBodyWeight(); });
     host.appendChild(el("div", { style: "display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;" }, [el("span", { class: "card-muted", text: "Goal:" }), goalIn, goalSet, goalClear]));
 
-    var recents = BW.withDeltas(entries, goal).slice(-4).reverse();
+    var recents = deltas.slice(-4).reverse();
     if (recents.length) {
       var list = el("div", { class: "list", style: "margin-top:8px;" });
       recents.forEach(function (e) {
@@ -623,7 +628,7 @@
       [["all", "All AFT events"], ["MDL", "MDL"], ["HRP", "HRP"], ["SDC", "SDC"], ["PLK", "PLK"], ["2MR", "2MR"]],
       STATE.filter.aft);
     var eq = {};
-    EX.forEach(function (e) { if (e.equipment) eq[e.equipment] = 1; });
+    allExercises().forEach(function (e) { if (e.equipment) eq[e.equipment] = 1; });
     fillSelect($("#filter-equipment"),
       [["all", "All equipment"]].concat(Object.keys(eq).sort().map(function (k) { return [k, k]; })),
       STATE.filter.equipment);
@@ -641,6 +646,13 @@
     var hit = EX.find(function (e) { return e.id === id; });
     if (hit || !CUST) return hit || null;
     return customLibrary().find(function (e) { return e.id === id; }) || null;
+  }
+  /* id -> exercise across the built-in and custom libraries. Rebuilt per call
+   * because the custom library is live state in localStorage. */
+  function exerciseIndex() {
+    var out = {};
+    allExercises().forEach(function (e) { out[e.id] = e; });
+    return out;
   }
 
   function renderCustomExercises() {
@@ -854,7 +866,12 @@
   /* ---- password protection ---- */
   function getSettings() { return load("br_settings", {}); }
   function saveSettings(s) { store("br_settings", s); }
-  function getAftResults() { return AFT_RESULTS ? AFT_RESULTS.normalizeList(load(KEYS.aft, [])) : []; }
+  function getAftResults() {
+    if (!AFT_RESULTS) return [];
+    var raw = load(KEYS.aft, []);
+    if (!Array.isArray(raw)) return [];
+    return raw.map(function (x) { return AFT_RESULTS.make(x); }).filter(Boolean);
+  }
   function saveAftResults(list) { store(KEYS.aft, list); }
   function hashPw(str) {
     var h = 5381;
@@ -1116,7 +1133,7 @@
   }
 
   function addToSession(exId) {
-    var ex = EX.find(function (e) { return e.id === exId; });
+    var ex = exerciseById(exId);
     if (!ex) return;
     if (!STATE.session) STATE.session = blankSession();
     var key = ex.id === "mb8-recovery-drill-stretches" ? "recovery" : ex.component === "mobility-stability" ? "prep" : "activity";
@@ -1204,7 +1221,7 @@
       if (item.type === "exercise") gridFields.push(machineField(item, readOnly));
       var actions = el("div", { style: "display:flex;align-items:center;gap:6px;" });
       if (item.type === "exercise") {
-        if (EX.some(function (e) { return e.id === item.ref; })) {
+        if (exerciseById(item.ref)) {
           actions.appendChild(el("button", { class: "btn-icon", html: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>', title: "Preview workout guide", "aria-label": "Preview " + item.label, onclick: function () { openExerciseModal(item.ref); } }));
         }
       } else if (item.type === "drill") {
@@ -1253,7 +1270,7 @@
     (DOC.drills || []).forEach(function (d) {
       select.appendChild(el("option", { value: "drill:" + d.id, text: "[Drill] " + d.name }));
     });
-    EX.forEach(function (e) {
+    allExercises().forEach(function (e) {
       select.appendChild(el("option", { value: "exercise:" + e.id, text: e.name + " (" + componentLabel(e.component) + ")" }));
     });
     var btn = el("button", { class: "btn btn-ghost btn-sm", text: "Add", onclick: function () {
@@ -1775,7 +1792,7 @@
       var a = r.actual || {};
       if (Array.isArray(a.sets) && a.sets.length) {
         a.sets.forEach(function (x) {
-          if (x && x.warmup) { t.sets += 1; return; } /* count the set, drop it from reps/volume */
+          if (x && x.warmup) return; /* warm-up sets still count as a set, just not toward reps/volume */
           var w = Number(x && x.weight) || 0;
           var rp = Number(x && x.reps) || 0;
           if (w > 0) t.volume += w * rp;
@@ -2203,8 +2220,7 @@
       return;
     }
     var select = $("#progress-ex");
-    var exIndex = {};
-    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var exIndex = exerciseIndex();
     var P = progressData();
     var opts = P.ids.map(function (id) {
       var ex = exIndex[id];
@@ -2232,8 +2248,7 @@
   function renderProgressFor(exId) {
     if (!exId) return;
     var P = progressData();
-    var exIndex = {};
-    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var exIndex = exerciseIndex();
     var points = ONE_RM.e1rmSeries(P.workouts, exId);
     var best = ONE_RM.best1RM(P.workouts, exId);
     var chartEl = $("#progress-chart");
@@ -2336,8 +2351,7 @@
     if (!host) return;
     host.innerHTML = "";
     if (!REC || !MUSC) return;
-    var exIndex = {};
-    EX.forEach(function (e) { exIndex[e.id] = e; });
+    var exIndex = exerciseIndex();
     var enriched = (baseWorkouts || []).map(function (w) {
       return {
         d: w.d, t: w.t,
@@ -2619,6 +2633,7 @@
       if (m) m.addEventListener("click", function (ev) {
         if (ev.target.classList.contains("modal")) {
           ev.target.classList.add("hidden");
+          pendingAuth = null;
           if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
         }
       });
@@ -2628,6 +2643,7 @@
       if (!openModal) return;
       if (event.key === "Escape" && openModal) {
         openModal.classList.add("hidden");
+        pendingAuth = null;
         if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
         return;
       }

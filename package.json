@@ -2,7 +2,7 @@
   "name": "battle-rhythm",
   "version": "0.1.0",
   "private": true,
-  "description": "Battle Rhythm training app. No build system; browser scripts loaded directly from index.html. Pure sync logic is unit-tested with Node built-in node:test.",
+  "description": "Battle Rhythm training app. No build system; browser scripts loaded directly from index.html. Pure logic modules are unit-tested with Node built-in node:test.",
   "license": "MIT",
   "author": "stoptalkingishh",
   "repository": {
@@ -26,6 +26,8 @@
   ],
   "scripts": {
     "test": "node --test",
-    "check": "node scripts/check-syntax.mjs"
+    "check": "node scripts/check-syntax.mjs",
+    "check:bust": "node scripts/check-cache-buster.mjs",
+    "check:config": "node scripts/check-config.mjs"
   }
 }
