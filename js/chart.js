@@ -20,6 +20,23 @@
 
   function toNum(v) { return Number(v); }
 
+  /* This module builds markup by string concatenation, so every caller-supplied
+   * string must go through esc() before it lands in the DOM. Kept local so the
+   * file stays dependency-free for node:test. */
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  /* isFinite(null) and isFinite("") are true, so coerce first: a null/undefined/
+   * non-numeric goal must be treated as "no goal" rather than 0. */
+  function numGoal(v) {
+    var n = Number(v);
+    return (typeof v === "number" || (typeof v === "string" && v.trim() !== "")) &&
+      isFinite(n) ? n : null;
+  }
+
   /* Pure domain + mapping math. Exported for tests; the renderer uses it. */
   function computeScale(points, goal) {
     var pts = (points || []).slice();
@@ -28,7 +45,8 @@
     var ys = use.map(function (p) { return toNum(p.y); });
     var ymin = Math.min.apply(null, ys);
     var ymax = Math.max.apply(null, ys);
-    if (isFinite(goal)) { ymin = Math.min(ymin, goal); ymax = Math.max(ymax, goal); }
+    var g = numGoal(goal);
+    if (g !== null) { ymin = Math.min(ymin, g); ymax = Math.max(ymax, g); }
     if (ymin === ymax) { ymin -= 1; ymax += 1; }
     var pad = (ymax - ymin) * 0.12;
     ymin -= pad; ymax += pad;
@@ -61,13 +79,14 @@
     var pts = opts.points || [];
     if (!pts.length) {
       container.innerHTML = '<div class="chart-empty">' +
-        (opts.emptyLabel || "No progress logged yet.") + "</div>";
+        esc(opts.emptyLabel || "No progress logged yet.") + "</div>";
       return container;
     }
-    var H = opts.h || 150;
-    var unit = opts.unit ? " " + opts.unit : "";
-    var color = opts.color || "var(--gold)";
-    var goal = opts.goal;
+    var hn = Number(opts.h);
+    var H = isFinite(hn) && hn > 0 ? hn : 150;
+    var unit = opts.unit ? " " + esc(opts.unit) : "";
+    var color = esc(opts.color || "var(--gold)");
+    var goal = numGoal(opts.goal);
     var s = computeScale(pts, goal);
     var path = pts.map(function (p, i) {
       return (i ? "L" : "M") + s.X(p.t).toFixed(1) + " " + s.Y(p.y, H).toFixed(1);
@@ -76,7 +95,7 @@
       return '<circle cx="' + s.X(p.t).toFixed(1) + '" cy="' + s.Y(p.y, H).toFixed(1) +
         '" r="3" fill="' + color + '" />';
     }).join("");
-    var goalLine = isFinite(goal)
+    var goalLine = goal !== null
       ? '<line x1="16" x2="' + (W - 8) + '" y1="' + s.Y(goal, H).toFixed(1) + '" y2="' + s.Y(goal, H).toFixed(1) +
         '" stroke="var(--gold)" stroke-dasharray="4 4" stroke-width="1" opacity="0.7" />'
       : "";
@@ -89,7 +108,7 @@
     }).join("");
     container.innerHTML =
       '<svg viewBox="0 0 ' + W + " " + H + '" class="chart-svg" role="img" ' +
-      'aria-label="' + (opts.ariaLabel || "progress chart") + '">' +
+      'aria-label="' + esc(opts.ariaLabel || "progress chart") + '">' +
       yAxis + goalLine +
       '<path d="' + path + '" fill="none" stroke="' + color + '" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round" />' +
       dots +
@@ -108,12 +127,12 @@
 
   /* First/last point-date labels along the bottom axis. */
   function xLabels(pts, s, H) {
-    var first = pts[0].d ? pts[0].d.slice(0, 7) : shortT(pts[0].t);
-    var last = pts[pts.length - 1].d ? pts[pts.length - 1].d.slice(0, 7) : shortT(pts[pts.length - 1].t);
+    var first = pts[0].d ? String(pts[0].d).slice(0, 7) : shortT(pts[0].t);
+    var last = pts[pts.length - 1].d ? String(pts[pts.length - 1].d).slice(0, 7) : shortT(pts[pts.length - 1].t);
     var ly = H - 5;
     function el(x, anchor, txt) {
       return '<text x="' + x + '" y="' + ly + '" text-anchor="' + anchor +
-        '" font-size="9" fill="var(--text-muted)">' + txt + "</text>";
+        '" font-size="9" fill="var(--text-muted)">' + esc(txt) + "</text>";
     }
     return el(16, "start", first) + el(W - 8, "end", last);
   }

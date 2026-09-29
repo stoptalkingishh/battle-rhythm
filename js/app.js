@@ -359,7 +359,14 @@
 
   function loadBW() { return (load("br_bodyweight", []) || []).map(function (e) { return BW.make(e); }).filter(Boolean); }
   function saveBW(v) { store("br_bodyweight", v); }
-  function getBWGoal() { try { return JSON.parse(localStorage.getItem("br_bw_goal")); } catch (e) { return null; } }
+  function getBWGoal() {
+    var g = null;
+    try { g = JSON.parse(localStorage.getItem("br_bw_goal")); } catch (e) { return null; }
+    if (!g || typeof g !== "object" || Array.isArray(g)) return null;
+    var v = Number(g.value);
+    if (!isFinite(v) || v <= 0) return null;
+    return { value: v, unit: g.unit === "kg" ? "kg" : "lb" };
+  }
   function saveBWGoal(g) { try { localStorage.setItem("br_bw_goal", JSON.stringify(g)); } catch (e) {} }
 
   function renderBodyWeight() {
@@ -2209,7 +2216,8 @@
     var opts = P.ids.map(function (id) {
       var ex = exIndex[id];
       return { id: id, label: ex ? ex.name : id };
-    }).sort(function (a, b) { return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; });
+    }).filter(function (o) { return !!safeExId(o.id); })
+      .sort(function (a, b) { return a.label < b.label ? -1 : a.label > b.label ? 1 : 0; });
 
     select.innerHTML = "";
     if (!opts.length) {
@@ -2229,8 +2237,16 @@
     renderProgressFor(current);
   }
 
+  /* Exercise ids reach the chart's aria-label and become DOM/localStorage keys,
+   * so accept only the shape we actually generate. */
+  var EX_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+  function safeExId(id) {
+    return typeof id === "string" && EX_ID_RE.test(id) ? id : "";
+  }
+
   function renderProgressFor(exId) {
     if (!exId) return;
+    var labelId = safeExId(exId);
     var P = progressData();
     var exIndex = {};
     EX.forEach(function (e) { exIndex[e.id] = e; });
@@ -2240,7 +2256,7 @@
     if (!points.length) {
       chartEl.innerHTML = '<div class="chart-empty">No estimable sets (weight + reps) for this exercise yet.</div>';
     } else {
-      CHART.lineChart(chartEl, { points: points, h: 170, unit: "", goal: null, ariaLabel: exId + " estimated 1RM" });
+      CHART.lineChart(chartEl, { points: points, h: 170, unit: "", goal: null, ariaLabel: (labelId || "exercise") + " estimated 1RM" });
     }
     $("#progress-best").textContent = best
       ? "All-time best estimated 1RM: " + best.est + " (from " + best.w + "\u00d7" + best.r + " on " + (best.d || "") + ")."
