@@ -1,0 +1,118 @@
+name: CI
+
+# Runs the full check suite on every push to main and every PR targeting main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Default-deny: the CI job only ever needs to read the repository. Write
+# scopes are granted to the deploy job alone, below.
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Test and verify
+    runs-on: ubuntu-latest
+    steps:
+      # Actions are pinned to release tags rather than commit SHAs. This is a
+      # single-maintainer repo where a readable diff of the workflow is worth
+      # more than SHA-pinning; revisit if the project gains outside contributors.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # node:test and `node --test` need Node 20+. Pinned to the LTS major
+          # rather than floating to `latest`, so the runtime cannot drift under
+          # the suite between runs.
+          node-version: 20
+
+      # No `npm install` step on purpose. The project has zero dependencies and
+      # no lockfile, so there is nothing to install; adding `npm ci` would fail
+      # for want of package-lock.json, and `npm install` would only create an
+      # empty node_modules. If a dependency is ever added, commit a lockfile and
+      # add `npm ci --no-audit --no-fund` here.
+      - name: Unit tests
+        run: npm test
+
+      - name: Syntax check
+        run: npm run check
+
+      # Every local asset in index.html must share one ?v=battle-rhythm-N.
+      # Mismatched tags let a warm browser cache mix a new app.js with an old
+      # sync-core.js, which fails at runtime rather than at build time.
+      - name: Cache-buster check
+        run: node scripts/check-cache-buster.mjs
+
+      # js/config.js is tracked; keep its Google credentials empty so a real
+      # client id or API key cannot be committed by accident.
+      - name: Config guard
+        run: node scripts/check-config.mjs
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: ci
+    runs-on: ubuntu-latest
+    # Only publish from main on a real push — never from a fork PR.
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Scoped to this job rather than the workflow: a workflow-level
+    # concurrency group would also cancel in-progress PR checks, and a PR run
+    # must never be able to cancel a main deploy (or vice versa). Cancelling
+    # here means a newer commit can never be overtaken by an older deploy.
+    concurrency:
+      group: pages
+      cancel-in-progress: true
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Explicit whitelist, never `cp -R . _site/`. The repository also holds
+      # source and legal-analysis material that has no business in a public
+      # static site: blender/ (MakeHuman/Blender render pipeline),
+      # research/ (web-reference docs), docs/ (architecture notes including a
+      # rejected design), tests/ and scripts/. Uploading "." would publish all
+      # of it. Verified against index.html: every local reference resolves
+      # under js/, css/ or assets/ only.
+      - name: Stage site files
+        run: |
+          mkdir -p _site
+          for entry in index.html assets css js; do
+            cp -R "$entry" _site/
+          done
+          # Pages runs Jekyll by default, which drops files and directories
+          # beginning with an underscore. Nothing here uses that convention,
+          # but the marker keeps the publish path stable if that changes.
+          touch _site/.nojekyll
+
+      - name: Verify no source material was staged
+        run: |
+          leaked=""
+          for dir in blender research docs tests scripts; do
+            if [ -e "_site/$dir" ]; then
+              leaked="$leaked $dir"
+            fi
+          done
+          if [ -n "$leaked" ]; then
+            echo "::error::source-only material leaked into the artifact:$leaked"
+            exit 1
+          fi
+          echo "Staged: $(find _site -type f | wc -l) files"
+          ls _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
