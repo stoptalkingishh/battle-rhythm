@@ -1,0 +1,100 @@
+name: Bug report
+description: Something in the app behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Battle Rhythm runs fully offline in guest mode. Almost every report
+        falls into one of two buckets, and the two questions below are what
+        everything else branches on — please answer both.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Is this a doctrine/content bug or an app bug?
+      description: >
+        A content bug is wrong or missing training data — an exercise, a
+        component, an AFT standard, a citation. An app bug is the software
+        behaving wrongly around that data.
+      options:
+        - "Doctrine / content — the data itself is wrong or missing"
+        - "App — the software behaves wrongly"
+        - "Not sure"
+      validations:
+        required: true
+
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Are you offline (guest mode) or signed in to Google Drive?
+      description: >
+        Offline means no keys configured and everything in localStorage.
+        Drive-synced means you signed in via Settings. Sync bugs frequently
+        only appear in one of these two modes.
+      options:
+        - "Offline / guest mode (no Drive sign-in)"
+        - "Signed in to Google Drive"
+        - "Both"
+        - "Not applicable"
+      validations:
+        required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what actually happened.
+      validations:
+        required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the Library tab
+        2. Search for "deadlift"
+        3. Click the guide
+        4. ...
+      validations:
+        required: true
+
+  - type: input
+    id: tab
+    attributes:
+      label: Which tab / feature?
+      placeholder: "Library, Builder, Tracker, Home, Doctrine, Progress, Settings"
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: "Chrome 131 on Windows 11, iOS Safari on iPhone 15"
+      validations:
+        required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output
+      description: >
+        If the console shows an error, paste it. F12 → Console. This is the
+        fastest route to a real diagnosis for a no-build app.
+      render: text
+
+  - type: checkboxes
+    id: cache
+    attributes:
+      label: Cache
+      options:
+        - label: I tried a hard reload (Ctrl/Cmd+Shift+R) and the problem persisted.
+          required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: >
+        Screenshots, the exercise/session name involved, or whether it used to
+        work.

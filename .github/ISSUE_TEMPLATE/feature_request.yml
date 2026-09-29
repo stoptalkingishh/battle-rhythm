@@ -1,0 +1,77 @@
+name: Feature request
+description: Suggest a capability for Battle Rhythm.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This app is a no-build static site with **zero npm dependencies** that
+        ships to GitHub Pages as-is. Please keep proposals inside that
+        envelope — no framework, no backend, no build step.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: >
+        Describe the situation you are in, not the solution you have in mind.
+        A good problem statement survives a different implementation.
+      validations:
+        required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      validations:
+        required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - "Library / exercises"
+        - "Session builder"
+        - "Regiments"
+        - "Tracker"
+        - "Home (body weight, weekly plan, reminders)"
+        - "Progress / charts"
+        - "Doctrine content"
+        - "Google Drive backup / sync"
+        - "Visual plates"
+        - "Offline / storage"
+        - "Something else"
+      validations:
+        required: true
+
+  - type: dropdown
+    id: storage
+    attributes:
+      label: Does this need to work with no Google Drive sign-in?
+      description: >
+        The app is offline-first: guest mode is fully supported and must stay
+        supported. Anything you propose should work for a Soldier with no
+        account.
+      options:
+        - "Yes, it must work fully offline"
+        - "No, Drive sync is fine"
+        - "Not sure"
+      validations:
+        required: true
+
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Confirm the proposal fits the existing architecture.
+      options:
+        - label: This can be done as a pure-logic module with no dependencies.
+          required: false
+        - label: This needs no new visual plate assets.
+          required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
