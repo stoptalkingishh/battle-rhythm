@@ -1,0 +1,33 @@
+"use strict";
+/* Google Drive backup configuration — TEMPLATE.
+ *
+ * Copy this file to js/config.js and fill in the two values to enable storing
+ * workouts in your own Google Drive. js/config.js is tracked in git, so leave
+ * the values blank in the tracked copy; CI (scripts/check-config.mjs) fails the
+ * build if either one is populated. The deployed site then runs in guest mode:
+ * everything lives in localStorage and no sign-in UI is offered.
+ *
+ *   BR_GOOGLE_CLIENT_ID
+ *     OAuth 2.0 Client ID of type "Web application", from
+ *     https://console.cloud.google.com/apis/credentials
+ *     The client must list this site's origin (e.g.
+ *     https://stoptalkingishh.github.io) under "Authorized JavaScript origins",
+ *     or Google will reject the sign-in.
+ *     Shape: 1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
+ *
+ *   BR_GOOGLE_API_KEY
+ *     API key from the same console, created with the Google Drive API enabled.
+ *     Restrict it to the Drive API and to this site's referrer.
+ *     Shape: AIzaSyAbCdEfGhIjKlMnOpQrStUvWxYz1234567
+ *
+ * Both are public client-side identifiers: they are embedded in the page and
+ * readable by anyone who views source. That is expected and is the same model
+ * openquiz uses with its NEXT_PUBLIC_GOOGLE_* values. The OAuth client id is
+ * not a secret, and the API key is only a rate-limit and quota control rather
+ * than an access control — restrict it by API and referrer, do not rely on it
+ * to keep data private. Access itself is granted by the signed-in user, and
+ * the Drive scope requested is drive.file, which only reaches files this app
+ * creates.
+ */
+window.BR_GOOGLE_CLIENT_ID = "";
+window.BR_GOOGLE_API_KEY = "";

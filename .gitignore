@@ -1,3 +1,33 @@
+# Dependencies: this project has none and must stay that way — no build step,
+# browser scripts are served straight from the repo.
 node_modules/
-*.log
+
+# npm debug logs. Deliberately narrower than a blanket *.log: the repo tracks
+# real content and a catch-all here would silently hide new files.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment / secrets. js/config.js is tracked on purpose (see below),
+# but a .env carrying real credentials must never be committed.
+.env
+.env.*
+!.env.example
+
+# Python bytecode — the ATP extraction scripts under scripts/ are Python.
+__pycache__/
+*.py[cod]
+
+# Editor and OS noise.
+.vscode/
+.idea/
 .DS_Store
+.Thumbs.db
+desktop.ini
+
+# NOTE: generated visual assets are intentionally NOT ignored.
+# assets/plates/svg/*.svg and assets/plates/ai/*.webp are generator output,
+# but this project has no build step — GitHub Pages serves them directly from
+# the repository. If they were untracked, every exercise tile and AI plate
+# would 404 in production. assets/plates/svg/ has 80 files and
+# assets/plates/atp/ has 254; all must stay committed. Do not "fix" this.
