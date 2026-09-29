@@ -10,6 +10,13 @@
   --surface: #171A22;
   --surface-hover: #1E222C;
   --border: #262B36;
+  /* WCAG 1.4.11 boundary colour for *interactive controls* only. --border
+   * stays as the low-contrast decorative hairline for cards, list rows and
+   * dividers; a control whose edge is its only affordance (input, select,
+   * textarea, chip) must clear 3:1 against its own background. #5A6680 is the
+   * lightest blue-grey that clears 3:1 against BOTH --surface and --bg-soft
+   * (3.02:1 and 3.20:1 respectively). */
+  --border-control: #5A6680;
   --text: #F5F7FA;
   --text-muted: #9AA3B2;
   --gold: #D4A644;
@@ -371,7 +378,7 @@ body {
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   background: transparent;
   color: var(--text-muted);
   font-family: var(--font-body);
@@ -554,7 +561,7 @@ body {
 textarea {
   width: 100%;
   background: var(--bg-soft);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   color: var(--text);
   font-family: var(--font-body);
@@ -1256,7 +1263,11 @@ textarea {
   padding-top: 2px;
 }
 
-.timer {
+/* Class names here must track the ones js/timer.js actually writes: br-timer,
+ * br-timer-head/label/plan/display/actions/status, plus the br-timer-running
+ * and br-timer-done state classes it toggles on the widget root. The
+ * rest-vs-set variant is NOT a class — it is data-variant="rest"|"set". */
+.br-timer {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface-hover);
@@ -1264,19 +1275,19 @@ textarea {
   min-width: 158px;
 }
 
-.timer--rest {
+.br-timer[data-variant="rest"] {
   border-color: rgba(255, 193, 7, .35);
 }
 
-.timer.is-running {
+.br-timer.br-timer-running {
   border-color: var(--gold);
 }
 
-.timer.is-complete .timer-display {
+.br-timer.br-timer-done .br-timer-display {
   color: var(--ok);
 }
 
-.timer-head {
+.br-timer-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -1284,7 +1295,7 @@ textarea {
   margin-bottom: 2px;
 }
 
-.timer-label {
+.br-timer-label {
   font-family: var(--font-display);
   font-size: .68rem;
   letter-spacing: .08em;
@@ -1292,12 +1303,12 @@ textarea {
   color: var(--text-muted);
 }
 
-.timer-plan {
+.br-timer-plan {
   font-size: .68rem;
   color: var(--text-muted);
 }
 
-.timer-display {
+.br-timer-display {
   display: block;
   margin: 2px 0 6px;
   font-family: var(--font-display);
@@ -1308,7 +1319,7 @@ textarea {
   color: var(--gold);
 }
 
-.timer-actions {
+.br-timer-actions {
   display: flex;
   gap: 6px;
 }
@@ -1316,7 +1327,7 @@ textarea {
 /* The counts down in a role=timer element that we do NOT feed a live region
  * every tick; instead this called-out status line announces only the discrete
  * states (started / paused / reset / complete) to avoid screen-reader spam. */
-.timer-status {
+.br-timer-status {
   position: absolute;
   width: 1px;
   height: 1px;

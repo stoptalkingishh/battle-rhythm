@@ -375,7 +375,7 @@
     var top = el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;" });
     top.appendChild(el("strong", { text: cur ? ("Current: " + cur.weight + " " + (cur.unit || unit)) : "No weigh-ins yet." }));
     if (goal) top.appendChild(el("span", { class: "tags", text: "Goal " + goal.value + " " + (goal.unit || unit) }));
-    if (goal && cur) top.appendChild(el("span", { class: "tags", style: "color:" + (BW.towardGoal(goal, cur.weight, cur.change || 0) ? "var(--good)" : "var(--warn)") + ";", text: "On/off track toward goal" }));
+    if (goal && cur) top.appendChild(el("span", { class: "tags", style: "color:" + (BW.towardGoal(goal, cur.weight, cur.change || 0) ? "var(--ok)" : "var(--warn)") + ";", text: "On/off track toward goal" }));
     host.appendChild(top);
 
     var chartBox = el("div", {});
@@ -418,7 +418,7 @@
         var toward = (e.change != null && goal) ? BW.towardGoal(goal, e.weight, e.change) : null;
         list.appendChild(el("div", { class: "list-item", style: "display:flex;justify-content:space-between;align-items:center;" }, [
           el("span", { text: e.date + " — " + e.weight + " " + (e.unit || unit) }),
-          el("span", { text: delta + (toward === null ? "" : (toward ? "  toward" : "  away")), style: "color:" + (toward ? "var(--good)" : "var(--text-muted)") + ";" })
+          el("span", { text: delta + (toward === null ? "" : (toward ? "  toward" : "  away")), style: "color:" + (toward ? "var(--ok)" : "var(--text-muted)") + ";" })
         ]));
       });
       host.appendChild(list);
@@ -2301,8 +2301,13 @@
     el2.textContent = head + ": " + val + growth + " (auto progression)";
   }
 
+  /* WCAG 1.4.11: every level-1..4 cell must clear 3:1 against --bg so
+   * "trained once" is distinguishable from "no training". The old ramp failed
+   * at level 1 (1.46:1) and, once level 1 was lifted to 3:1, level 2 would
+   * have collapsed onto it (3.19:1), so the ramp is re-spaced:
+   * 3.26 / 4.65 / 7.07 / 10.63 — monotonic and clearly stepped. */
   function heatColor(level) {
-    return ["transparent", "#2f2f2f", "#3f6b4f", "#5f9a6f", "#86d08b"][level] || "transparent";
+    return ["transparent", "#57675c", "#508764", "#6ba97b", "#86d08b"][level] || "transparent";
   }
 
   function renderHeat(workouts) {
