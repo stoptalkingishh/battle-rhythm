@@ -16,8 +16,8 @@
  *     (`q.toLowerCase()`), so an alias pattern like /tricep/g matches "tricep"
  *     but not "Tricep". Do not "fix" that here without a separate decision.
  *   - alias patterns are applied in array order, each with /g, so an earlier
- *     pattern can rewrite text a later one then matches ("db " -> "dumbbell"
- *     runs after /dumbbell/ has already been applied).
+ *     pattern can rewrite text a later one then matches (the /dumbbell/ rule
+ *     runs before the db rule).
  */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) {
@@ -38,7 +38,12 @@
     [/plank/g, "plank"],
     [/sqt|squats/g, "squat"],
     [/dumbbell/g, "dumbbell"],
-    [/db /g, "dumbbell"]
+    /* A word boundary, not a trailing space. The old /db / pattern swallowed
+     * the separator and glued the words together ("db curl" -> "dumbbellcurl"),
+     * which cannot be a substring of any haystack, so every multi-word query
+     * containing "db" matched nothing; it also never fired on a bare "db".
+     * \b keeps the space and covers "db" alone and at the end of a query. */
+    [/\bdb\b/g, "dumbbell"]
   ];
 
   function expandAliases(q) {
