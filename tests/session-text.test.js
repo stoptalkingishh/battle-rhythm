@@ -260,7 +260,8 @@ test("trackedSessionPlainText: status line, checkboxes, actuals and session resu
   }, ctx());
   const lines = text.split("\n");
 
-  assert.equal(lines[4], "Tracker status: Completed");
+  assert.equal(lines[2], "60 min  |  Focus: Muscular Strength  |  RPE 8");
+  assert.equal(lines[3], "Tracker status: Completed", "the status line follows the stats line (no date label in this context)");
   assert.ok(text.includes("\nTRACKED RESULTS:\n"));
   assert.ok(text.includes("[x] Cardio Warmup - actual: 5 x 135"), "a logged actual replaces the planned stats");
   assert.ok(text.includes("[ ] Deadlift - 3 sets, 5 reps, machine: Barbell rig"), "an unlogged item keeps its planned stats");
@@ -291,21 +292,44 @@ test("trackedSessionPlainText: without an actualSummary in the context it falls 
   assert.ok(text.includes("[x] Deadlift - 3 sets, 5 reps, machine: Barbell rig"));
 });
 
-test("trackedSessionPlainText: the status line is placed relative to the date line, not the header", () => {
-  // Pins a pre-existing quirk rather than endorsing it (see issue #26). The
-  // status line is spliced in at a fixed index, which only lands above the
-  // Notes line when the Date line is present. An empty date label therefore
-  // pushes the status line below the Notes line. The extraction preserved this
-  // exactly; the test exists so the behaviour cannot change by accident.
-  const withDate = TEXT.trackedSessionPlainText(session({ notes: "Some notes." }), "Sep 29, 2026", null, ctx({ dateLabel: "Sep 29, 2026" })).split("\n");
-  assert.equal(withDate.findIndex(l => l.startsWith("Tracker status:")), 4);
-  assert.equal(withDate.findIndex(l => l.startsWith("Notes:")), 5);
-  assert.ok(withDate.findIndex(l => l.startsWith("Tracker status:")) < withDate.findIndex(l => l.startsWith("Notes:")), "above Notes when the date is present");
+test("trackedSessionPlainText: the status line sits directly after the stats line, before Notes", () => {
+  // The status line is placed relative to a marker — the stats line — not an
+  // index, because the header above it is not a fixed shape: the Date line is
+  // emitted only when a date label is given. A fixed index therefore moved the
+  // status line below Notes whenever the date label was empty (issue #26), so
+  // all four combinations are asserted here rather than the two that used to
+  // agree by accident.
+  const cases = [
+    { name: "(date, notes)", dateLabel: "Sep 29, 2026", notes: "Some notes." },
+    { name: "(date, no notes)", dateLabel: "Sep 29, 2026", notes: "" },
+    { name: "(no date, notes)", dateLabel: "", notes: "Some notes." },
+    { name: "(no date, no notes)", dateLabel: "", notes: "" }
+  ];
+  cases.forEach(c => {
+    const lines = TEXT.trackedSessionPlainText(session({ notes: c.notes }), c.dateLabel, null, ctx({ dateLabel: c.dateLabel })).split("\n");
+    const stats = lines.findIndex(l => l.includes(" min  |  Focus: ") && l.includes("  |  RPE "));
+    const status = lines.findIndex(l => l.startsWith("Tracker status:"));
+    const notes = lines.findIndex(l => l.startsWith("Notes: "));
 
-  const noDate = TEXT.trackedSessionPlainText(session({ notes: "Some notes." }), "", null, ctx()).split("\n");
-  assert.equal(noDate.findIndex(l => l.startsWith("Tracker status:")), 4);
-  assert.equal(noDate.findIndex(l => l.startsWith("Notes:")), 3);
-  assert.ok(noDate.findIndex(l => l.startsWith("Tracker status:")) > noDate.findIndex(l => l.startsWith("Notes:")), "below Notes when it is not");
+    assert.notEqual(stats, -1, c.name + ": the stats line is present");
+    assert.equal(status, stats + 1, c.name + ": the status line is directly after the stats line");
+    assert.equal(status, lines.findIndex(l => l.startsWith("Tracker status: ")), c.name + ": exactly one status line");
+    if (c.notes) assert.equal(notes, status + 1, c.name + ": the Notes line follows the status line, not the reverse");
+  });
+});
+
+test("trackedSessionPlainText: a date label pushes the stats line down, and the status follows it", () => {
+  // Guards the property the bug violated: insertion follows the header shape
+  // instead of assuming one, so adding a Date line shifts both lines together.
+  const withDate = TEXT.trackedSessionPlainText(session(), "Sep 29, 2026", null, ctx({ dateLabel: "Sep 29, 2026" })).split("\n");
+  assert.equal(withDate[1], "Date: Sep 29, 2026");
+  assert.equal(withDate[3], "60 min  |  Focus: Muscular Strength  |  RPE 8");
+  assert.equal(withDate[4], "Tracker status: In progress");
+
+  const noDate = TEXT.trackedSessionPlainText(session(), "", null, ctx()).split("\n");
+  assert.equal(noDate[1], "TEST SESSION");
+  assert.equal(noDate[2], "60 min  |  Focus: Muscular Strength  |  RPE 8");
+  assert.equal(noDate[3], "Tracker status: In progress");
 });
 
 /* ---------------- regimentPlainText ---------------- */
