@@ -1065,7 +1065,10 @@
 
   function machineField(item, readOnly) {
     var select = el("select", { class: "select", "aria-label": "Target machine for " + item.label, disabled: !!readOnly });
-    select.appendChild(el("option", { value: "none", text: "No machine (free weight / bodyweight)" }));
+    /* The vocabulary is the whole list. MACHINE_OPTIONS[0] is already the
+       "none" row, so a hardcoded copy of it here rendered that label twice in
+       an 11-option select for a 10-entry vocabulary. Build the select from the
+       module alone so the two cannot drift apart again. */
     MACHINE_OPTIONS.forEach(function (o) {
       var opt = el("option", { value: o.value, text: o.label });
       opt.selected = item.machine === o.value;
