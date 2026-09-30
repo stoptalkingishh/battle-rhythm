@@ -9,8 +9,8 @@
  *
  * Two quirks are pinned deliberately because they are load-bearing:
  *   - alias expansion is case-sensitive; callers lowercase the query first
- *   - patterns apply in array order, so "db " is rewritten after /dumbbell/ has
- *     already run and only affects a trailing-space "db "
+ *   - patterns apply in array order, so the db rule only sees the text the
+ *     earlier /dumbbell/ rule has already been applied to
  * Changing either is a behaviour change, not a cleanup.
  */
 const { test } = require("node:test");
@@ -69,19 +69,36 @@ test("expandAliases: /g replaces every occurrence, not just the first", () => {
 });
 
 test("expandAliases: patterns apply in array order, so a later one sees rewritten text", () => {
-  // /dumbbell/ -> "dumbbell" is a no-op, then /"db "/ -> "dumbbell" rewrites a
-  // "db " that the first pass could not have produced.
-  //
-  // The replacement swallows the trailing space, which is a pre-existing bug
-  // (filed as #29): "db curl" expands to "dumbbellcurl", which matches
-  // nothing, while "db  curl" with two spaces expands correctly. Pinned as-is
-  // because a pure extraction must not change behaviour.
-  assert.equal(F.expandAliases("db curl"), "dumbbellcurl");
-  assert.equal(F.expandAliases("db  curl"), "dumbbell curl");
-  // No trailing space: the /db / pattern does not fire, so it survives.
+  // /dumbbell/ -> "dumbbell" is a no-op, then the word-bounded db rule
+  // rewrites a "db" that the first pass could not have produced.
+  assert.equal(F.expandAliases("db curl"), "dumbbell curl");
+  // Only the word itself is replaced now, so a run of spaces stays a run of
+  // spaces instead of the separator being eaten.
+  assert.equal(F.expandAliases("db  curl"), "dumbbell  curl");
+  // No boundary: the db pattern does not fire, so the token survives.
   assert.equal(F.expandAliases("dbcurl"), "dbcurl");
   // "bw" inside a longer word is rewritten too — the pattern has no boundary.
   assert.equal(F.expandAliases("bwcurl"), "bodyweightcurl");
+});
+
+test("expandAliases: the db shorthand is word-bounded, so it never eats the space", () => {
+  // The old /db / pattern consumed the separator and produced "dumbbellcurl",
+  // a string that is not a substring of any haystack, so every multi-word
+  // query containing "db" matched nothing (#29). Only the alias is replaced now.
+  assert.equal(F.expandAliases("db curl"), "dumbbell curl");
+  // A bare "db" never expanded before, because the pattern demanded a space.
+  assert.equal(F.expandAliases("db"), "dumbbell");
+  assert.equal(F.expandAliases("press db"), "press dumbbell", "mid-query, not just the first token");
+  assert.equal(F.expandAliases("db db"), "dumbbell dumbbell", "/g replaces every occurrence");
+  // Not a word on its own: no rewrite, same as before the fix.
+  assert.equal(F.expandAliases("dbcurl"), "dbcurl");
+});
+
+test("expandAliases: the db fix leaves the other shorthands alone", () => {
+  // /bw/g has no trailing space and no boundary on purpose and must keep
+  // matching inside a word, so the db change must not have touched it.
+  assert.equal(F.expandAliases("bw squat"), "bodyweight squat");
+  assert.equal(F.expandAliases("db ohp"), "dumbbell overhead push-press");
 });
 
 /* ---------------- matchesExercise / filterExercises ---------------- */
@@ -142,10 +159,28 @@ test("filterExercises: preserves order, filters by predicate, and tolerates junk
   assert.deepEqual(F.filterExercises(list, ALL).map(e => e.id), ["a", "b", "c"]);
   assert.deepEqual(F.filterExercises(list, { component: "power" }).map(e => e.id), ["b"]);
   assert.deepEqual(F.filterExercises(list, { q: "pull" }).map(e => e.id), ["c"], "only Pull-Up contains 'pull'");
-  assert.deepEqual(F.filterExercises(list, { q: "db row" }), [], "'db row' expands to 'dumbbellrow' — the space-eating bug, pinned");
+  assert.deepEqual(F.filterExercises(list, { q: "db row" }), [], "'db row' now expands to 'dumbbell row', which nothing in this list matches");
   assert.deepEqual(F.filterExercises([], ALL), []);
   assert.deepEqual(F.filterExercises(undefined, ALL), []);
   assert.deepEqual(F.filterExercises(list, { q: "nothing matches this" }), []);
+});
+
+test("filterExercises: a db query finds the same exercises as its dumbbell spelling", () => {
+  const list = [
+    ex({ id: "curl", name: "Dumbbell Curl", equipment: "Dumbbell" }),
+    ex({ id: "press", name: "FW4 Bench Press—dumbbell", equipment: "Dumbbell" }),
+    ex({ id: "row", name: "Bodyweight Row", equipment: "Bodyweight", muscles: "Back" })
+  ];
+  assert.deepEqual(
+    F.filterExercises(list, { q: "db curl" }).map(e => e.id),
+    F.filterExercises(list, { q: "dumbbell curl" }).map(e => e.id),
+    "the shorthand must not change which exercises match"
+  );
+  assert.deepEqual(
+    F.filterExercises(list, { q: "db curl" }).map(e => e.id),
+    ["curl"],
+    "and the query matches something, which is the bug #29 reported"
+  );
 });
 
 test("haystack: exposes the searched fields, lowercased, and no others", () => {
