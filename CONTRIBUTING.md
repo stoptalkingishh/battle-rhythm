@@ -80,6 +80,32 @@ precedent exactly:
 `js/**/*.js` and `tests/**/*.js`. (It used to be a hand-maintained list
 that had silently fallen behind by twelve files.)
 
+## Adding a language (i18n)
+
+Strings go through the plain lookup in `js/data/i18n.js` (`window.BR_I18N`).
+There is no framework and no build step; the full decision record, including
+what is deliberately out of scope, is in
+[`docs/architecture/localization.md`](docs/architecture/localization.md).
+
+```js
+t("weekly.today", { name: "Upper A" })   // "Today: Upper A"
+```
+
+`t()` **never returns `""`**. It falls back active locale -> English catalog ->
+the call site's `{ default }` -> the key string itself, so a missing
+translation shows up as a greppable key rather than a blank button. Preserve
+that when you add keys, and preserve it in tests: there is a mutation check in
+`tests/i18n.test.js` that deletes the English fallback and expects a failure.
+
+To add a language: create `js/data/locale-xx.js` publishing a flat
+`{ key: "text" }` map on `window.BR_LOCALE_XX`, add its `<script>` tag above
+`js/app.js`, add `["xx", "BR_LOCALE_XX"]` to the `CATALOGS` manifest in
+`js/app.js`, add the global to `js/data/capabilities.js` (the cross-check in
+`tests/capabilities.test.js` will fail otherwise), then `npm run bump:bust`.
+
+Do not machine-translate the app. A large unreviewed catalog is worse than a
+small honest one — only add strings you can stand behind.
+
 ## Adding visual plates
 
 `assets/plates/svg/` (generated cards), `assets/plates/ai/` (AI plates) and

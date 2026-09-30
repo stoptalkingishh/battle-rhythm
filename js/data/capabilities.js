@@ -76,7 +76,16 @@
     { global: "BR_DOM_ATTRS", module: "js/data/dom-attrs.js", required: false },
     { global: "BR_FILTERS", module: "js/data/filters.js", required: true },
     { global: "BR_SESSION_TEXT", module: "js/data/session-text.js", required: true },
-    { global: "BR_DATA_EXPORT", module: "js/data/data-export.js", required: false }
+    { global: "BR_DATA_EXPORT", module: "js/data/data-export.js", required: false },
+    /* Localization (#20). BR_I18N is the lookup itself and is read in app.js
+     * only through a `|| null` guard that degrades to the key string, so a
+     * miss renders raw keys rather than blank copy - optional on purpose. The
+     * catalogs are data: losing one removes a language, and the English
+     * default is the one that must never be the casualty, so all three are
+     * listed so a 404 is visible in the notice. */
+    { global: "BR_I18N", module: "js/data/i18n.js", required: false },
+    { global: "BR_LOCALE_EN", module: "js/data/locale-en.js", required: false },
+    { global: "BR_LOCALE_ES", module: "js/data/locale-es.js", required: false }
   ];
 
   /* null/undefined only. An empty array or object means the file loaded and

@@ -36,6 +36,32 @@
   var TEXT = window.BR_SESSION_TEXT || null;
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
+  var I18N = window.BR_I18N || null;
+
+  /* -- localization (#20) ------------------------------------------------
+   * The lookup seam. t() falls back to the English catalog key-by-key and
+   * finally to the key itself, so a missing translation degrades to English or
+   * a visible key — never to a blank string. If the module failed to load we
+   * fall back to identity so the UI still renders copy.
+   */
+  var LOCALE_KEY = "br_locale";
+  /* The catalog's own default, so the fallback below works even if the i18n
+   * module failed to load. Kept in sync with BR_I18N.DEFAULT_LOCALE. */
+  var I18N_DEFAULT = "en";
+  function t(key, vars) {
+    if (!I18N) return vars && vars.default ? vars.default : key;
+    return I18N.t(key, vars);
+  }
+  /* Monday-first weekday name for the current locale. */
+  function weekdayName(wd) { return t("weekday." + wd); }
+
+  function currentLocale() { return I18N ? I18N.getLocale() : I18N_DEFAULT; }
+  function setLocale(tag) {
+    if (!I18N) return;
+    I18N.setLocale(tag);
+    store(LOCALE_KEY, I18N.getLocale());
+    renderWeeklyPlan();
+  }
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -339,27 +365,45 @@
   }
   function saveWeek(p) { store("br_week", p); }
 
+  /* Language selector. Rendered inside the weekly-plan card rather than a
+   * hidden settings page so the i18n seam is reachable and visible; with one
+   * catalog it is a single-option control, which is honest about how little
+   * is translated so far. */
+  function languageControl() {
+    if (!I18N) return null;
+    var sel = el("select", { class: "select", style: "min-width:110px;", "aria-label": t("language.label") });
+    I18N.locales().forEach(function (tag) {
+      sel.appendChild(el("option", { value: tag, text: tag, selected: tag === currentLocale() ? "selected" : null }));
+    });
+    sel.addEventListener("change", function () { setLocale(sel.value); });
+    return el("label", { style: "display:flex;align-items:center;gap:6px;font-size:.8rem;" }, [
+      el("span", { class: "card-muted", text: t("language.label") }), sel
+    ]);
+  }
+
   function renderWeeklyPlan() {
     var host = $("#home-weekly");
     if (!host) return;
     host.innerHTML = "";
-    if (!WP || !getSessions().length) { host.appendChild(el("p", { class: "card-muted", text: "Weekly-plan module not loaded, or no saved sessions yet." })); return; }
+    var lang = languageControl();
+    if (lang) host.appendChild(el("div", { style: "display:flex;justify-content:flex-end;margin:0 0 8px;" }, [lang]));
+    if (!WP || !getSessions().length) { host.appendChild(el("p", { class: "card-muted", text: t("weekly.noModule") })); return; }
     var plan = load("br_week", {});
     var sessions = getSessions();
     var today = WP.activeFor(plan, todayStr());
-    host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 10px;", text: today ? ("Today: " + sessionName(today)) : "Nothing scheduled today." }));
+    host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 10px;", text: today ? t("weekly.today", { name: sessionName(today) }) : t("weekly.nothingToday") }));
     var rows = [];
-    WP.WEEKDAY_NAMES.forEach(function (name, wd) {
+    [0, 1, 2, 3, 4, 5, 6].forEach(function (wd) {
       var ref = plan ? plan[wd] : undefined;
       var sel = el("select", { class: "select", style: "flex:1;min-width:130px;" });
-      sel.appendChild(el("option", { value: "", text: "— no session —" }));
+      sel.appendChild(el("option", { value: "", text: t("weekly.noSession") }));
       sessions.forEach(function (s) { sel.appendChild(el("option", { value: s.id, text: s.name, selected: s.id === ref ? "selected" : null })); });
       sel.addEventListener("change", function () {
         var p = sel.value ? WP.assign(plan, wd, sel.value) : WP.clear(plan, wd);
         saveWeek(p); renderWeeklyPlan();
       });
       rows.push(el("div", { style: "display:flex;align-items:center;gap:8px;" }, [
-        el("strong", { style: "min-width:72px;font-size:.8rem;", text: name }), sel
+        el("strong", { style: "min-width:72px;font-size:.8rem;", text: weekdayName(wd) }), sel
       ]));
     });
     host.appendChild(el("div", { style: "display:grid;gap:6px;" }, rows));
@@ -367,17 +411,17 @@
     var busy = WP.weekdays(plan);
     if (busy.length) {
       var fromSel = el("select", { class: "select", style: "min-width:120px;" });
-      busy.forEach(function (wd) { fromSel.appendChild(el("option", { value: String(wd), text: WP.WEEKDAY_NAMES[wd] + " (" + sessionName(plan[wd]) + ")" })); });
+      busy.forEach(function (wd) { fromSel.appendChild(el("option", { value: String(wd), text: weekdayName(wd) + " (" + sessionName(plan[wd]) + ")" })); });
       var toSel = el("select", { class: "select", style: "min-width:120px;" });
-      [0, 1, 2, 3, 4, 5, 6].forEach(function (wd) { toSel.appendChild(el("option", { value: String(wd), text: WP.WEEKDAY_NAMES[wd] })); });
-      var mv = el("button", { class: "btn btn-ghost btn-sm", text: "Reschedule" });
+      [0, 1, 2, 3, 4, 5, 6].forEach(function (wd) { toSel.appendChild(el("option", { value: String(wd), text: weekdayName(wd) })); });
+      var mv = el("button", { class: "btn btn-ghost btn-sm", text: t("weekly.reschedule") });
       mv.addEventListener("click", function () {
         var res = WP.move(plan, Number(fromSel.value), Number(toSel.value));
-        if (!res.ok) { toast("Can't move: " + res.reason); return; }
-        saveWeek(res.plan); renderWeeklyPlan(); toast("Session rescheduled");
+        if (!res.ok) { toast(t("weekly.moveFailed", { reason: res.reason })); return; }
+        saveWeek(res.plan); renderWeeklyPlan(); toast(t("weekly.rescheduled"));
       });
       host.appendChild(el("div", { style: "display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap;" }, [
-        el("span", { class: "card-muted", text: "Reschedule:" }), fromSel, el("span", { text: "→" }), toSel, mv
+        el("span", { class: "card-muted", text: t("weekly.rescheduleLabel") }), fromSel, el("span", { text: "→" }), toSel, mv
       ]));
     }
   }
@@ -2680,7 +2724,32 @@
     document.body.appendChild(notice);
   }
 
+  /* Load every catalog that shipped with the page, then restore the visitor's
+   * chosen locale from localStorage. Registration is explicit and static — a
+   * new language is one more catalog module plus one more <script> tag, with
+   * no build step and no loader convention to learn. Everything here is
+   * local-only: no network, no credentials, guest mode unaffected. */
+  /* The page's catalog manifest: the locale tag is declared HERE, next to the
+   * <script> tag that loads the file, rather than inferred from the file's
+   * contents. A flat { key: "text" } catalog can then be dropped in as
+   * plain JSON-shaped JS with no metadata convention to learn. */
+  var CATALOGS = [
+    ["en", "BR_LOCALE_EN"],
+    ["es", "BR_LOCALE_ES"]
+  ];
+
+  function initI18n() {
+    if (!I18N) return;
+    CATALOGS.forEach(function (entry) {
+      var bundle = window[entry[1]];
+      if (bundle) I18N.register(entry[0], bundle);
+    });
+    var saved = load(LOCALE_KEY, null);
+    if (saved) I18N.setLocale(saved);
+  }
+
   function init() {
+    initI18n();
     startCapabilities();
     seedPresets();
     bindEvents();
