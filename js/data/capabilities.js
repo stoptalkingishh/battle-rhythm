@@ -69,6 +69,7 @@
     { global: "BR_BODYWEIGHT", module: "js/data/bodyweight.js", required: false },
     { global: "BR_SUPERSETS", module: "js/data/supersets.js", required: false },
     { global: "BR_WEEKLY_PLAN", module: "js/data/weekly-plan.js", required: false },
+    { global: "BR_REGIMENT_ANALYTICS", module: "js/data/regiment-analytics.js", required: false },
     { global: "BR_FREESTYLE_PREFILL", module: "js/data/freestyle-prefill.js", required: false },
     { global: "BR_CUSTOM", module: "js/data/custom-exercises.js", required: false },
     { global: "BR_NOTIFICATIONS", module: "js/data/notifications.js", required: false },
