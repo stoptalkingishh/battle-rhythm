@@ -32,6 +32,7 @@
   var NOTIF = window.BR_NOTIFICATIONS || null;
   var CHART = window.BRChart || null;
   var DOM_ATTRS = window.BR_DOM_ATTRS || null;
+  var TEXT = window.BR_SESSION_TEXT || null;
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -45,23 +46,10 @@
   var PHASE_ORDER = ["prep", "activity", "recovery"];
   var PHASE_LABEL = { prep: "Preparation", activity: "Activity", recovery: "Recovery" };
 
-  var MACHINE_OPTIONS = [
-    { value: "none", label: "No machine (free weight / bodyweight)" },
-    { value: "barbell", label: "Barbell rig" },
-    { value: "hex-bar", label: "MDL hex bar" },
-    { value: "cable", label: "Cable pulley column" },
-    { value: "leg-press", label: "Leg press machine" },
-    { value: "lat-pulldown", label: "Lat pulldown machine" },
-    { value: "smith", label: "Smith machine" },
-    { value: "treadmill", label: "Treadmill" },
-    { value: "stationary-bike", label: "Stationary cycle" },
-    { value: "erg-rower", label: "Rowing ergometer" }
-  ];
-  function machineLabel(value) {
-    if (!value || value === "none") return "";
-    var m = MACHINE_OPTIONS.find(function (o) { return o.value === value; });
-    return m ? m.label : value;
-  }
+  /* The machine vocabulary lives in js/data/session-text.js, which both prints
+     * the label ("machine: Barbell rig") and feeds this select. Read it from
+     * there so the two cannot drift. */
+    var MACHINE_OPTIONS = (TEXT && TEXT.MACHINE_OPTIONS) || [];
 
   var STATE = {
     view: "home",
@@ -233,130 +221,42 @@
     } else fallback();
   }
 
-  function exercisePlainText(ex) {
-    var lines = [];
-    lines.push(ex.name.toUpperCase());
-    lines.push("Component: " + componentLabel(ex.component) + "  |  Equipment: " + (ex.equipment || "None"));
-    if (ex.drill) lines.push("Drill: " + ex.drill);
-    lines.push("");
-    lines.push("FORM:");
-    (ex.cues || []).forEach(function (c, i) { lines.push("  " + (i + 1) + ". " + c); });
-    lines.push("");
-    lines.push("PROGRAMMING:");
-    lines.push("  " + (ex.programming || ""));
-    lines.push("MUSCLES:");
-    lines.push("  " + (ex.muscles || ""));
-    lines.push("SAFETY:");
-    lines.push("  " + (ex.safety || ""));
-    if ((ex.aft || []).length) lines.push("AFT: " + ex.aft.join(", "));
-    lines.push("SOURCE: " + (ex.source || "") + "  [" + sourceLabel(ex) + "]");
-    return lines.join("\n");
+  /* ==================== PLAIN-TEXT EXPORT (js/data/session-text.js) ==================== */
+
+  /* The serialisers and the machine vocabulary now live in the module. What
+   * stays here is the app-side context: the lookups they need, and the
+   * signatures the call sites already use. */
+  function textCtx() {
+    return {
+      component: componentLabel,
+      source: sourceLabel,
+      phaseOrder: PHASE_ORDER,
+      phaseLabels: PHASE_LABEL,
+      /* Built-in library only, matching what these serialisers resolved before
+       * they moved: exerciseById() also sees the custom library. */
+      findExercise: function (id) { return EX.find(function (e) { return e.id === id; }); },
+      actualSummary: function (r) { return (TS_OK && TS.actualSummary) ? TS.actualSummary(r) : ""; }
+    };
   }
 
-  function drillPlainText(drill) {
-    var lines = [];
-    lines.push(drill.name.toUpperCase());
-    lines.push("Doctrine Drill");
-    lines.push("");
-    if (drill.description) { lines.push("PURPOSE:"); lines.push("  " + drill.description); }
-    if (drill.exercises) { lines.push("EXERCISES:"); lines.push("  " + drill.exercises); }
-    if (drill.citation) { lines.push("CITATION: " + drill.citation); }
-    return lines.join("\n");
-  }
-
-  function itemText(item) {
-    var parts = [];
-    if (item.sets) parts.push(item.sets + " sets");
-    if (item.reps) parts.push(item.reps + " reps");
-    if (item.duration) parts.push(item.duration);
-    if (item.rest) parts.push("rest " + item.rest);
-    var machine = machineLabel(item.machine);
-    if (machine) parts.push("machine: " + machine);
-    return parts.join(", ");
-  }
-
+  function itemText(item) { return TEXT.itemText(item); }
+  function exercisePlainText(ex) { return TEXT.exercisePlainText(ex, textCtx()); }
+  function drillPlainText(drill) { return TEXT.drillPlainText(drill); }
   function sessionPlainText(s, dateLabel) {
-    var lines = [];
-    lines.push("BATTLE RHYTHM - SESSION");
-    if (dateLabel) lines.push("Date: " + dateLabel);
-    lines.push(s.name.toUpperCase());
-    lines.push(s.duration + " min  |  Focus: " + componentLabel(s.focus) + "  |  RPE " + s.rpe);
-    if (s.format === "circuit") {
-      lines.push("Format: Active-Recovery Circuit | " + s.circuit.rounds + " rounds | " + s.circuit.work + " work | " + s.circuit.rest + " transition/rest");
-    }
-    if (s.notes) { lines.push("Notes: " + s.notes); }
-    lines.push("------------------------------------");
-    PHASE_ORDER.forEach(function (key) {
-      var phase = s.phases[key];
-      if (!phase || !phase.items.length) return;
-      lines.push("");
-      lines.push(PHASE_LABEL[key].toUpperCase() + ":");
-      phase.items.forEach(function (item, i) {
-        var t = itemText(item);
-        var head = (i + 1) + ". " + item.label + (t ? "  [" + t + "]" : "");
-        lines.push(head);
-        var ex = EX.find(function (e) { return e.id === item.ref; });
-        if (ex) {
-          (ex.cues || []).slice(0, 3).forEach(function (c) { lines.push("     - " + c); });
-        }
-      });
-    });
-    lines.push("");
-    lines.push("Safety confirmation: profile, supervision, risk controls, and environmental conditions reviewed.");
-    lines.push("Sourced from FM 7-22 and ATP 7-22.02 (H2F doctrine).");
-    lines.push("Safety: apply risk management (ATP 5-19); respect profiles (DA 3349/DD 689) and environmental guidance (TB MED 507/508).");
-    return lines.join("\n");
+    var ctx = textCtx();
+    ctx.dateLabel = dateLabel;
+    return TEXT.sessionPlainText(s, ctx);
   }
-
   function trackedSessionPlainText(s, date, entry) {
-    var lines = sessionPlainText(s, fmtDate(date)).split("\n");
-    var results = (entry && entry.results) || {};
-    lines.splice(4, 0, "Tracker status: " + (entry && entry.complete ? "Completed" : "In progress"));
-    lines.push("");
-    lines.push("TRACKED RESULTS:");
-    PHASE_ORDER.forEach(function (key) {
-      var phase = s.phases[key];
-      if (!phase || !phase.items.length) return;
-      phase.items.forEach(function (item) {
-        var r = results[item.id];
-        var done = !!(r && r.done);
-        var line = (done ? "[x] " : "[ ] ") + item.label;
-        var act = TS_OK && r ? TS.actualSummary(r) : "";
-        if (act) line += " - actual: " + act;
-        else if (itemText(item)) line += " - " + itemText(item);
-        lines.push(line);
-      });
-    });
-    if (entry) {
-      var meta = [];
-      if (entry.rpeActual) meta.push("RPE actual: " + entry.rpeActual);
-      if (entry.durationActual) meta.push("Duration actual: " + entry.durationActual);
-      if (entry.notes) meta.push("Notes: " + entry.notes);
-      if (meta.length) { lines.push(""); lines.push("SESSION RESULTS: " + meta.join("  |  ")); }
-    }
-    return lines.join("\n");
+    var ctx = textCtx();
+    /* The date label has to reach the context: the serialiser places the
+     * tracker status line relative to the header the date produces, exactly
+     * as it did before the extraction. */
+    ctx.dateLabel = fmtDate(date);
+    return TEXT.trackedSessionPlainText(s, ctx.dateLabel, entry, ctx);
   }
 
-  function regimentPlainText(r) {
-    var sessions = load(KEYS.sessions, []);
-    var lines = [];
-    lines.push("BATTLE RHYTHM - REGIMENT");
-    lines.push(r.name.toUpperCase());
-    lines.push("Period: " + r.period);
-    lines.push("------------------------------------");
-    (r.days || []).forEach(function (day) {
-      if (!day.sessions || !day.sessions.length) return;
-      lines.push("");
-      lines.push(day.name.toUpperCase() + ":");
-      day.sessions.forEach(function (sid) {
-        var s = sessions.find(function (x) { return x.id === sid; });
-        if (s) lines.push("  - " + s.name + " (" + s.duration + " min, RPE " + s.rpe + ")");
-      });
-    });
-    lines.push("");
-    lines.push("Regiment grouped with Battle Rhythm, informed by FM 7-22 periodization (base/build/peak/recovery).");
-    return lines.join("\n");
-  }
+  function regimentPlainText(r) { return TEXT.regimentPlainText(r, load(KEYS.sessions, [])); }
 
   /* ==================== BODY WEIGHT + WEEKLY PLAN (openGym adoption) ==================== */
 
