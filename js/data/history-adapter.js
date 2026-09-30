@@ -75,5 +75,57 @@
     return Object.keys(seen).sort();
   }
 
-  return { workoutsFromLogs: workoutsFromLogs, exercisesWithSets: exercisesWithSets };
+  /* A log entry's results are keyed by the tracker item uid, which uid() mints
+   * fresh for every session. Two sessions that both log the Deadlift therefore
+   * arrive here under two unrelated ids, and neither resolves to an exercise
+   * name in the Progress dropdown.
+   *
+   * This relabels each workout's entries with the exercise/drill `ref` from the
+   * session snapshot that `lookup` supplies, falling back to the item id when
+   * the snapshot is absent or has no matching item. Entries that share a ref
+   * within one session are merged, so their sets are counted together in the
+   * Progress sets/reps/volume row.
+   *
+   * `lookup(itemId, session)` returns the ref string, or a falsy value to keep
+   * the item id. Pure: it takes the workouts, never the DOM or localStorage. */
+  function keyWorkoutsByRef(workouts, lookup) {
+    if (!Array.isArray(workouts) || typeof lookup !== "function") return [];
+    return workouts.map(function (w) {
+      var byRef = {};
+      var order = [];
+      (w.entries || []).forEach(function (e) {
+        var ref = lookup(e.id, w);
+        if (!ref) ref = e.id;
+        if (!byRef[ref]) {
+          byRef[ref] = { id: ref, sets: [] };
+          order.push(ref);
+        }
+        byRef[ref].sets = byRef[ref].sets.concat(e.sets || []);
+      });
+      var out = {};
+      out.d = w.d;
+      out.t = w.t;
+      out.entries = order.map(function (ref) { return byRef[ref]; });
+      return out;
+    });
+  }
+
+  /* Exercise ids in a keyed workout list that have an estimable (weight + reps)
+   * set — the Progress dropdown's option list. */
+  function exercisesWithSetsIn(workouts) {
+    var seen = {};
+    (workouts || []).forEach(function (w) {
+      (w.entries || []).forEach(function (e) {
+        if ((e.sets || []).some(function (s) { return s.w > 0 && s.r > 0; })) seen[e.id] = true;
+      });
+    });
+    return Object.keys(seen).sort();
+  }
+
+  return {
+    workoutsFromLogs: workoutsFromLogs,
+    exercisesWithSets: exercisesWithSets,
+    keyWorkoutsByRef: keyWorkoutsByRef,
+    exercisesWithSetsIn: exercisesWithSetsIn
+  };
 });

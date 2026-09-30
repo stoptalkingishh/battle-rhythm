@@ -51,6 +51,19 @@ jobs:
       - name: Config guard
         run: node scripts/check-config.mjs
 
+      # Browser E2E (issue #14): drives the static site over the DevTools
+      # Protocol in headless Chrome, covering Builder -> Tracker -> Progress.
+      # No build step and no install — ubuntu-latest ships Chrome at
+      # /usr/bin/google-chrome, and the harness is pure node stdlib.
+      # BR_E2E_REQUIRED=1 makes a missing browser a failure rather than a skip,
+      # so this step cannot pass vacuously on a runner that lost its Chrome.
+      - name: Browser E2E
+        env:
+          BR_E2E_REQUIRED: '1'
+        run: |
+          google-chrome --version
+          npm run test:e2e
+
   deploy:
     name: Deploy to GitHub Pages
     needs: ci
