@@ -1897,3 +1897,29 @@ textarea {
 /* Progress charts (openGym adoption) */
 .chart-svg{width:100%;height:auto;display:block;max-width:640px;}
 .chart-empty{padding:26px 14px;text-align:center;color:var(--text-muted);font-size:.85rem;border:1px dashed var(--border);border-radius:8px;}
+/* Startup module check (issue #13). Losing a BR_* module was previously only
+   visible in devtools; this banner names it. Deliberately not part of .toast -
+   the toast auto-hides after 2.4s, and a script that failed to load does not
+   fix itself. */
+.capability-notice {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 400;
+  max-width: min(420px, calc(100vw - 32px));
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  border: 1px solid var(--warn);
+  box-shadow: var(--shadow);
+}
+
+.capability-notice-text {
+  font-size: .8rem;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: break-word;
+}

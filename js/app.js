@@ -34,6 +34,7 @@
   var DOM_ATTRS = window.BR_DOM_ATTRS || null;
   var FILTERS = window.BR_FILTERS || null;
   var TEXT = window.BR_SESSION_TEXT || null;
+  var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
 
   var COMPONENTS = {
@@ -2638,9 +2639,49 @@
     });
   }
 
+  /* Startup capability check (issue #13). A script tag that fails to load is
+     * otherwise silent: the browser logs the failed file and every feature fed
+     * by that global is simply absent. Report what actually loaded, once, in one
+     * dismissible notice naming the missing module, so a partial deploy (a stale
+     * cached sibling script, a rename) is diagnosable from the UI. Optional
+     * modules are still named: their features are disabled and the user should
+     * know why. Deliberately not a framework - one element, no state. */
+
+  function startCapabilities() {
+    if (!CAPABILITIES) {
+      console.error("capabilities.js failed to load - module check unavailable");
+      return;
+    }
+    var report = CAPABILITIES.inspect(window);
+    if (!report.missing.length) return;
+    console.error("Battle Rhythm: " + CAPABILITIES.message(report));
+    renderCapabilityNotice(CAPABILITIES.message(report));
+  }
+
+  function renderCapabilityNotice(text) {
+    if ($("#capability-notice")) return;
+    var notice = el("div", {
+      id: "capability-notice",
+      class: "capability-notice",
+      /* role=alert so the message is announced. Nothing in the notice is
+         * focusable except Dismiss, so it does not pull focus away from the
+         * user's place in the page. */
+      role: "alert"
+    }, [
+      el("span", { class: "capability-notice-text", text: text + " Reload the page to retry." }),
+      el("button", {
+        type: "button",
+        class: "btn btn-ghost btn-sm",
+        id: "capability-notice-dismiss",
+        text: "Dismiss"
+      })
+    ]);
+    notice.querySelector("#capability-notice-dismiss").addEventListener("click", function () { notice.remove(); });
+    document.body.appendChild(notice);
+  }
+
   function init() {
-    if (!window.BR_EXERCISES) { console.error("exercises.js failed to load"); }
-    if (!window.BR_DOCTRINE) { console.error("doctrine.js failed to load"); }
+    startCapabilities();
     seedPresets();
     bindEvents();
     nav(initialView());
