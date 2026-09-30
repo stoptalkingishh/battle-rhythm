@@ -784,6 +784,7 @@
     $("#settings-new-pw").value = "";
     $("#settings-confirm-pw").value = "";
     renderDriveSection();
+    renderConflictSection();
     $("#settings-modal").classList.remove("hidden");
   }
 
@@ -854,6 +855,82 @@
         cloud.signOut().catch(function () {});
       });
       areaEl.appendChild(signOutBtn);
+
+  /* ---- Sync conflicts (Settings modal) ----
+   * Rendered whether or not Drive is configured. BRCloud keeps the conflict
+   * stash in localStorage, so a conflict raised on this device stays
+   * resolvable in guest mode - which is what "reachable in guest mode" has
+   * to mean when the thing that raises conflicts is Drive itself.
+   *
+   * Each conflict shows both versions and offers three choices: keep this
+   * device's, keep the other device's, or keep both. Nothing is resolved
+   * automatically and no timestamp decides it. */
+  var CONFLICT_LABEL = {
+    "edit-vs-edit": "edited on two devices",
+    "created-both": "created on two devices",
+    "delete-local-vs-edit-remote": "deleted here, edited on the other device",
+    "edit-local-vs-delete-remote": "edited here, deleted on the other device"
+  };
+
+  function describeConflictValue(v) {
+    if (v === undefined || v === null) return "(deleted)";
+    try { return JSON.stringify(v); } catch (e) { return String(v); }
+  }
+
+  function renderConflictSection() {
+    var area = $("#conflict-area");
+    if (!area) return;
+    var cloud = window.BRCloud;
+    var list = [];
+    if (cloud && cloud.getConflicts) {
+      try { list = cloud.getConflicts() || []; } catch (e) { list = []; }
+    }
+    area.innerHTML = "";
+    if (!list.length) {
+      var quiet = el("p", { class: "card-muted" });
+      quiet.textContent = "No conflicts. If two devices change the same record while both are " +
+        "offline, both versions are kept and you choose here — nothing is overwritten.";
+      area.appendChild(quiet);
+      return;
+    }
+    var intro = el("p", { class: "card-muted" });
+    intro.textContent = list.length + " conflict" + (list.length === 1 ? "" : "s") +
+      " — both versions were kept. Choose which to keep for each one.";
+    intro.style.margin = "0 0 10px;";
+    area.appendChild(intro);
+    list.forEach(function (c) {
+      var card = el("div", { class: "card" });
+      card.style.cssText = "padding:10px;margin-bottom:8px;";
+      var where = c.path ? c.path + " / " : "";
+      card.appendChild(el("div", { class: "field-label", text: where + c.recordId }));
+      var kind = el("div", { class: "card-muted", text: CONFLICT_LABEL[c.kind] || c.kind });
+      kind.style.cssText = "font-size:.72rem;margin:4px 0 6px;";
+      card.appendChild(kind);
+      ["This device: " + describeConflictValue(c.local),
+       "Other device: " + describeConflictValue(c.remote)].forEach(function (text) {
+        var pre = el("pre", { text: text });
+        pre.style.cssText = "margin:0 0 4px;font-size:.72rem;white-space:pre-wrap;word-break:break-word;";
+        card.appendChild(pre);
+      });
+      var row = el("div");
+      row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;";
+      [["Keep this device", "local"], ["Keep other device", "remote"], ["Keep both", "both"]].forEach(function (pair) {
+        var btn = el("button", { class: "btn btn-ghost btn-sm", text: pair[0] });
+        btn.addEventListener("click", function () {
+          if (!cloud || !cloud.resolveConflictById) return;
+          try {
+            cloud.resolveConflictById(c.id, pair[1]);
+            renderConflictSection();
+            renderDriveSection();
+            if (!hasOpenModal()) refreshView();
+          } catch (e) {}
+        });
+        row.appendChild(btn);
+      });
+      card.appendChild(row);
+      area.appendChild(card);
+    });
+  }
     } else {
       statusEl.textContent = "Sign in to back up your workouts to your own Google Drive in a private “Battle Rhythm” folder.";
       var signInBtn = document.createElement("button");
@@ -2689,6 +2766,7 @@
       window.BRCloud.init(function (dataChanged) {
         if (dataChanged && !hasOpenModal()) refreshView();
         renderDriveSection();
+        renderConflictSection();
       });
     }
   }

@@ -36,6 +36,7 @@
   var onSync = null;
   var flushing = false;
   var pendingFlushAgain = false;
+  var conflictsFound = 0; /* conflicts detected in the current flush pass */
 
   function isActive() {
     return Boolean(window.BRDrive) && window.BRDrive.isDriveConfigured() &&
@@ -84,6 +85,56 @@
 
   function mtimeKey(file) { return "brsync_mtime_" + file; }
 
+  /* The last state Drive confirmed for a file: the common ancestor for the
+   * three-way merge. Without it a two-device collision is indistinguishable
+   * from a one-sided edit, so we would have to either overwrite (the bug in
+   * issue #3) or flag every shared id. Device-local; never synced itself. */
+  function baseKey(file) { return "brsync_base_" + file; }
+
+  function readBase(file) {
+    var raw = localGet(baseKey(file));
+    if (!raw) return null;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+  }
+  function writeBase(file, data) { writeJson(baseKey(file), data); }
+
+  /* Conflicts awaiting the user's choice. Kept on the device and preserved
+   * across sign-out: an unresolved conflict is still the user's to resolve,
+   * and dropping it on sign-out would re-hide the other device's edit. */
+  var CONFLICT_KEY = "brsync_conflicts";
+
+  function readStash() {
+    var raw = localGet(CONFLICT_KEY);
+    if (!raw) return [];
+    try {
+      var o = JSON.parse(raw);
+      return Array.isArray(o) ? o : [];
+    } catch (e) { return []; }
+  }
+  function writeStash(stash) { writeJson(CONFLICT_KEY, stash || []); }
+
+  function getConflicts() { return BRSync.pendingConflicts(readStash()); }
+
+  /* Apply the user's choice and persist. Pure math in sync-core; this only
+   * writes the collection and the stash, then lets the normal mirror push it. */
+  function resolveConflictById(conflictId, choice) {
+    var stash = readStash();
+    var entry = BRSync.pendingConflicts(stash).filter(function (c) { return c.id === conflictId; })[0];
+    if (!entry) return false;
+    var out = BRSync.resolveConflict(entry.key, readJson(entry.key, BRSync.fallbackFor(entry.key)), stash, conflictId, choice);
+    writeJson(entry.key, out.data);
+    writeStash(out.stash);
+    if (isActive()) mirror(entry.key);
+    return true;
+  }
+
+  /* True when Drive's copy moved since our last verified write, so the
+   * three-way merge is the right path (the two-way reconcile covers the
+   * unchanged case, where a plain overwrite is safe). */
+  function remoteChangedSinceLastSync(lastMTime, remoteMTime, remoteData) {
+    return remoteData != null && !BRSync.doesRemoteMatch(lastMTime, remoteMTime);
+  }
+
   function emit(dataChanged) {
     if (onSync) { try { onSync(!!dataChanged); } catch (e) {} }
   }
@@ -118,7 +169,17 @@
       }
       var remoteData = remoteRes ? remoteRes.data : null;
       var remoteMTime = remoteRes ? remoteRes.modifiedTime : "";
-      var rec = BRSync.reconcile(lastMTime, remoteMTime, remoteData, local, key);
+      /* Three-way when this device has a base snapshot; the two-way reconcile
+       * otherwise, where ancestorKnown is false and we refuse to guess that
+       * every shared id is a conflict. */
+      var base = readBase(file);
+      var rec = remoteChangedSinceLastSync(lastMTime, remoteMTime, remoteData)
+        ? BRSync.reconcileWithBase(key, base, local, remoteData, new Date().toISOString())
+        : BRSync.reconcile(lastMTime, remoteMTime, remoteData, local, key);
+      if (rec.conflicts && rec.conflicts.length) {
+        writeStash(BRSync.addConflicts(readStash(), rec.conflicts));
+        conflictsFound += rec.conflicts.length;
+      }
       var dataChanged = String(JSON.stringify(rec.data)) !== String(JSON.stringify(local));
       if (dataChanged) writeJson(key, rec.data); /* absorb remote before pushing */
       if (!BRSync.shouldWriteRemote(key, rec.data, remoteData)) {
@@ -127,6 +188,9 @@
       return window.BRDrive.writeDriveFile(file, rec.data).then(function (res) {
         if (res && res.ok && res.modifiedTime) {
           localSet(mtimeKey(file), res.modifiedTime || "");
+          /* Drive now holds exactly what we just pushed: that is the state
+           * every device can treat as the agreed ancestor next time. */
+          writeBase(file, rec.data);
           lastSync = new Date().toISOString();
           return { ok: true, reconciled: rec.remoteChanged, dataChanged: dataChanged };
         }
@@ -316,6 +380,10 @@
     getStatus: getStatus,
     getLastSync: getLastSync,
     getLastError: getLastError,
-    getPendingCount: pendingCount
+    getPendingCount: pendingCount,
+    getConflicts: getConflicts,
+    getConflictCount: function () { return BRSync.pendingConflicts(readStash()).length; },
+    resolveConflictById: resolveConflictById,
+    takeConflictsFound: function () { var n = conflictsFound; conflictsFound = 0; return n; }
   };
 })();
