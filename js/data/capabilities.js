@@ -73,6 +73,7 @@
     { global: "BR_CUSTOM", module: "js/data/custom-exercises.js", required: false },
     { global: "BR_NOTIFICATIONS", module: "js/data/notifications.js", required: false },
     { global: "BRChart", module: "js/chart.js", required: false },
+    { global: "BR_PWA", module: "js/pwa.js", required: false },
     { global: "BR_DOM_ATTRS", module: "js/data/dom-attrs.js", required: false },
     { global: "BR_FILTERS", module: "js/data/filters.js", required: true },
     { global: "BR_SESSION_TEXT", module: "js/data/session-text.js", required: true },

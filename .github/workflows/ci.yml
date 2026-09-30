@@ -90,6 +90,15 @@ jobs:
           for entry in index.html assets css js; do
             cp -R "$entry" _site/
           done
+          # sw.js is the one deliberate root-level file. A service worker's
+          # default scope is the directory holding its script, and GitHub Pages
+          # sends no Service-Worker-Allowed header, so a worker under js/ could
+          # only ever control /js/ — the navigation to index.html would stay
+          # outside its scope and offline would not start. Staging it at the
+          # artifact root is what gives it scope over the whole deployed site.
+          # tests/deploy-whitelist.test.js parses this step and fails if the
+          # worker (or anything index.html references) is not published.
+          cp sw.js _site/
           # Pages runs Jekyll by default, which drops files and directories
           # beginning with an underscore. Nothing here uses that convention,
           # but the marker keeps the publish path stable if that changes.
