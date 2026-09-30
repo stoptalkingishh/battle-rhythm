@@ -43,12 +43,23 @@ aftermath. `scripts/check-cache-buster.mjs` now fails the build if the
 versions disagree, if a local reference has no tag, or if it cannot find
 the tags at all.
 
-The safe sequence:
+The safe sequence — one command, run after editing anything under `js/`,
+`css/` or `assets/`:
 
 ```bash
-# edit your file(s), then:
-# 1. replace every ?v=battle-rhythm-N in index.html with one new N
-# 2. confirm:
+npm run bump:bust          # rewrites every tag in index.html to one new N
+```
+
+That is the whole step. `scripts/bump-cache-buster.mjs` re-parses the file it
+is about to write and refuses to write it unless every reference comes back
+uniform, so a partial bump cannot leave the working tree. `--dry-run` reports
+without writing, and `npm run bump:bust -- 40` sets an explicit N.
+
+If a local reference has a query string but no tag, the tool refuses and tells
+you which line — appending `&v=...` would not match the guard's pattern, so
+that one is a hand fix. Then finish with the guard:
+
+```bash
 node scripts/check-cache-buster.mjs
 ```
 
