@@ -21,3 +21,27 @@ The application shows the AI plate in the exercise guide modal when one exists; 
 ## Source tooling
 
 `blender/` is a source-only MakeHuman/Blender render pipeline, kept for reference. It was not used to produce the shipped plates (all 60 are AI-generated per the registry). Never deploy source `.blend` files, MakeHuman exports, MPFB data, pose libraries, working textures, or render caches.
+## The s1-deadlift hero card
+
+`assets/plates/svg/s1-deadlift.svg` is **900x600** while the 79 generated cards are
+**720x420**. This is intentional, not stale output.
+
+`scripts/generate-workout-cards.mjs` skips that one card explicitly:
+
+```js
+if (card.id === 's1-deadlift') continue; // Reviewed custom override is intentionally retained.
+```
+
+It is a reviewed, hand-authored card kept as the deadlift hero, and the
+generator will not overwrite it. Two consequences worth knowing:
+
+- Re-running the generator rewrites the other 79 cards and **leaves this one
+  alone**. The output is content-identical to what is committed; the only byte
+  difference is line endings (the committed files are CRLF, the generator emits
+  LF), so a Windows checkout can show all 80 as modified when nothing changed.
+- `tests/plate-assets.test.js` declares the exception **by card id** in a
+  `CARD_OVERRIDES` map, not by geometry. A new card at an unexpected size fails
+  the test; retiring this override and regenerating the card at 720x420 does not.
+
+If the hero card is ever replaced by a generated one, remove its entry from
+`CARD_OVERRIDES` in the same commit.
