@@ -113,8 +113,18 @@
                 <input class="input" id="cex-name" placeholder="Name (required)" style="flex:1;min-width:160px;" />
                 <input class="input" id="cex-equipment" placeholder="Equipment" style="max-width:150px;" />
                 <input class="input" id="cex-muscles" placeholder="Muscles, e.g. Chest, triceps" style="flex:1;min-width:180px;" />
+                <select class="input" id="cex-component" style="max-width:190px;">
+                  <option value="">Component…</option>
+                </select>
                 <button class="btn btn-gold btn-sm" id="cex-add">Add</button>
               </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+                <input class="input" id="cex-cues" placeholder="Form cues — one per semicolon" style="flex:1;min-width:220px;" />
+                <input class="input" id="cex-safety" placeholder="Safety notes" style="flex:1;min-width:200px;" />
+                <input class="input" id="cex-programming" placeholder="Programming, e.g. 3x8 @ 60s" style="flex:1;min-width:190px;" />
+                <input class="input" id="cex-plate" placeholder="Plate image URL (optional)" style="flex:1;min-width:200px;" />
+              </div>
+              <p class="card-muted" style="margin:8px 0 0;font-size:.74rem;">Custom entries carry no doctrine citation, so they are labelled as your own. With no plate image a generic card is generated from the fields above.</p>
               <div class="list" id="cex-list" style="margin-top:12px;"></div>
               <p class="card-muted" id="cex-status" style="margin:8px 0 0;font-size:.74rem;"></p>
             </div>
