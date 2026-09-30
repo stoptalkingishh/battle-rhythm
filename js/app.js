@@ -34,6 +34,7 @@
   var DOM_ATTRS = window.BR_DOM_ATTRS || null;
   var FILTERS = window.BR_FILTERS || null;
   var TEXT = window.BR_SESSION_TEXT || null;
+  var DATA = window.BR_DATA_EXPORT || null;
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -2317,6 +2318,85 @@
         } catch (err) { toast("Import failed: " + err.message); }
         pimport.value = "";
       };
+      reader.readAsText(file);
+    });
+
+    /* ---- full data export / import (Settings) ----
+     * The guest-mode safety net: every stored collection as one JSON file, with
+     * no Drive involved. Both directions go through js/data/data-export.js,
+     * which sanitizes on the way out and on the way in, so a restored file
+     * lands in the shape the app already writes. */
+    function dataCollections() {
+      return {
+        sessions: getSessions(),
+        regiments: getRegiments(),
+        tracker: getLogs(),
+        aftResults: getAftResults(),
+        bodyweight: loadBW(),
+        groups: getGroups(),
+        customExercises: getCustom(),
+        settings: getSettings()
+      };
+    }
+    /* The modules that own each record shape, handed to the pure module so an
+     * import is normalized by the same code that reads localStorage. */
+    function dataExportCtx() {
+      return { planShare: PLAN, trackerSchema: TS, aft: AFT_RESULTS, bodyweight: BW, custom: CUST };
+    }
+    /* Apply a validated envelope. Writes go through store() so the Drive mirror
+     * and outbox see them like any other save; the settings write keeps this
+     * device's password hash, which the file deliberately never carries. */
+    function applyDataImport(data) {
+      DATA.COLLECTIONS.forEach(function (c) {
+        if (c.key === "settings") return;
+        store(c.localKey, data.collections[c.key]);
+      });
+      var settings = {};
+      Object.keys(data.collections.settings).forEach(function (k) { settings[k] = data.collections.settings[k]; });
+      var live = getSettings();
+      DATA.PRESERVED_SETTINGS.forEach(function (k) { if (live && live[k] != null) settings[k] = live[k]; });
+      store("br_settings", settings);
+      /* Imported data can leave the view pointing at a record it no longer has. */
+      STATE.session = null;
+      STATE.groupFilter = null;
+      STATE.editingGroup = null;
+      refreshView();
+    }
+
+    var dexport = $("#data-export");
+    if (dexport && DATA) dexport.addEventListener("click", function () {
+      var doc = DATA.buildExport(dataCollections(), dataExportCtx());
+      var blob = new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = "battle-rhythm-data.json"; document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      toast("Exported " + doc.counts.sessions + " sessions and " + doc.counts.trackerEntries + " log entries");
+    });
+    var dimport = $("#data-import");
+    if (dimport && DATA) dimport.addEventListener("change", function (event) {
+      var file = event.target.files && event.target.files[0];
+      if (!file) return;
+      if (file.size > DATA.MAX_FILE_BYTES) {
+        toast("That backup file is too large to import.");
+        dimport.value = "";
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function () {
+        var res = DATA.parseImport(String(reader.result), dataExportCtx());
+        if (!res.ok) { toast("Import failed: " + res.error); dimport.value = ""; return; }
+        var c = res.data.counts;
+        var msg = "Restore " + c.sessions + " sessions, " + c.regiments + " regiments, " +
+          c.trackerEntries + " log entries, " + c.bodyweight + " weigh-ins, " +
+          c.aftResults + " AFT results and " + c.customExercises + " custom exercises?\n\n" +
+          "This replaces the local data on this device.";
+        if (!window.confirm(msg)) { dimport.value = ""; return; }
+        applyDataImport(res.data);
+        toast("Imported " + c.sessions + " sessions and " + c.trackerEntries + " log entries");
+        dimport.value = "";
+      };
+      reader.onerror = function () { toast("Could not read that file."); dimport.value = ""; };
       reader.readAsText(file);
     });
 

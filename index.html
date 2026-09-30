@@ -566,6 +566,15 @@
         <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Google Drive backup</h4>
         <p class="card-muted" id="drive-status" style="margin:0 0 10px;"></p>
         <div id="drive-auth-area" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"></div>
+        <div class="divider" style="margin:16px 0;"></div>
+        <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Data backup (JSON)</h4>
+        <p class="card-muted" style="margin:0 0 10px;">Download every session, regiment, log entry, weigh-in, AFT result and setting as one JSON file. Works in guest mode, no Google Drive needed. Restoring a file replaces the stored data on this device.</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" id="data-export">Export all data</button>
+          <label class="btn btn-ghost btn-sm" style="display:inline-flex;cursor:pointer;margin:0;">Import data
+            <input type="file" id="data-import" accept=".json,application/json" style="display:none;" />
+          </label>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost btn-sm" id="settings-cancel">Cancel</button>
@@ -649,6 +658,7 @@
   <script src="js/data/dom-attrs.js?v=battle-rhythm-40"></script>
   <script src="js/data/filters.js?v=battle-rhythm-40"></script>
   <script src="js/data/session-text.js?v=battle-rhythm-40"></script>
+  <script src="js/data/data-export.js?v=battle-rhythm-40"></script>
   <script src="js/app.js?v=battle-rhythm-40"></script>
 </body>
 </html>
