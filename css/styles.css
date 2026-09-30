@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,500;0,600;0,700;1,600&family=Inter:wght@400;500;600;700&display=swap');
+/* Webfonts (Barlow Condensed, Inter) are declared in index.html, not here.
+   An @import at the top of a stylesheet is only discovered once this file has
+   downloaded and been parsed, which puts a serial round trip in front of the
+   first paint. Issue #18 moved it to <head> for that reason. */
 
 *, *::before, *::after {
   box-sizing: border-box;
