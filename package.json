@@ -26,6 +26,7 @@
   ],
   "scripts": {
     "test": "node --test",
+    "test:e2e": "node --test tests/e2e/*.e2e.mjs",
     "check": "node scripts/check-syntax.mjs",
     "check:bust": "node scripts/check-cache-buster.mjs",
     "check:config": "node scripts/check-config.mjs",

@@ -2129,10 +2129,42 @@
   function progressData() {
     if (!ONE_RM || !ADAPT || !SET_H) return { workouts: [], ids: [] };
     var logs = getLogs();
-    return {
-      workouts: ADAPT.workoutsFromLogs(logs),
-      ids: ADAPT.exercisesWithSets(logs)
-    };
+    var raw = ADAPT.workoutsFromLogs(logs);
+    /* Log results are keyed by the tracker item uid, which is unique per
+     * session, so the raw entries carry opaque ids that match no exercise and
+     * split one exercise's history across sessions. Relabel them with the ref
+     * from the session snapshot taken when the entry was created. */
+    var sessions = getSessions();
+    var keyed = ADAPT.keyWorkoutsByRef(raw, function (itemId) {
+      var snap = snapshotItemRef(logs, sessions, itemId);
+      return snap;
+    });
+    return { workouts: keyed, ids: ADAPT.exercisesWithSetsIn(keyed) };
+  }
+
+  /* Find the exercise/drill ref for a tracker item id by scanning each logged
+   * session's snapshot for the item. Snapshots are per-session, so the item id
+   * is unique across the whole store and the first match is the only one. */
+  function snapshotItemRef(logs, sessions, itemId) {
+    var dates = Object.keys(logs || {}).filter(function (d) { return d !== "schemaVersion"; });
+    for (var i = 0; i < dates.length; i++) {
+      var day = logs[dates[i]];
+      var sids = Object.keys((day && day.sessions) || {});
+      for (var j = 0; j < sids.length; j++) {
+        var entry = day.sessions[sids[j]];
+        var snap = entry && entry.snapshot
+          || sessions.filter(function (x) { return x.id === sids[j]; })[0];
+        if (!snap || !snap.phases) continue;
+        var keys = Object.keys(snap.phases);
+        for (var k = 0; k < keys.length; k++) {
+          var items = (snap.phases[keys[k]].items) || [];
+          for (var m = 0; m < items.length; m++) {
+            if (items[m] && items[m].id === itemId && items[m].ref) return items[m].ref;
+          }
+        }
+      }
+    }
+    return "";
   }
 
   function renderProgress() {
