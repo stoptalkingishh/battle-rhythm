@@ -75,7 +75,8 @@
     { global: "BRChart", module: "js/chart.js", required: false },
     { global: "BR_DOM_ATTRS", module: "js/data/dom-attrs.js", required: false },
     { global: "BR_FILTERS", module: "js/data/filters.js", required: true },
-    { global: "BR_SESSION_TEXT", module: "js/data/session-text.js", required: true }
+    { global: "BR_SESSION_TEXT", module: "js/data/session-text.js", required: true },
+    { global: "BR_DATA_EXPORT", module: "js/data/data-export.js", required: false }
   ];
 
   /* null/undefined only. An empty array or object means the file loaded and
