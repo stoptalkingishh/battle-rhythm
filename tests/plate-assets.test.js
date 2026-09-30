@@ -225,23 +225,61 @@ test("every workout card is a usable, self-consistent SVG", () => {
   assert.deepEqual(problems, [], `unusable SVG cards:\n  ${problems.join("\n  ")}`);
 });
 
-test("SVG card geometry is one of the two known sizes", () => {
-  // The current generator hardcodes 720x420 for every card. s1-deadlift is
-  // 900x600, so it cannot have come from the current generator — a stale or
-  // hand-authored card. It is listed here rather than blessed silently: a third
-  // geometry appearing is a failing test, not a surprise in production.
-  const known = new Set(["720x420", "900x600"]);
-  const seen = new Map();
+// The generator emits 720x420 for every card it owns. Cards it deliberately
+// does not own are declared here BY ID, with the reason — not by geometry.
+//
+// s1-deadlift is a reviewed, hand-authored hero card. generate-workout-cards.mjs
+// skips it on purpose:
+//
+//     if (card.id === 's1-deadlift') continue; // Reviewed custom override ...
+//
+// so the generator can never rewrite it and 900x600 is intentional, not stale
+// output. Declaring the exception per id rather than per geometry is what makes
+// a NEW outlier fail while a RETIRED one cannot. See assets/plates/README.md.
+const GENERATED_CARD_GEOMETRY = "720x420";
+const CARD_OVERRIDES = new Map([
+  ["s1-deadlift", "reviewed hand-authored hero card; the generator skips it by design"]
+]);
+
+test("every SVG card is at the generator's geometry unless it is a declared override", () => {
+  const unexpected = [];
   for (const card of cards) {
+    if (CARD_OVERRIDES.has(card.id)) continue;
     const { width, height } = svgGeometry(card.src);
-    const key = geometry(width, height);
-    if (!seen.has(key)) seen.set(key, []);
-    seen.get(key).push(card.id);
+    const actual = geometry(width, height);
+    if (actual !== GENERATED_CARD_GEOMETRY) unexpected.push(`${card.id}: ${actual}`);
   }
 
-  const unknown = [...seen.keys()].filter(key => !known.has(key));
-  assert.deepEqual(unknown, [], `cards at an undocumented geometry:\n  ${unknown.map(key => `${key}: ${seen.get(key).join(", ")}`).join("\n  ")}`);
-  assert.deepEqual([...seen.keys()].sort(), [...known].sort(), "the documented geometry set no longer matches what is on disk");
+  assert.deepEqual(
+    unexpected,
+    [],
+    `cards at an undeclared geometry (expected ${GENERATED_CARD_GEOMETRY}, or declare the card in \
+CARD_OVERRIDES above with its reason):\n  ${unexpected.join("\n  ")}`
+  );
+});
+
+test("a declared SVG card override still matches the file on disk", () => {
+  // Tolerant on purpose. If the override is retired and the card is regenerated
+  // at the generated geometry, this still passes: the entry goes inert and is
+  // cleaned up by hand. The previous version of this file asserted that the set
+  // of geometries on disk equals a fixed set, which meant a correct fix to #24
+  // failed CI with a message that read like a bug. A guard must not punish the
+  // right answer.
+  const wrong = [];
+  for (const [id] of CARD_OVERRIDES) {
+    const card = cards.find(c => c.id === id);
+    if (!card) {
+      wrong.push(`${id}: declared as an override but no such card exists`);
+      continue;
+    }
+    const { width, height } = svgGeometry(card.src);
+    const actual = geometry(width, height);
+    if (actual === GENERATED_CARD_GEOMETRY) continue; // override retired, entry inert
+    if (actual === "900x600") continue;               // the documented hero geometry
+    wrong.push(`${id}: is ${actual}, which is neither the generated geometry nor a documented override`);
+  }
+
+  assert.deepEqual(wrong, [], `stale or wrong SVG card overrides:\n  ${wrong.join("\n  ")}`);
 });
 
 test("every exercise with an SVG fallback has a real file at the generated path", () => {
