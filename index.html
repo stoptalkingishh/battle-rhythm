@@ -539,6 +539,30 @@
     </div>
   </div>
 
+  <!-- Vault unlock gate (only shown when local encryption is on) -->
+  <div class="modal hidden" id="vault-modal" role="dialog" aria-modal="true" aria-labelledby="vault-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="vault-modal-title" style="font-family:var(--font-display); text-transform:uppercase; letter-spacing:.05em; margin:0;">Unlock Your Data</h3>
+          <p class="card-muted" style="margin:4px 0 0;">Your training data on this device is encrypted.</p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <label class="field-label" for="vault-unlock-input">Encryption passphrase</label>
+        <input class="input" id="vault-unlock-input" type="password" autocomplete="off" placeholder="Your passphrase" />
+        <p class="card-muted" style="margin:6px 0 0;font-size:.76rem;" id="vault-unlock-error" role="alert"></p>
+        <p class="card-muted" style="margin:10px 0 0;font-size:.76rem;">
+          There is no way to recover this data without the passphrase. If it is
+          lost, the data is gone. Export a JSON backup first if you have not already.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-gold btn-sm" id="vault-unlock-submit">Unlock</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Settings modal -->
   <div class="modal hidden" id="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
     <div class="modal-card">
@@ -566,6 +590,10 @@
         <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Google Drive backup</h4>
         <p class="card-muted" id="drive-status" style="margin:0 0 10px;"></p>
         <div id="drive-auth-area" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"></div>
+        <div class="divider" style="margin:16px 0;"></div>
+        <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Encrypt data on this device</h4>
+        <p class="card-muted" id="vault-status" style="margin:0 0 10px;"></p>
+        <div id="vault-panel"></div>
         <div class="divider" style="margin:16px 0;"></div>
         <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Data backup (JSON)</h4>
         <p class="card-muted" style="margin:0 0 10px;">Download every session, regiment, log entry, weigh-in, AFT result and setting as one JSON file. Works in guest mode, no Google Drive needed. Restoring a file replaces the stored data on this device.</p>
@@ -663,6 +691,8 @@
   <script src="js/data/i18n.js?v=battle-rhythm-41"></script>
   <script src="js/data/locale-en.js?v=battle-rhythm-41"></script>
   <script src="js/data/locale-es.js?v=battle-rhythm-41"></script>
+  <script src="js/data/crypto-vault.js?v=battle-rhythm-41"></script>
+  <script src="js/vault.js?v=battle-rhythm-41"></script>
   <script src="js/app.js?v=battle-rhythm-41"></script>
 </body>
 </html>
