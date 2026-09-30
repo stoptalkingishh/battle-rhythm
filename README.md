@@ -23,6 +23,18 @@ Runs entirely client-side on GitHub Pages. No build step, no backend — session
 
 The AFT (**Army Fitness Test**) replaced the historic Army Combat Fitness Test on **1 June 2025** per Army Directive 2025-06. It has **five events** — MDL, HRP, SDC, PLK, 2MR — the Standing Power Throw is not a current AFT event. The Combat Field Test (CFT) is in its initial implementation period for designated combat specialties under AD 2026-07; consult current Army policy for applicability and standards.
 
+### Versions & last verified
+
+Doctrine content is static, so it drifts when a publication is revised. `js/data/doctrine-sources.js` is the machine-readable record of what the app is quoting: for every source, the edition and whether that edition was **verified** against the publisher's record; for every doctrine data file, the `lastVerified` date, its review cadence, and what the last pass actually checked. Where an edition could not be confirmed it is recorded as `edition unverified` rather than guessed.
+
+The **Doctrine tab** renders this directly — a "Versions & last verified" section with a per-file last-verified table and the edition quoted for each source, so a user can see what the app quotes without leaving the app.
+
+```bash
+npm run check:doctrine     # age of every doctrine data file; warns past the threshold
+```
+
+CI warns (does not fail) when a file's `lastVerified` date passes the six-month threshold. `tests/doctrine-sources.test.js` is the hard gate: a doctrine record citing a paragraph, table, chapter, page or drill no source entry covers fails the build. Review cadence, the re-verification checklist, and the current list of unverified editions are in [`docs/doctrine-content-review.md`](docs/doctrine-content-review.md).
+
 ## Google Drive backup
 
 Sessions, regiments, tracker logs, and tag groups can be backed up to your own Google Drive (same mechanism as the `openquiz` app). With the keys below configured, the Settings modal gains a **Google Drive backup** section:
@@ -65,6 +77,7 @@ js/run-visual.js                  Run-track visualization for run events
 js/data/exercises.js              80 exercise schema entries
 js/data/exercises-atp.js          163 exercise schema entries from ATP 7-22.02
 js/data/doctrine.js               Doctrine content (components, drills, AFT, programming)
+js/data/doctrine-sources.js       Provenance registry: source editions, verification dates, citation guard
 js/data/movement-guides.js        Coach-figure pose/pattern definitions
 js/data/muscle-maps.js            Muscle map geometry used by the coach figure
 js/data/workout-cards.js          Generated 80-entry card manifest (do not hand-edit)

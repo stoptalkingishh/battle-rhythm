@@ -51,6 +51,17 @@ jobs:
       - name: Config guard
         run: node scripts/check-config.mjs
 
+      # The doctrine content in js/data/ is static and drifts when a cited
+      # publication is revised. This warns when a data file's recorded
+      # lastVerified date passes the review threshold in
+      # js/data/doctrine-sources.js. It deliberately does not fail the build:
+      # a stale date is a prompt to re-verify, and failing here would block
+      # unrelated work and teach maintainers to ignore it. The hard gate on
+      # citation/source consistency is tests/doctrine-sources.test.js, which
+      # runs in the unit-tests step above.
+      - name: Doctrine provenance freshness (warn)
+        run: node scripts/check-doctrine-freshness.mjs
+
   deploy:
     name: Deploy to GitHub Pages
     needs: ci

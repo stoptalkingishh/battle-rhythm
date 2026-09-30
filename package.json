@@ -29,6 +29,7 @@
     "check": "node scripts/check-syntax.mjs",
     "check:bust": "node scripts/check-cache-buster.mjs",
     "check:config": "node scripts/check-config.mjs",
+    "check:doctrine": "node scripts/check-doctrine-freshness.mjs",
     "bump:bust": "node scripts/bump-cache-buster.mjs"
   }
 }

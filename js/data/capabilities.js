@@ -40,6 +40,7 @@
     { global: "BR_EXERCISES", module: "js/data/exercises.js", required: true },
     { global: "BR_ATP_EXERCISES", module: "js/data/exercises-atp.js", required: true },
     { global: "BR_DOCTRINE", module: "js/data/doctrine.js", required: true },
+    { global: "BR_DOCTRINE_SOURCES", module: "js/data/doctrine-sources.js", required: false },
     { global: "BR_MOVEMENT_GUIDES", module: "js/data/movement-guides.js", required: false },
     { global: "BR_MUSCLE_MAPS", module: "js/data/muscle-maps.js", required: false },
     { global: "BR_AI_PLATES", module: "assets/plates/ai/registry.js", required: false },

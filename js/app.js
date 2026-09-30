@@ -3,6 +3,12 @@
 (function () {
   var EX = (window.BR_EXERCISES || []).concat(window.BR_ATP_EXERCISES || []);
   var DOC = window.BR_DOCTRINE || {};
+  /* Provenance registry (js/data/doctrine-sources.js): which publication each
+   * doctrine record came from, at what edition, and when a human last checked
+   * it. Rendered in the Doctrine tab under "Versions & last verified" so a
+   * user can see what the app is quoting rather than trusting the README.
+   * Absent module -> the section says so; the rest of the tab still renders. */
+  var PROV = window.BR_DOCTRINE_SOURCES || null;
   var GUIDES = window.BR_MOVEMENT_GUIDES || {};
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -1979,6 +1985,74 @@
     });
   }
 
+  /* Versions & last verified. Shows, per doctrine data file, the date a human
+   * last reconciled it with the publisher's records, how long ago that was, and
+   * what that pass actually covered - plus every source with the edition the
+   * app is quoting. A source whose edition could not be verified says so
+   * instead of guessing; see js/data/doctrine-sources.js and
+   * docs/doctrine-content-review.md. */
+  function renderDoctrineVersions() {
+    var host = $("#doctrine-versions");
+    if (!host) return;
+    host.innerHTML = "";
+    if (!PROV) {
+      host.appendChild(el("p", { class: "card-muted", style: "margin:0;",
+        text: "Provenance registry unavailable (js/data/doctrine-sources.js did not load). Source editions and verification dates are listed in the repository." }));
+      return;
+    }
+
+    /* One date for the whole panel so every row ages consistently. */
+    var today = new Date();
+    var nowIso = today.getFullYear() + "-" +
+      ("0" + (today.getMonth() + 1)).slice(-2) + "-" +
+      ("0" + today.getDate()).slice(-2);
+
+    var staleCount = PROV.overdueFiles(nowIso).length;
+    host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 10px;",
+      text: "Every doctrine record below is drawn from a named Army publication. " +
+        "This app is not an official Department of the Army publication, and " +
+        "quoted text is only as current as the edition shown here. Re-verify " +
+        "against the source before relying on it for a unit programme." }));
+
+    if (staleCount) {
+      host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 12px;color:var(--warn);",
+        text: staleCount + " of " + PROV.DATA_FILES.length + " doctrine data files are past their " +
+          PROV.POLICY.staleAfterMonths + "-month review date and should be re-checked." }));
+    }
+
+    host.appendChild(el("h3", { class: "card-title", text: "Last verified" }));
+    var wrap = el("div", { class: "table-wrap" }, [
+      el("table", { class: "table" }, [
+        el("thead", {}, [el("tr", {}, ["Content file", "Last verified", "Age", "Review", "What was checked"]
+          .map(function (h) { return el("th", { text: h }); }))]),
+        el("tbody", {}, PROV.reviewStatus(nowIso).map(function (r) {
+          return el("tr", {}, [
+            el("td", { html: "<span style='font-size:.78rem;'>" + esc(r.file) + "</span>" }),
+            el("td", { text: r.lastVerified || "never" }),
+            el("td", { text: r.ageDays === null ? "-" : r.ageDays + " d" }),
+            el("td", { text: r.overdue ? "due " + (r.ageMonths || 0) + " mo" : "current" }),
+            el("td", { html: "<span style='font-size:.74rem;color:var(--text-muted);'>" + esc(r.verifiedScope) + "</span>" })
+          ]);
+        }))
+      ])
+    ]);
+    host.appendChild(wrap);
+
+    host.appendChild(el("h3", { class: "card-title", style: "margin-top:22px;", text: "Edition quoted for each source" }));
+    PROV.all().forEach(function (s) {
+      var line = el("div", { style: "padding:8px 0;border-bottom:1px solid var(--border);" }, [
+        el("div", { html: "<a href='" + esc(s.url) + "' target='_blank' rel='noopener' style='color:var(--gold);'>" +
+          esc(s.publication) + "</a>" }),
+        el("p", { class: "card-muted", style: "font-size:.78rem;margin:2px 0 0;", text: "Edition: " + PROV.editionLabel(s) }),
+        el("p", { class: "card-muted", style: "font-size:.72rem;margin:2px 0 0;", text: s.editionNote })
+      ]);
+      host.appendChild(line);
+    });
+
+    host.appendChild(el("p", { class: "card-muted", style: "font-size:.74rem;margin:12px 0 0;",
+      text: "Registry last reviewed " + PROV.POLICY.registryReviewed + ". " + PROV.POLICY.reviewCadenceNote }));
+  }
+
   function renderDoctrine() {
     if (!DOC.aft) return;
     var sum = DOC.aft.summary || {};
@@ -2110,6 +2184,8 @@
         el("p", { class: "card-muted", style: "font-size:.72rem;margin:4px 0 0;", text: s.citation })
       ]));
     });
+
+    renderDoctrineVersions();
 
     var src = $("#doctrine-sources");
     src.innerHTML = "";

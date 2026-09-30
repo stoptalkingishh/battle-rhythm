@@ -402,7 +402,7 @@ window.BR_EXERCISES = [
     cues: ["25-m shuttles with direction change", "Touch line; accelerate out of turns"],
     programming: "1-4 reps, per FUA/BCT schedules",
     safety: "Clear lane; mark lines; run after dynamic warm-up",
-    source: "QUOTE: para 3-5",
+    source: "QUOTE: FM 7-22 Table 6-2 / para 3-5",
     aft: ["SDC"]
   },
   {
