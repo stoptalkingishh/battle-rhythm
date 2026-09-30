@@ -85,10 +85,23 @@ research/                         Web-reference research docs behind the exercis
 
 ## Visual plates
 
-- **AI plates** (`assets/plates/ai/*.webp`): original AI-generated anatomy illustrations, registered in `registry.js` (`window.BR_AI_PLATES`) with per-image provenance (generator, provider, date, prompt ID, license assertion). 60 of 80 exercises currently have an approved AI plate.
-- **SVG cards** (`assets/plates/svg/*.svg`): generated fallbacks for every exercise, rendered when no AI plate is registered.
+An exercise's visual is resolved in this order, first match wins (`workoutCard()` in `js/exercise-coach.js`):
 
-The exercise guide modal shows the AI plate first, falling back to the SVG card or the inline coach figure. The library tiles always show a compact card; the plate renders inside the guide modal. See `assets/plates/README.md` and `assets/plates/AI-ASSET-INTAKE.md` for the plate pipeline and intake workflow.
+1. **Official figure** (`assets/plates/atp/*.webp`) — figures extracted from ATP 7-22.02, mapped per exercise in `js/data/atp-figures.js`. Public domain, and preferred over generated art because it is the authoritative depiction.
+2. **SVG card** (`assets/plates/svg/*.svg`) — generated technical cards, one per exercise, so no tile is ever empty.
+3. **AI plate** (`assets/plates/ai/*.webp`) — original AI-generated anatomy illustrations, registered in `registry.js` (`window.BR_AI_PLATES`) with per-image provenance (generator, provider, date, prompt ID, license assertion).
+
+Because official figures outrank AI plates, the two counts are different numbers and both matter:
+
+| tier | core exercises | note |
+|---|---|---|
+| official ATP figure | 28 | wins outright |
+| AI plate | 37 | the tier actually displayed for these |
+| SVG card | 15 | the 10 AFT events and 5 stability/recovery drills |
+
+`BR_AI_PLATES` registers 60 plates, but only 37 are ever displayed — for 23 of them an official figure takes precedence. The remaining 23 are still shipped, and remain the fallback if an official figure is ever unavailable.
+
+Where an exercise has no official figure and no AI plate, the guide modal falls back to the inline coach figure (a generated three-frame movement sequence from `js/data/movement-guides.js`). The library tiles always show a compact card; the plate renders inside the guide modal. See `assets/plates/README.md` and `assets/plates/AI-ASSET-INTAKE.md` for the plate pipeline and intake workflow.
 
 ## Third-party assets
 
