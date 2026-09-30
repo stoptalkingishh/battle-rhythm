@@ -36,12 +36,10 @@
   var TEXT = window.BR_SESSION_TEXT || null;
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
-  var I18N = window.BR_I18N || null;
-
   /* -- localization (#20) ------------------------------------------------
    * The lookup seam. t() falls back to the English catalog key-by-key and
    * finally to the key itself, so a missing translation degrades to English or
-   * a visible key — never to a blank string. If the module failed to load we
+   * a visible key - never to a blank string. If the module failed to load we
    * fall back to identity so the UI still renders copy.
    */
   var LOCALE_KEY = "br_locale";
@@ -62,6 +60,7 @@
     store(LOCALE_KEY, I18N.getLocale());
     renderWeeklyPlan();
   }
+  var VAULT = null; /* built in initStorage(); stays null when js/vault.js is absent */
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -100,13 +99,28 @@
   var TIMER_CREATE = (window.BRTimer && typeof window.BRTimer.create === "function") ? window.BRTimer.create : null;
   var activeTimers = [];
 
+  /* The vault (js/vault.js) is the only thing that touches localStorage for
+   * app data now. With no vault record on disk it is a pass-through, so this
+   * is exactly the behaviour that shipped before encryption existed. See
+   * js/vault.js for why the decrypted mirror is held in memory. */
   function store(key, val) {
-    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+    /* The else branch matters as much as the if: if js/vault.js fails to load,
+     * every save would be silently dropped rather than falling back to
+     * localStorage. A missing optional module must cost the feature, not the
+     * user's data. */
+    if (VAULT) VAULT.set(key, val);
+    else { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
     if (window.BRCloud && window.BRCloud.isActive()) {
       try { window.BRCloud.mirror(key); } catch (e) {}
     }
   }
-  function load(key, def) { try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; } }
+  function load(key, def) {
+    if (VAULT) return VAULT.get(key, def);
+    try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
+  }
+  /* Removing a key has to go through the same layer, or a collection the user
+   * cleared would come straight back out of the vault's in-memory mirror. */
+  function unstore(key) { if (VAULT) VAULT.remove(key); else { try { localStorage.removeItem(key); } catch (e) {} } }
   function uid() { return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function todayStr() {
     var d = new Date();
@@ -293,7 +307,7 @@
   function saveBW(v) { store("br_bodyweight", v); }
   function getBWGoal() { return BW ? BW.normalizeGoal(load(KEYS.bwGoal, null)) : null; }
   function saveBWGoal(g) { store(KEYS.bwGoal, BW ? BW.normalizeGoal(g) : g); }
-  function clearBWGoal() { try { localStorage.removeItem(KEYS.bwGoal); } catch (e) {} }
+  function clearBWGoal() { unstore(KEYS.bwGoal); }
 
   function renderBodyWeight() {
     var host = $("#home-bodyweight");
@@ -828,7 +842,181 @@
     $("#settings-new-pw").value = "";
     $("#settings-confirm-pw").value = "";
     renderDriveSection();
+    renderVaultPanel();
     $("#settings-modal").classList.remove("hidden");
+  }
+
+  /* ---- local encryption vault (issue #16) ----
+     *
+     * Opt-in, off by default, and deliberately not automatic: a user's data is
+     * never encrypted behind their back. Without a vault record on disk,
+     * VAULT.get/set are a pass-through to localStorage and the app behaves
+     * exactly as it did before this feature existed.
+     *
+     * WHAT THIS PROTECTS, stated plainly so the UI can state it plainly: the
+     * stored bytes. Someone who copies this browser profile, or opens
+     * localStorage from another account on the machine, cannot read the
+     * training data without the passphrase.
+     *
+     * WHAT IT DOES NOT: anything running on this origin. An XSS payload can
+     * read the plaintext while the app is open, and the app holds the derived
+     * key in memory for the whole session. This is a real KDF and real
+     * authenticated encryption; it is not a sandbox.
+     *
+     * RECOVERY: none, by design. A forgotten passphrase means the data is
+     * permanently unreadable, so the UI says so before the user opts in and
+     * points at the JSON export as the only backup. There is deliberately no
+     * escrow copy, no hint key, and no reset button. */
+  function initStorage() {
+    var crypto = window.BR_VAULT;
+    var factory = window.BRVault;
+    /* Either module missing: no vault, no change in behaviour. The capability
+     * notice already tells the user which file did not load. */
+    if (!crypto || !factory || typeof factory.create !== "function") return;
+    try {
+      VAULT = factory.create(crypto, { storage: window.localStorage, crypto: window.crypto });
+    } catch (e) {
+      console.error("Battle Rhythm: local encryption unavailable -", e);
+      VAULT = null;
+    }
+    /* A write that is still being sealed must not be lost to a tab close. The
+     * browser will not wait on an async task during unload, so this is
+     * best-effort - which is why the UI tells the user to keep the export. */
+    window.addEventListener("pagehide", function () { if (VAULT) VAULT.flush(); });
+  }
+
+  function vaultAvailable() { return !!VAULT; }
+
+  /* The unlock gate. Shown before the app renders anything when a vault record
+   * exists: without the passphrase there is nothing to show, and rendering an
+   * empty dataset would read as "your data is gone". */
+  function vaultGate() {
+    return VAULT && VAULT.isEnabled() && !VAULT.isUnlocked();
+  }
+
+  function showVaultGate(onUnlocked) {
+    if (!$("#vault-modal")) { onUnlocked(); return; }
+    $("#vault-unlock-input").value = "";
+    $("#vault-unlock-error").textContent = "";
+    $("#vault-modal").classList.remove("hidden");
+    var submit = function () {
+      var val = $("#vault-unlock-input").value;
+      var errEl = $("#vault-unlock-error");
+      /* Deliberately identical message for a wrong passphrase and a corrupt
+       * record: telling them apart is a confirmation oracle for the
+       * passphrase, and there is nothing actionable in the difference. */
+      errEl.textContent = "Unlocking...";
+      VAULT.unlock(val).then(function (ok) {
+        if (!ok) {
+          errEl.textContent = "That passphrase did not unlock your data.";
+          $("#vault-unlock-input").value = "";
+          return;
+        }
+        errEl.textContent = "";
+        $("#vault-modal").classList.add("hidden");
+        onUnlocked();
+      });
+    };
+    $("#vault-unlock-submit").onclick = submit;
+    $("#vault-unlock-input").onkeydown = function (e) { if (e.key === "Enter") submit(); };
+    setTimeout(function () { $("#vault-unlock-input").focus(); }, 30);
+  }
+
+  /* The Settings panel. Rendered from state rather than declared in
+   * index.html, because the controls that make sense differ entirely between
+   * "encryption off", "on and unlocked", and "module unavailable". */
+  function renderVaultPanel() {
+    var statusEl = $("#vault-status");
+    var panel = $("#vault-panel");
+    if (!statusEl || !panel) return;
+    panel.innerHTML = "";
+
+    if (!vaultAvailable()) {
+      statusEl.textContent = "Local encryption is not available in this browser, so data is stored unencrypted.";
+      return;
+    }
+
+    if (!VAULT.isEnabled()) {
+      statusEl.textContent = "Off. Your sessions, logs, weigh-ins and AFT results are stored in plain text in this browser, readable by anything with access to this profile.";
+      var field = el("div", {}, [
+        el("label", { class: "field-label", for: "vault-new-pass", text: "Choose an encryption passphrase" }),
+        el("input", { class: "input", id: "vault-new-pass", type: "password", autocomplete: "new-password" }),
+        el("label", { class: "field-label", for: "vault-new-pass-2", text: "Repeat it", style: "margin-top:10px;" }),
+        el("input", { class: "input", id: "vault-new-pass-2", type: "password", autocomplete: "new-password" }),
+        el("p", {
+          class: "card-muted",
+          style: "margin:8px 0 0;font-size:.76rem;",
+          text: "At least " + window.BRVault.MIN_PASSPHRASE + " characters. This is separate from the master password above, and is not stored anywhere."
+        })
+      ]);
+      /* No recovery exists, so say it before the switch, not after. */
+      var warn = el("p", {
+        class: "card-muted",
+        style: "margin:10px 0 0;font-size:.76rem;",
+        text: "There is no recovery. If you forget this passphrase your data cannot be read again by anyone, including you. Export a JSON backup below first if you have not already."
+      });
+      var btn = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Turn on encryption" });
+      btn.addEventListener("click", function () {
+        var a = $("#vault-new-pass").value;
+        var b = $("#vault-new-pass-2").value;
+        if (a !== b) { toast("Passphrases do not match"); return; }
+        if (!window.confirm("Encrypt the data stored in this browser?\n\nAnyone with access to this browser profile will need this passphrase to read your training data. There is no recovery if it is lost.")) return;
+        btn.disabled = true;
+        btn.textContent = "Encrypting...";
+        VAULT.enable(a).then(function (res) {
+          btn.disabled = false;
+          btn.textContent = "Turn on encryption";
+          if (!res.ok) { toast(res.error); renderVaultPanel(); return; }
+          $("#vault-new-pass").value = "";
+          $("#vault-new-pass-2").value = "";
+          toast("Local encryption is on");
+          renderVaultPanel();
+        });
+      });
+      panel.appendChild(field);
+      panel.appendChild(warn);
+      panel.appendChild(el("div", { style: "margin-top:10px;" }, [btn]));
+      return;
+    }
+
+    statusEl.textContent = VAULT.isUnlocked()
+      ? "On. Your data is encrypted at rest with AES-GCM; the key is derived from your passphrase with PBKDF2 and is held in memory only while this tab is open. Export a JSON backup regularly - it is the only copy that survives a forgotten passphrase."
+      : "On, and locked in this tab.";
+
+    if (!VAULT.isUnlocked()) {
+      var unlockBtn = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Unlock in this tab" });
+      unlockBtn.addEventListener("click", function () { showVaultGate(function () { renderVaultPanel(); }); });
+      panel.appendChild(el("div", {}, [unlockBtn]));
+      return;
+    }
+
+    var offBtn = el("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Turn off encryption" });
+    offBtn.addEventListener("click", function () {
+      var val = $("#vault-off-pass").value;
+      if (!val) { toast("Enter your current passphrase to turn encryption off"); return; }
+      if (!window.confirm("Turn off encryption?\n\nYour data goes back to being stored in plain text, readable by anything with access to this browser profile.")) return;
+      offBtn.disabled = true;
+      offBtn.textContent = "Turning off...";
+      VAULT.disable(val).then(function (res) {
+        offBtn.disabled = false;
+        offBtn.textContent = "Turn off encryption";
+        if (!res.ok) { toast(res.error); return; }
+        $("#vault-off-pass").value = "";
+        toast("Local encryption is off; your data is readable again");
+        renderVaultPanel();
+        refreshView();
+      });
+    });
+    panel.appendChild(el("p", {
+      class: "card-muted",
+      style: "margin:0 0 10px;font-size:.76rem;",
+      text: "This does not protect against anything running in this page while it is open. A malicious script on this origin can read your data with the key already in memory."
+    }));
+    panel.appendChild(el("div", { class: "field" }, [
+      el("label", { class: "field-label", for: "vault-off-pass", text: "Current passphrase" }),
+      el("input", { class: "input", id: "vault-off-pass", type: "password", autocomplete: "off" })
+    ]));
+    panel.appendChild(el("div", { style: "margin-top:10px;" }, [offBtn]));
   }
 
   /* ---- Google Drive backup section (Settings modal) ---- */
@@ -2681,8 +2869,9 @@
       renderHome();
     });
 
-    $$(".modal").forEach(function (m) {
+    $(".modal").forEach(function (m) {
       if (m) m.addEventListener("click", function (ev) {
+        if (m.id === "vault-modal") return;
         if (ev.target.classList.contains("modal")) {
           ev.target.classList.add("hidden");
           pendingAuth = null;
@@ -2694,6 +2883,7 @@
       var openModal = $$(".modal").find(function (modal) { return !modal.classList.contains("hidden"); });
       if (!openModal) return;
       if (event.key === "Escape" && openModal) {
+        if (openModal.id === "vault-modal") return;
         openModal.classList.add("hidden");
         pendingAuth = null;
         if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
@@ -2783,15 +2973,31 @@
   function init() {
     initI18n();
     startCapabilities();
+    initStorage();
+    if (vaultGate()) {
+      /* Nothing may render before the passphrase: the collections read as empty
+       * while locked, and an empty library looks like data loss. */
+      showVaultGate(function () {
+        seedPresets();
+        bindEvents();
+        nav(initialView());
+        if (window.BRCloud) startCloud();
+      });
+      return;
+    }
     seedPresets();
     bindEvents();
     nav(initialView());
-    if (window.BRCloud) {
-      window.BRCloud.init(function (dataChanged) {
-        if (dataChanged && !hasOpenModal()) refreshView();
-        renderDriveSection();
-      });
-    }
+    if (window.BRCloud) startCloud();
+  }
+
+  function startCloud() {
+    if (!window.BRCloud) return;
+    window.BRCloud.init(function (dataChanged) {
+      if (dataChanged && !hasOpenModal()) refreshView();
+      renderDriveSection();
+      renderVaultPanel();
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);
