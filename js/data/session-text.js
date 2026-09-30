@@ -152,7 +152,29 @@
     var summary = (ctx && ctx.actualSummary) || noSummary;
     var lines = sessionPlainText(session, ctx).split("\n");
     var results = (entry && entry.results) || {};
-    lines.splice(4, 0, "Tracker status: " + (entry && entry.complete ? "Completed" : "In progress"));
+    /* The status line is placed by the stats line, never by a fixed index. The
+     * header above it is not a fixed shape: `Date:` is emitted only when a date
+     * label is given, and a circuit session adds a `Format:` line. An index
+     * therefore lands somewhere different depending on which of those were
+     * emitted — at 4 it dropped below `Notes:` whenever the date label was
+     * empty (issue #26). The stats line is the marker because sessionPlainText
+     * always emits exactly one line carrying both the " min  |  Focus: " and
+     * "  |  RPE " separators, and the status belongs directly under it: above
+     * `Notes:`, and above any `Format:` line.
+     */
+    var statusAt = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].indexOf(" min  |  Focus: ") !== -1 && lines[i].indexOf("  |  RPE ") !== -1) {
+        statusAt = i + 1;
+        break;
+      }
+    }
+    /* Defensive only: sessionPlainText always emits the stats line, so the
+     * marker is always found. Appending keeps the line in the document rather
+     * than landing at the top of it if that ever stops being true.
+     */
+    if (statusAt === -1) statusAt = lines.length;
+    lines.splice(statusAt, 0, "Tracker status: " + (entry && entry.complete ? "Completed" : "In progress"));
     lines.push("");
     lines.push("TRACKED RESULTS:");
     var phaseOrder = (ctx && ctx.phaseOrder) || PHASE_ORDER;
