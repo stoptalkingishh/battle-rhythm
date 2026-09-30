@@ -36,6 +36,7 @@
   var TEXT = window.BR_SESSION_TEXT || null;
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
+  var I18N = window.BR_I18N || null;
   /* -- localization (#20) ------------------------------------------------
    * The lookup seam. t() falls back to the English catalog key-by-key and
    * finally to the key itself, so a missing translation degrades to English or
@@ -2869,7 +2870,7 @@
       renderHome();
     });
 
-    $(".modal").forEach(function (m) {
+    $$(".modal").forEach(function (m) {
       if (m) m.addEventListener("click", function (ev) {
         if (m.id === "vault-modal") return;
         if (ev.target.classList.contains("modal")) {
