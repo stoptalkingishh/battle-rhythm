@@ -54,6 +54,8 @@
     { global: "BRTrackerSchema", module: "js/data/tracker-schema.js", required: false },
     { global: "BRTimerCore", module: "js/data/timer-core.js", required: false },
     { global: "BRSync", module: "js/sync-core.js", required: false },
+    { global: "BR_DRIVE_SETUP", module: "js/data/drive-setup.js", required: false },
+    { global: "BRCredentials", module: "js/credentials.js", required: false },
     { global: "BRDrive", module: "js/drive.js", required: false },
     { global: "BRCloud", module: "js/cloud.js", required: false },
     { global: "BRTimer", module: "js/timer.js", required: false },

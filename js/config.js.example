@@ -1,11 +1,21 @@
 "use strict";
 /* Google Drive backup configuration — TEMPLATE.
  *
- * Copy this file to js/config.js and fill in the two values to enable storing
- * workouts in your own Google Drive. js/config.js is tracked in git, so leave
- * the values blank in the tracked copy; CI (scripts/check-config.mjs) fails the
- * build if either one is populated. The deployed site then runs in guest mode:
- * everything lives in localStorage and no sign-in UI is offered.
+ * MOST USERS DO NOT NEED THIS FILE. Battle Rhythm's Settings tab has a
+ * self-service setup flow (Settings > Google Drive backup > Set up Google
+ * Drive) that walks through the Google Cloud console and stores both values in
+ * this browser's localStorage. Leave this file as it is and use that.
+ * See docs/google-drive-setup.md.
+ *
+ * This template is for self-hosters who want Drive backup on for every visitor
+ * with no setup step. Copy this file to js/config.js and fill in the two
+ * values. js/config.js is tracked in git, so add it to .git/info/exclude
+ * (or .gitignore in a fork) before filling it in; CI
+ * (scripts/check-config.mjs) fails the build if either value is committed, and
+ * now also scans the rest of js/ and tests/ for a hard-coded key.
+ *
+ * A build with a populated js/config.js takes priority over anything a visitor
+ * saved in their own browser, so a local paste cannot override it.
  *
  *   BR_GOOGLE_CLIENT_ID
  *     OAuth 2.0 Client ID of type "Web application", from
@@ -31,3 +41,5 @@
  */
 window.BR_GOOGLE_CLIENT_ID = "";
 window.BR_GOOGLE_API_KEY = "";
+/* After changing either value, run `npm run bump:bust` so browsers that have a
+ * cached copy of js/config.js pick the change up. */
