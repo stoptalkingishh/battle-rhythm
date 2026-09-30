@@ -37,6 +37,7 @@
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
   var I18N = window.BR_I18N || null;
+  var HELP = window.BR_HELP || null;
 
   /* -- localization (#20) ------------------------------------------------
    * The lookup seam. t() falls back to the English catalog key-by-key and
@@ -829,6 +830,175 @@
     $("#settings-confirm-pw").value = "";
     renderDriveSection();
     $("#settings-modal").classList.remove("hidden");
+  }
+
+  /* ---- Help: quick-start tour + FAQ ----------------------------------
+   * All copy and ordering come from HELP (js/data/help-content.js), which is
+   * pure data plus pure functions and is unit-tested in tests/. Nothing here
+   * decides what to say; this only builds nodes for what HELP returns, so the
+   * words can be changed and tested without a DOM.
+   *
+   * The whole feature is behind a `|| null` guard: losing the help module
+   * costs the tour and the FAQ, not the app (see BR_HELP in
+   * js/data/capabilities.js, which reports the miss).
+   */
+  var helpTab = "tour";
+  var helpStep = 0;
+
+  function helpSeen() {
+    try { return localStorage.getItem(HELP.SEEN_KEY); } catch (e) { return null; }
+  }
+  function markHelpSeen(stepsSeen) {
+    var rec = HELP.seenRecord(stepsSeen);
+    rec.seenAt = new Date().toISOString();
+    try { localStorage.setItem(HELP.SEEN_KEY, JSON.stringify(rec)); } catch (e) {}
+  }
+
+  function openHelp(tab) {
+    if (!HELP) return;
+    helpTab = tab === "faq" ? "faq" : "tour";
+    helpStep = 0;
+    renderHelp();
+    $("#help-modal").classList.remove("hidden");
+    var close = $("#help-modal-close");
+    if (close && close.focus) close.focus();
+  }
+  function closeHelp() {
+    if (helpTab === "tour") markHelpSeen(helpStep);
+    var modal = $("#help-modal");
+    if (modal) modal.classList.add("hidden");
+  }
+
+  function renderHelp() {
+    if (!HELP) return;
+    renderHelpTabs();
+    if (helpTab === "tour") renderHelpTour(); else renderHelpFaq();
+  }
+
+  function renderHelpTabs() {
+    var tabs = [
+      { id: "tour", label: "Quick-start" },
+      { id: "faq", label: "FAQ (" + HELP.faq().length + ")" }
+    ];
+    var box = $("#help-tabs");
+    box.innerHTML = "";
+    tabs.forEach(function (t) {
+      var active = helpTab === t.id;
+      box.appendChild(el("button", {
+        type: "button",
+        class: "help-tab" + (active ? " active" : ""),
+        role: "tab",
+        "aria-selected": active ? "true" : "false",
+        text: t.label,
+        onclick: function () { helpTab = t.id; helpStep = 0; renderHelp(); }
+      }));
+    });
+  }
+
+  function renderHelpTour() {
+    var steps = HELP.steps();
+    if (!steps.length) return;
+    var step = steps[HELP.progress(helpStep).index];
+    var prog = HELP.progress(helpStep);
+
+    $("#help-modal-sub").textContent = "Four steps to your first logged session.";
+    var body = $("#help-body");
+    body.innerHTML = "";
+    body.appendChild(el("p", { class: "help-step-count", text: prog.label }));
+    body.appendChild(el("h4", { class: "help-step-title", text: step.title }));
+    body.appendChild(el("p", { class: "help-step-body", text: step.body }));
+
+    var footer = $("#help-footer");
+    footer.innerHTML = "";
+    footer.appendChild(el("button", {
+      type: "button",
+      class: "btn btn-ghost btn-sm",
+      text: prog.index === 0 ? "Skip" : "Back",
+      onclick: function () { if (prog.index === 0) closeHelp(); else { helpStep = prog.index - 1; renderHelp(); } }
+    }));
+    /* "Take me there" closes the modal and navigates, so the step does the
+     * thing instead of describing it. Marked done even on the last step:
+     * pressing through to the end is how a Soldier finishes the tour. */
+    footer.appendChild(el("button", {
+      type: "button",
+      class: "btn btn-gold btn-sm",
+      text: step.cta,
+      onclick: function () {
+        helpStep = prog.index + 1;
+        markHelpSeen(prog.index + 1);
+        $("#help-modal").classList.add("hidden");
+        nav(step.view);
+      }
+    }));
+    if (prog.index < prog.total - 1) {
+      footer.appendChild(el("button", {
+        type: "button",
+        class: "btn btn-ghost btn-sm",
+        text: "Next",
+        onclick: function () { helpStep = prog.index + 1; renderHelp(); }
+      }));
+    }
+  }
+
+  function renderHelpFaq() {
+    var body = $("#help-body");
+    body.innerHTML = "";
+    $("#help-modal-sub").textContent = "Short answers to the things everyone asks first.";
+
+    /* One search box over the whole FAQ; the topic headings below it are the
+     * unfiltered view, so the same content serves both. */
+    var input = el("input", {
+      class: "input help-search",
+      type: "search",
+      id: "help-search",
+      placeholder: "Search: guest, drive, json, lost phone…",
+      "aria-label": "Search the FAQ",
+    });
+    input.addEventListener("input", function () { renderHelpFaqList(input.value); });
+    body.appendChild(input);
+    body.appendChild(el("div", { id: "help-faq-list", class: "help-faq-list" }));
+    renderHelpFaqList("");
+
+    var footer = $("#help-footer");
+    footer.innerHTML = "";
+    footer.appendChild(el("button", {
+      type: "button",
+      class: "btn btn-gold btn-sm",
+      text: "Close",
+      onclick: function () { $("#help-modal").classList.add("hidden"); }
+    }));
+  }
+
+  function renderHelpFaqList(query) {
+    var list = $("#help-faq-list");
+    if (!list) return;
+    list.innerHTML = "";
+    var results = HELP.search(query);
+    if (!results.length) {
+      list.appendChild(el("p", { class: "card-muted", text: "Nothing matches that. Try: guest, drive, json, backup, phone." }));
+      return;
+    }
+    /* Grouped by topic while unfiltered, flat under a search: nine headings
+     * over one match each is worse than no headings. */
+    if (!String(query || "").trim()) {
+      HELP.topics().forEach(function (topic) {
+        var entries = HELP.faqByTopic(topic.id);
+        if (!entries.length) return;
+        list.appendChild(el("h4", { class: "help-topic", text: topic.label }));
+        entries.forEach(function (e) { list.appendChild(helpFaqEl(e)); });
+      });
+      return;
+    }
+    results.forEach(function (e) { list.appendChild(helpFaqEl(e)); });
+  }
+
+  function helpFaqEl(entry) {
+    /* <details> keeps the FAQ scannable on a phone with no JS state: the
+     * questions are all visible, the answers open one at a time. */
+    var summary = el("summary", { class: "help-faq-q", text: entry.q });
+    var body = el("p", { class: "help-faq-a", text: entry.a });
+    var wrap = el("details", { class: "help-faq-item" }, [summary, body]);
+    return wrap;
   }
 
   /* ---- Google Drive backup section (Settings modal) ---- */
@@ -2573,6 +2743,22 @@
 
     /* password + settings + groups bindings */
     $("#settings-btn").addEventListener("click", function () { openSettings(); });
+    /* Help: the ? button in the top bar, the two entries in Settings, and the
+     * modal's own controls. Opening the tour from Settings closes Settings
+     * first - two stacked modals trap the phone user. */
+    if (HELP && $("#help-btn")) {
+      $("#help-btn").addEventListener("click", function () { openHelp("tour"); });
+      $("#help-open-tour").addEventListener("click", function () {
+        $("#settings-modal").classList.add("hidden");
+        openHelp("tour");
+      });
+      $("#help-open-faq").addEventListener("click", function () {
+        $("#settings-modal").classList.add("hidden");
+        openHelp("faq");
+      });
+      $("#help-modal-close").addEventListener("click", closeHelp);
+    }
+
     $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
     $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
     $("#settings-save-pw").addEventListener("click", function () {
@@ -2748,11 +2934,23 @@
     if (saved) I18N.setLocale(saved);
   }
 
+  /* First run: interrupt once, then never again. shouldShowTour() treats any
+   * unreadable stored value as "not seen", so a corrupt or hand-edited flag
+   * cannot lock the tour away - the cost is one extra look, not a feature
+   * that never appears. */
+  function maybeShowFirstRunHelp() {
+    if (!HELP) return;
+    if (hasOpenModal()) return;
+    if (!HELP.shouldShowTour(helpSeen())) return;
+    openHelp("tour");
+  }
+
   function init() {
     initI18n();
     startCapabilities();
     seedPresets();
     bindEvents();
+    maybeShowFirstRunHelp();
     nav(initialView());
     if (window.BRCloud) {
       window.BRCloud.init(function (dataChanged) {

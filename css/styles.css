@@ -1923,3 +1923,139 @@ textarea {
   color: var(--text);
   overflow-wrap: break-word;
 }
+
+/* ===================================================================
+   Help modal (issue #17). Self-contained block, appended rather than
+   woven into existing rules, so it can be removed or restyled without
+   touching anything else. Everything here is prefixed .help- / reuses
+   .modal-card, and only overrides max-width so the FAQ gets the full
+   phone width and still fits a desktop.
+   =================================================================== */
+
+.help-card {
+  max-width: 620px;
+}
+
+.help-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.help-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: .8rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  margin-bottom: -1px;
+}
+
+.help-tab:hover {
+  color: var(--text);
+}
+
+.help-tab.active {
+  color: var(--gold);
+  border-color: var(--border);
+  background: var(--surface-2, var(--surface));
+}
+
+.help-tab:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+
+.help-search {
+  width: 100%;
+  margin-bottom: 14px;
+}
+
+.help-step-count {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.help-step-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  color: var(--text);
+}
+
+.help-step-body {
+  margin: 0;
+  font-size: .92rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+.help-topic {
+  margin: 18px 0 6px;
+  font-family: var(--font-display);
+  font-size: .74rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.help-faq-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  background: var(--surface-2, transparent);
+}
+
+.help-faq-q {
+  cursor: pointer;
+  padding: 12px 14px;
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--text);
+  list-style: none;
+}
+
+/* Hide the default disclosure triangle: .help-faq-q draws its own, and a
+   rotated chevron is the one affordance that reads correctly on a phone. */
+.help-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.help-faq-q::after {
+  content: "+";
+  float: right;
+  margin-left: 12px;
+  color: var(--gold);
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.help-faq-item[open] .help-faq-q::after {
+  content: "\2212";
+}
+
+.help-faq-q:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+
+.help-faq-a {
+  margin: 0;
+  padding: 0 14px 14px;
+  font-size: .86rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}

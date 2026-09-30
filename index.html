@@ -32,6 +32,9 @@
       <button class="nav-btn" data-view="doctrine">Doctrine</button>
       <button class="nav-btn" data-view="progress">Progress</button>
     </nav>
+    <button class="btn-icon topbar-help" id="help-btn" aria-label="Help" title="Help">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.9 2.9 0 0 1 5.6 1c0 1.9-2.8 2.4-2.8 4"/><path d="M12 17.2v.01"/></svg>
+    </button>
     <button class="btn-icon topbar-settings" id="settings-btn" aria-label="Settings" title="Settings">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
@@ -575,6 +578,13 @@
             <input type="file" id="data-import" accept=".json,application/json" style="display:none;" />
           </label>
         </div>
+        <div class="divider" style="margin:16px 0;"></div>
+        <h4 style="font-family:var(--font-display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--gold);margin:0 0 8px;">Help</h4>
+        <p class="card-muted" style="margin:0 0 10px;">A four-step quick-start for the first session, and answers on guest mode, Drive sync, backups and what happens to your data.</p>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" id="help-open-tour">Quick-start tour</button>
+          <button class="btn btn-ghost btn-sm" id="help-open-faq">Read the FAQ</button>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost btn-sm" id="settings-cancel">Cancel</button>
@@ -617,6 +627,25 @@
     </div>
   </div>
 
+
+  <!-- Help modal: quick-start tour + FAQ. The copy and the ordering live in
+       js/data/help-content.js; this is the shell the app fills in. -->
+  <div class="modal hidden" id="help-modal" role="dialog" aria-modal="true" aria-labelledby="help-modal-title">
+    <div class="modal-card help-card">
+      <div class="modal-header">
+        <div>
+          <h3 id="help-modal-title" style="font-family:var(--font-display); text-transform:uppercase; letter-spacing:.05em; margin:0;">Help</h3>
+          <p class="card-muted" style="margin:4px 0 0;" id="help-modal-sub"></p>
+        </div>
+        <button class="btn-icon" id="help-modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="help-tabs" id="help-tabs" role="tablist" aria-label="Help sections"></div>
+      <div class="modal-body" id="help-body"></div>
+      <div class="modal-footer" id="help-footer"></div>
+    </div>
+  </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/data/exercises.js?v=battle-rhythm-41"></script>
@@ -663,6 +692,7 @@
   <script src="js/data/i18n.js?v=battle-rhythm-41"></script>
   <script src="js/data/locale-en.js?v=battle-rhythm-41"></script>
   <script src="js/data/locale-es.js?v=battle-rhythm-41"></script>
+  <script src="js/data/help-content.js?v=battle-rhythm-41"></script>
   <script src="js/app.js?v=battle-rhythm-41"></script>
 </body>
 </html>
