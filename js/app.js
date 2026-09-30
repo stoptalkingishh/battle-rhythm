@@ -32,6 +32,7 @@
   var NOTIF = window.BR_NOTIFICATIONS || null;
   var CHART = window.BRChart || null;
   var DOM_ATTRS = window.BR_DOM_ATTRS || null;
+  var FILTERS = window.BR_FILTERS || null;
   var TEXT = window.BR_SESSION_TEXT || null;
 
   var COMPONENTS = {
@@ -579,36 +580,8 @@
     });
   }
 
-  function filteredExercises() {
-    var f = STATE.filter;
-    return allExercises().filter(function (e) {
-      if (f.component !== "all" && e.component !== f.component) return false;
-      if (f.aft !== "all" && !(e.aft || []).some(function (a) { return a === f.aft; })) return false;
-      if (f.equipment !== "all" && e.equipment !== f.equipment) return false;
-      if (f.q) {
-        var q = expandAliases(f.q.toLowerCase());
-        var hay = (e.name + " " + (e.muscles || "") + " " + (e.drill || "") + " " + (e.equipment || "") + " " + (e.cues || []).join(" ") + " " + (e.programming || "")).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
-      }
-      return true;
-    });
-  }
-
-  function expandAliases(q) {
-    return ALIASES.reduce(function (memo, pair) { return memo.replace(pair[0], pair[1]); }, q);
-  }
-  var ALIASES = [
-    [/med ?ball/g, "medicine ball"],
-    [/tricep/g, "triceps"],
-    [/lat ?pulldown|lat ?pull ?down/g, "lat pulldown"],
-    [/ohp|overhead press/g, "overhead push-press"],
-    [/bw/g, "bodyweight"],
-    [/pullup|pull ?up/g, "pull-up"],
-    [/plank/g, "plank"],
-    [/sqt|squats/g, "squat"],
-    [/dumbbell/g, "dumbbell"],
-    [/db /g, "dumbbell"]
-  ];
+  function filteredExercises() { return FILTERS.filterExercises(allExercises(), STATE.filter); }
+  function expandAliases(q) { return FILTERS.expandAliases(q); }
 
   function exerciseCard(ex) {
     var cues = (ex.cues || []).slice(0, 2).map(function (c) { return "&bull; " + esc(c); }).join("<br>");
@@ -912,21 +885,11 @@
   /* ---- groups (saved tag bundles) ---- */
   function getGroups() { return load("br_groups", []); }
   function saveGroups(list) { store("br_groups", list); }
-  function isPreset(s) { return (window.BR_PRESET_WORKOUTS || []).some(function (p) { return p.id === s.id; }); }
-  function sessionTags(s) {
-    var t = s && s.tags ? s.tags : [];
-    return t.map(function (x) { return String(x).trim(); }).filter(Boolean);
-  }
-  function allTags() {
-    var seen = {};
-    getSessions().forEach(function (s) { sessionTags(s).forEach(function (t) { seen[t] = 1; }); });
-    return Object.keys(seen).sort();
-  }
-  function sessionMatchesGroup(s, group) {
-    if (!group || !group.tags || !group.tags.length) return true;
-    var st = sessionTags(s);
-    return group.tags.some(function (t) { return st.indexOf(t) !== -1; });
-  }
+  function isPreset(s) { return FILTERS.isPreset(s, window.BR_PRESET_WORKOUTS || []); }
+  function sessionTags(s) { return FILTERS.sessionTags(s); }
+  function allTags() { return FILTERS.allTags(getSessions()); }
+  function sessionMatchesGroup(s, group) { return FILTERS.matchesGroup(s, group); }
+
   function filteredSessions() {
     var all = getSessions();
     if (!STATE.groupFilter) return all;
