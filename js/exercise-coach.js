@@ -357,6 +357,15 @@
         alt: (card && card.alt) || exercise.name + " anatomy plate"
       };
     }
+    /* An explicit `plate` on the exercise is last, not first: a doctrine
+     * exercise that ever grows one must still resolve to its official ATP
+     * figure. Custom exercises carry no id in ATP_FIGURES / WORKOUT_CARDS /
+     * BR_AI_PLATES, so this is the tier that gives them a visual — a
+     * user-supplied image, or a generic card generated from their own fields
+     * (see js/data/custom-exercises.js plateFor). Never null, so a custom
+     * exercise reaches this function's caller with an <img> to draw. */
+    var own = exercise && exercise.plate;
+    if (own && own.src) return { src: own.src, alt: own.alt || (exercise.name || "Exercise") + " plate" };
     return card;
   }
 
@@ -422,6 +431,17 @@
         cueContent.className = "coach-steps";
         appendList(cueContent, cues);
         root.appendChild(cueContent);
+      }
+      /* No movement guide (the custom-exercise case: guides are keyed by
+       * doctrine id). Safety still belongs on the card, so read the same
+       * `safety` field the guided branch reads. */
+      var plainWarning = list(exercise && exercise.safety).map(textOf).filter(Boolean);
+      if (plainWarning.length) {
+        var plainWarningContent = node("div");
+        plainWarningContent.className = "coach-warning";
+        plainWarningContent.appendChild(node("strong", "Safety"));
+        appendList(plainWarningContent, plainWarning);
+        root.appendChild(plainWarningContent);
       }
       root.appendChild(node("p", "Illustrative movement guide — follow qualified instruction and unit policy.")).className = "coach-disclaimer";
       return root;
@@ -496,5 +516,9 @@
     return root;
   }
 
-  window.BRExerciseCoach = { render: render };
+  /* workoutCard is exported so the plate-resolution precedence can be tested
+   * under node:test (tests/data-integrity.test.js). It is pure — no document
+   * — and it is the single place the four plate tiers are ordered, so it is
+   * the thing worth a test. */
+  window.BRExerciseCoach = { render: render, workoutCard: workoutCard };
 })(window);

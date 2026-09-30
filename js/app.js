@@ -176,6 +176,10 @@
   }
   function sourceLabel(ex) {
     var s = ex.source || "";
+    /* A custom exercise carries no citation by construction (js/data/
+     * custom-exercises.js forces source to "custom" and citation to ""), so it
+     * must never fall through to a label implying doctrinal provenance. */
+    if (s === "custom") return "Custom — your own entry";
     if (s.indexOf("QUOTE") === 0) return "Doctrinal - quoted";
     if (s.indexOf("PAR - adapted") === 0) return "Adapted / common H2F practice";
     if (s.indexOf("PAR") === 0) return "Paraphrased from doctrine";
@@ -583,6 +587,17 @@
   }
 
   function populateSelects() {
+    /* The custom-exercise component picker, built from the same COMPONENTS
+     * table the library filter uses — CUST.COMPONENTS is asserted to equal
+     * these ids in tests/data-integrity.test.js, so the two cannot drift. */
+    var cexComponent = $("#cex-component");
+    if (cexComponent && CUST && !cexComponent.dataset.filled) {
+      cexComponent.dataset.filled = "1";
+      cexComponent.appendChild(el("option", { value: CUST.COMPONENT, text: "Custom (no component)" }));
+      CUST.COMPONENTS.forEach(function (id) {
+        cexComponent.appendChild(el("option", { value: id, text: componentLabel(id) }));
+      });
+    }
     fillSelect($("#filter-component"),
       [["all", "All components"]].concat(Object.keys(COMPONENTS).map(function (k) { return [k, COMPONENTS[k].label]; })),
       STATE.filter.component);
@@ -626,11 +641,12 @@
     var customs = getCustom();
     status.textContent = customs.length ? customs.length + " custom exercise(s)" : "";
     customs.forEach(function (c) {
-      var detail = [c.equipment, c.muscles].filter(Boolean).join(" - ") || "Custom movement";
+      var detail = [componentLabel(c.component), c.equipment, c.muscles].filter(Boolean).join(" - ") || "Custom movement";
+      var extra = [c.cues.length ? c.cues.length + " cue(s)" : "", c.safety ? "safety noted" : ""].filter(Boolean).join(", ");
       list.appendChild(el("div", { style: "display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);" }, [
         el("div", {}, [
           el("h4", { style: "margin:0;font-size:.95rem;", text: c.name }),
-          el("p", { class: "card-muted", style: "margin:0;font-size:.74rem;", text: detail })
+          el("p", { class: "card-muted", style: "margin:0;font-size:.74rem;", text: detail + (extra ? " · " + extra : "") })
         ]),
         el("button", { class: "btn btn-ghost btn-sm", text: "Delete", "aria-label": "Delete " + c.name, onclick: function () {
           saveCustom(CUST.remove(getCustom(), c.id).list);
@@ -755,7 +771,12 @@
       row("Programming", ex.programming);
       row("Muscles", ex.muscles);
       row("Safety", ex.safety);
-      row("Source", ex.source + "  [" + sourceLabel(ex) + "]");
+      /* Doctrine exercises quote or paraphrase a source; a custom one has no
+       * citation, and saying so is the distinction. Never print an empty
+       * "Source" row. */
+      row("Source", ex.citation || ex.source
+        ? (ex.citation || ex.source) + "  [" + sourceLabel(ex) + "]"
+        : "No citation — your own entry, not doctrine");
     } else {
       row("Purpose", drill.description || "");
       row("Exercises", drill.exercises || "");
@@ -2669,11 +2690,21 @@
     var cexAdd = $("#cex-add");
     if (cexAdd && CUST) cexAdd.addEventListener("click", function () {
       var name = $("#cex-name").value.trim();
-      var rec = CUST.make({ name: name, equipment: $("#cex-equipment").value.trim(), muscles: $("#cex-muscles").value.trim() });
+      var rec = CUST.make({
+        name: name,
+        equipment: $("#cex-equipment").value.trim(),
+        muscles: $("#cex-muscles").value.trim(),
+        component: $("#cex-component") ? $("#cex-component").value : "",
+        cues: $("#cex-cues") ? $("#cex-cues").value.split(";") : [],
+        safety: $("#cex-safety") ? $("#cex-safety").value.trim() : "",
+        programming: $("#cex-programming") ? $("#cex-programming").value.trim() : "",
+        plateUrl: $("#cex-plate") ? $("#cex-plate").value.trim() : ""
+      });
       if (!rec) { toast("Enter an exercise name."); return; }
       var res = CUST.upsert(getCustom(), rec);
       saveCustom(res.list);
-      $("#cex-name").value = ""; $("#cex-equipment").value = ""; $("#cex-muscles").value = "";
+      ["cex-name", "cex-equipment", "cex-muscles", "cex-cues", "cex-safety", "cex-programming", "cex-plate"]
+        .forEach(function (id) { var f = $("#" + id); if (f) f.value = ""; });
       renderCustomExercises();
       renderLibrary();
       toast("Added custom exercise: " + rec.name);
