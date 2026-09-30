@@ -13,9 +13,19 @@
  * writes are Promise-based and cloud.js bridges them to the app's storage.
  */
 (function () {
-  var CLIENT_ID = window.BR_GOOGLE_CLIENT_ID || "";
-  var API_KEY = window.BR_GOOGLE_API_KEY || "";
-
+  /* Credentials are resolved on every call rather than captured at load time,
+   * so a user who pastes their own keys in Settings gets a working sign-in
+   * without reloading. js/config.js still wins when it is populated. */
+  function credentials() {
+    if (window.BRCredentials && typeof window.BRCredentials.get === "function") {
+      return window.BRCredentials.get();
+    }
+    return {
+      clientId: window.BR_GOOGLE_CLIENT_ID || "",
+      apiKey: window.BR_GOOGLE_API_KEY || "",
+      source: "build"
+    };
+  }
   var SCOPE = "openid email profile https://www.googleapis.com/auth/drive.file";
   var DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
   var FOLDER_NAME = "Battle Rhythm";
@@ -27,7 +37,22 @@
   var lastIdToken = null;
 
   function isDriveConfigured() {
-    return Boolean(CLIENT_ID && API_KEY);
+    var c = credentials();
+    return Boolean(c.clientId && c.apiKey);
+  }
+
+  /* Google/gapi failures are strings and loosely-shaped objects. Every
+   * rejection out of this module carries a stable { code, title, message } so
+   * the UI can name the failing step instead of printing a raw exception. */
+  function coded(error, fallback) {
+    var explained = (window.BR_DRIVE_SETUP && window.BR_DRIVE_SETUP.explainError)
+      ? window.BR_DRIVE_SETUP.explainError(error)
+      : { code: "unknown", title: "Drive sync could not continue", message: String((error && error.message) || error || fallback || "Unknown Drive failure.") };
+    var err = new Error(explained.message);
+    err.code = explained.code;
+    err.title = explained.title;
+    err.detail = error;
+    return err;
   }
 
   function loadScript(src) {
@@ -43,24 +68,59 @@
     });
   }
 
+  /* A cached <script> tag does not prove the API it provides is usable: a
+   * network error, a blocked script, or a partially-initialised gapi all leave
+   * the global missing. Check the global rather than the tag. */
+  function requireGlobal(name) {
+    var parts = name.split(".");
+    var node = window;
+    for (var i = 0; i < parts.length; i++) {
+      node = node ? node[parts[i]] : undefined;
+    }
+    if (!node) {
+      throw coded(
+        new Error("Failed to load " + name + " (blocked by the network, an extension, or a firewall)"),
+        name
+      );
+    }
+    return node;
+  }
+
+  /* Why the last init attempt failed, so sign-in can name the step instead of
+   * reporting a generic "could not initialize". */
+  var lastInitError = null;
+
+  /* The most recent read/write failure, so the Settings panel can say why the
+   * last save did not reach Drive instead of showing a bare "offline?". */
+  var lastOpError = null;
+
   function initGapi() {
     if (!initialized) {
       initialized = true;
       driveReady = (async function () {
         try {
           await loadScript("https://accounts.google.com/gsi/client");
+          requireGlobal("google.accounts.oauth2");
           await loadScript("https://apis.google.com/js/api.js");
+          requireGlobal("gapi");
           await new Promise(function (resolve, reject) {
             window.gapi.load("client", {
               callback: resolve,
-              onerror: function () { reject(new Error("gapi client failed")); }
+              onerror: function () {
+                reject(new Error("Failed to load the Google API client library (blocked by the network, an extension, or a firewall)"));
+              }
             });
           });
-          await window.gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
+          await window.gapi.client.init({
+            apiKey: credentials().apiKey,
+            discoveryDocs: [DISCOVERY_DOC]
+          });
+          lastInitError = null;
           return true;
         } catch (err) {
           initialized = false;
           driveReady = null;
+          lastInitError = err;
           console.error("Drive init failed:", err);
           return false;
         }
@@ -69,24 +129,51 @@
     return driveReady;
   }
 
+  /* Google never calls back in some real situations: the popup is suppressed
+   * without raising an error, the user leaves it open indefinitely, or the
+   * page is backgrounded. Without a deadline the caller waits forever and the
+   * UI stays disabled, so bound it and name the likely cause. */
+  var TOKEN_TIMEOUT_MS = 120000;
+
   function requestToken(prompt) {
     return new Promise(function (resolve, reject) {
-      var client = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
+      var settled = false;
+      var timer = null;
+      function finish(fn, value) {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        fn(value);
+      }
+      var creds = credentials();
+      if (!creds.clientId || !creds.apiKey) {
+        reject(coded("not-configured", "credentials"));
+        return;
+      }
+      timer = setTimeout(function () {
+        finish(reject, coded("popup_timeout", "sign-in"));
+      }, TOKEN_TIMEOUT_MS);
+      var client = requireGlobal("google.accounts.oauth2").initTokenClient({
+        client_id: creds.clientId,
         scope: SCOPE,
         callback: function (response) {
           if (response && response.access_token) {
             lastIdToken = response.id_token || null;
-            resolve(response.access_token);
+            finish(resolve, response.access_token);
           } else {
-            reject(new Error((response && (response.error_description || response.error)) || "Google sign-in failed"));
+            finish(reject, coded(response || "Google sign-in failed", "sign-in"));
           }
         },
         error_callback: function (error) {
-          reject(new Error((error && error.error_description) || (error && error.error) || "Google sign-in was cancelled"));
+          finish(reject, coded(error || "popup_closed_by_user", "sign-in"));
         }
       });
-      client.requestAccessToken({ prompt: prompt });
+      try {
+        client.requestAccessToken({ prompt: prompt });
+      } catch (err) {
+        /* A suppressed popup can throw synchronously rather than calling back. */
+        finish(reject, coded(err, "popup_blocked"));
+      }
     });
   }
 
@@ -131,7 +218,7 @@
     return fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { Authorization: "Bearer " + token }
     }).then(function (res) {
-      if (!res.ok) throw new Error("Failed to fetch Google profile");
+      if (!res.ok) throw coded({ status: res.status, message: "Failed to fetch Google profile" }, "profile");
       return res.json();
     }).then(function (info) { return toDriveUser(info); });
   }
@@ -146,18 +233,19 @@
         currentToken = token;
         window.gapi.client.setToken({ access_token: currentToken });
         return currentToken;
-      }).catch(function () {
+      }).catch(function (err) {
         currentToken = null;
+        lastOpError = coded(err, "token");
         return null;
       });
     });
   }
 
   function signInToDrive() {
-    if (!isDriveConfigured()) return Promise.reject(new Error("Google sign-in is not configured on this build."));
-    if (typeof window === "undefined") return Promise.reject(new Error("Not in browser"));
+    if (!isDriveConfigured()) return Promise.reject(coded("not-configured", "sign-in"));
+    if (typeof window === "undefined") return Promise.reject(coded("not-in-browser", "sign-in"));
     return initGapi().then(function (ok) {
-      if (!ok) throw new Error("Could not initialize Google Drive client");
+      if (!ok) throw coded(lastInitError || "not-configured", "sign-in");
       return requestToken("consent").then(function (token) {
         currentToken = token;
         window.gapi.client.setToken({ access_token: token });
@@ -238,6 +326,7 @@
         });
       }).catch(function (err) {
         console.error("Drive ensureFolder failed:", err);
+        lastOpError = coded(err, "folder");
         return null;
       });
     });
@@ -253,6 +342,7 @@
       return { id: (f && f.id) || null, available: true };
     }).catch(function (err) {
       console.error("Drive file lookup failed:", err);
+      lastOpError = coded(err, "lookup");
       return { id: null, available: false };
     });
   }
@@ -282,6 +372,7 @@
       })
       .catch(function (err) {
         console.error("Drive metadata fetch failed:", err);
+        lastOpError = coded(err, "metadata");
         return { id: fileId, modifiedTime: "", available: false };
       });
   }
@@ -311,6 +402,7 @@
             });
           }).catch(function (err) {
             console.error("Drive read failed:", err);
+            lastOpError = coded(err, "read");
             return emptyRead(false);
           });
         });
@@ -361,6 +453,7 @@
             });
           }).catch(function (err) {
             console.error("Drive write failed:", err);
+            lastOpError = coded(err, "write");
             return { ok: false, modifiedTime: "" };
           });
         });
@@ -368,8 +461,21 @@
     });
   }
 
+  /* Forget the cached gapi client so a newly entered API key is picked up
+   * without a page reload. */
+  function resetClient() {
+    initialized = false;
+    driveReady = null;
+    lastInitError = null;
+    lastOpError = null;
+  }
+
+  function getLastError() { return lastOpError || lastInitError; }
+
   window.BRDrive = {
     isDriveConfigured: isDriveConfigured,
+    resetClient: resetClient,
+    getLastError: getLastError,
     signInToDrive: signInToDrive,
     signOutFromDrive: signOutFromDrive,
     restoreDriveSession: restoreDriveSession,

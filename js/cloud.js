@@ -37,6 +37,14 @@
   var flushing = false;
   var pendingFlushAgain = false;
 
+  /* Drive failures arrive as coded errors (see js/drive.js). Surface the
+   * specific one rather than a fixed "Drive read failed" string, which told
+   * the user nothing about which step to fix. */
+  function explain(err, fallback) {
+    if (err && err.message) return err.message;
+    return fallback;
+  }
+
   function isActive() {
     return Boolean(window.BRDrive) && window.BRDrive.isDriveConfigured() &&
       typeof window !== "undefined" && !!window.BRDrive.getDriveUser();
@@ -113,7 +121,8 @@
     var lastMTime = localGet(mtimeKey(file)) || "";
     return window.BRDrive.readDriveFile(file).then(function (remoteRes) {
       if (!remoteRes || remoteRes.available === false) {
-        lastError = "Drive read failed";
+        lastError = explain(window.BRDrive.getLastError && window.BRDrive.getLastError(),
+          "Could not read the file from Drive. Your data is safe on this device and will be pushed on the next save.");
         return { ok: false, reconciled: false, dataChanged: false };
       }
       var remoteData = remoteRes ? remoteRes.data : null;
@@ -130,14 +139,17 @@
           lastSync = new Date().toISOString();
           return { ok: true, reconciled: rec.remoteChanged, dataChanged: dataChanged };
         }
-        lastError = "Drive write not confirmed";
+        lastError = explain(window.BRDrive.getLastError && window.BRDrive.getLastError(),
+          "Drive accepted the save but did not confirm it. The change stays queued on this device and will be retried.");
         return { ok: false, reconciled: rec.remoteChanged, dataChanged: dataChanged };
-      }, function () {
-        lastError = "Drive write failed";
+      }, function (err) {
+        lastError = explain(err || (window.BRDrive.getLastError && window.BRDrive.getLastError()),
+          "The save did not reach Drive. The change stays queued on this device and will be retried.");
         return { ok: false, reconciled: rec.remoteChanged, dataChanged: dataChanged };
       });
-    }, function () {
-      lastError = "Drive read failed";
+    }, function (err) {
+      lastError = explain(err || (window.BRDrive.getLastError && window.BRDrive.getLastError()),
+        "Could not read the file from Drive. Your data is safe on this device and will be pushed on the next save.");
       return { ok: false, reconciled: false, dataChanged: false };
     });
   }
@@ -274,7 +286,7 @@
         return user;
       });
     }).catch(function (err) {
-      lastError = (err && err.message) || "Sign-in failed";
+      lastError = (err && err.message) || "Google sign-in failed and returned no reason. Close any blocking dialog, allow pop-ups for this site, and try again.";
       status = pendingErr();
       emit(true);
       throw err;
@@ -285,6 +297,50 @@
     if (hasPending()) return "pending";
     if (isActive()) return "ready";
     return "guest";
+  }
+
+  /* Save the user's own credentials and sign in, in one step, from the
+   * Settings setup form. Rejects with { field, code, message } when validation
+   * fails, or a coded Error when Google refuses, so the form can point at the
+   * offending field or show the specific Google failure. */
+  function configure(clientId, apiKey) {
+    if (!window.BRCredentials) {
+      return Promise.reject({
+        field: "form",
+        code: "credentials_layer_missing",
+        message: "js/credentials.js did not load, so these values cannot be saved. Reload the page; if it persists the deploy is incomplete."
+      });
+    }
+    return window.BRCredentials.save(clientId, apiKey).then(function (saved) {
+      /* The gapi client is initialised once with the old API key, so drop it. */
+      if (window.BRDrive && window.BRDrive.resetClient) window.BRDrive.resetClient();
+      return signIn().then(function (user) {
+        return { user: user, credentials: saved };
+      }, function (err) {
+        /* Keep the saved values: the sign-in failure is a Google-side problem
+         * the user needs to fix in the console, not a reason to make them
+         * paste everything again. */
+        throw err;
+      });
+    });
+  }
+
+  /* Forget the stored credentials and return to guest mode. Refuses while
+   * signed in, so the user cannot strand a Drive session. */
+  function disconnect() {
+    if (isActive()) {
+      return Promise.reject({
+        field: "form",
+        code: "still_signed_in",
+        message: "Sign out of Google first, then remove the keys."
+      });
+    }
+    if (window.BRDrive && window.BRDrive.resetClient) window.BRDrive.resetClient();
+    if (window.BRCredentials) window.BRCredentials.clear();
+    status = "off";
+    lastError = "";
+    emit(false);
+    return Promise.resolve(true);
   }
 
   function signOut() {
@@ -307,6 +363,8 @@
     isActive: isActive,
     init: init,
     signIn: signIn,
+    configure: configure,
+    disconnect: disconnect,
     signOut: signOut,
     mirror: mirror,
     syncNow: syncNow,

@@ -831,17 +831,285 @@
     $("#settings-modal").classList.remove("hidden");
   }
 
-  /* ---- Google Drive backup section (Settings modal) ---- */
+  /* ---- Google Drive backup section (Settings modal) ----
+   *
+   * Three states, all reachable from here without editing a file or running a
+   * build:
+   *   - not configured: a "Set up Google Drive" button opens the guided form
+   *     (console steps + the two credential fields), driven by
+   *     js/data/drive-setup.js so the wording is unit-tested;
+   *   - configured, signed out: sign in, with the specific Google error shown
+   *     inline when it fails;
+   *   - signed in: sync state, last error, sign out, and "remove keys".
+   */
+
+  /* A short, styled line of text. Errors are shown in the same place as
+   * status so a failure is never swallowed by a re-render. */
+  function driveMessage(container, text, tone) {
+    container.textContent = text || "";
+    container.style.color = tone === "error" ? "var(--red, #e2564a)" : "";
+  }
+
+  /* Live-validate a credential field as the user types, so a wrong paste is
+   * caught before any network call. Returns the validator result. */
+  function validateDriveField(input, errEl, validate, label) {
+    var value = input.value;
+    if (!value) {
+      /* An empty field is still a failure the user needs told about, so it gets
+       * the same treatment as a bad value rather than silently passing. */
+      var emptyMessage = label === "clientId"
+        ? "Enter the OAuth 2.0 Client ID — the long value ending in .apps.googleusercontent.com."
+        : "Enter the API key — the value starting with AIza.";
+      errEl.textContent = emptyMessage;
+      input.setAttribute("aria-invalid", "true");
+      return { ok: false, code: "empty", value: "", message: emptyMessage };
+    }
+    var res = validate(value);
+    if (res.ok) {
+      errEl.textContent = "";
+      input.removeAttribute("aria-invalid");
+    } else {
+      errEl.textContent = res.message;
+      input.setAttribute("aria-invalid", "true");
+    }
+    return res;
+  }
+
+  function driveField(id, label, placeholder, helpText) {
+    var wrap = el("div", { class: "field" });
+    var input = el("input", { class: "input", id: id, type: "text", placeholder: placeholder,
+      autocomplete: "off", autocapitalize: "off", spellcheck: "false" });
+    var err = el("p", { class: "card-muted" });
+    err.style.cssText = "font-size:.72rem;margin:4px 0 0;";
+    wrap.appendChild(el("label", { class: "field-label", for: id, text: label }));
+    wrap.appendChild(input);
+    if (helpText) {
+      var help = el("p", { class: "card-muted" });
+      help.style.cssText = "font-size:.72rem;margin:4px 0 0;";
+      help.textContent = helpText;
+      wrap.appendChild(help);
+    }
+    wrap.appendChild(err);
+    return { wrap: wrap, input: input, err: err };
+  }
+
+  /* The guided setup panel. Pure DOM assembly from the tested step list — no
+   * inline HTML strings, so nothing here can silently break a tag. */
+  function renderDriveSetupPanel(container, focusField) {
+    var S = window.BR_DRIVE_SETUP;
+    var cloud = window.BRCloud;
+    container.innerHTML = "";
+    container.classList.remove("hidden");
+    if (!S || !cloud || typeof cloud.configure !== "function") {
+      driveMessage(container,
+        "The Drive setup helper did not load, so setup cannot run. Reload the page; if it persists the deploy is incomplete.",
+        "error");
+      return;
+    }
+
+    var advice = S.originAdvice(typeof window !== "undefined" ? window.location : null);
+    var intro = el("p", { class: "card-muted" });
+    intro.style.cssText = "margin:0 0 10px;font-size:.78rem;";
+    intro.textContent = "Battle Rhythm has no Google keys of its own, so Drive backup needs your own Google Cloud project. " +
+      "The app works fully without it — everything stays on this device in guest mode. Two values are needed and the steps below produce both.";
+    container.appendChild(intro);
+
+    /* The origin box, copyable. This is the single most error-prone paste in
+     * the whole flow, so it is rendered rather than described. */
+    var originBox = el("div", { class: "field" });
+    originBox.appendChild(el("label", { class: "field-label", text: "Step 1 — add this address to Authorized JavaScript origins" }));
+    var originRow = el("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;" });
+    var originInput = el("input", { class: "input", type: "text",
+      value: advice.origin || "(no usable origin — see the note below)" });
+    /* Set the property directly. js/data/dom-attrs.js writes booleans as
+     * node[name], and "readonly" is a plain expando there rather than the
+     * readOnly DOM property, so the attribute form does not take effect. */
+    originInput.readOnly = true;
+    originInput.setAttribute("readonly", "readonly");
+    /* The clipboard fallback has to clear the property, since that is what
+     * actually makes the field editable. */
+    function selectOrigin(input) {
+      input.readOnly = false;
+      input.removeAttribute("readonly");
+      input.focus();
+      input.select();
+      if (input.setSelectionRange) {
+        try { input.setSelectionRange(0, input.value.length); } catch (e) {}
+      }
+    }
+    originInput.style.flex = "1 1 240px";
+    var copyBtn = el("button", { class: "btn btn-ghost btn-sm", text: "Copy" });
+    copyBtn.addEventListener("click", function () {
+      if (!advice.origin) { driveMessage(container, advice.message, "error"); return; }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(advice.origin).then(function () {
+          driveMessage(container, "Origin copied. Paste it into the OAuth client's Authorized JavaScript origins list.");
+        }, function () {
+          /* Clipboard access is permission-gated and blocked in some
+           * contexts. Selecting the text is the manual fallback. */
+          selectOrigin(originInput);
+          driveMessage(container, "The browser blocked clipboard access. The address is selected above — copy it with Ctrl+C / Cmd+C.");
+        });
+      } else {
+        selectOrigin(originInput);
+        driveMessage(container, "Copy the selected address with Ctrl+C / Cmd+C.");
+      }
+    });
+    originRow.appendChild(originInput);
+    originRow.appendChild(copyBtn);
+    originBox.appendChild(originRow);
+    var originNote = el("p", { class: "card-muted" });
+    originNote.style.cssText = "font-size:.72rem;margin:4px 0 0;";
+    originNote.textContent = advice.message;
+    originBox.appendChild(originNote);
+    container.appendChild(originBox);
+
+    /* Step 2: the credential form. */
+    var idField = driveField("drive-client-id", "Step 2 — OAuth 2.0 Client ID",
+      "123456789012-…apps.googleusercontent.com",
+      "Credentials > Create credentials > OAuth client ID > Application type: Web application.");
+    var keyField = driveField("drive-api-key", "Step 3 — API key",
+      "AIza…",
+      "Credentials > Create credentials > API key.");
+    container.appendChild(idField.wrap);
+    container.appendChild(keyField.wrap);
+
+    var formStatus = el("p", { class: "card-muted" });
+    formStatus.style.cssText = "font-size:.78rem;margin:8px 0 0;";
+    formStatus.setAttribute("role", "status");
+    container.appendChild(formStatus);
+
+    var actions = el("div", { style: "display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;" });
+    var connectBtn = el("button", { class: "btn btn-gold btn-sm", text: "Save and connect" });
+    var cancelBtn = el("button", { class: "btn btn-ghost btn-sm", text: "Cancel" });
+    actions.appendChild(connectBtn);
+    actions.appendChild(cancelBtn);
+    container.appendChild(actions);
+
+    var details = el("details");
+    details.style.marginTop = "12px";
+    details.appendChild(el("summary", { class: "card-muted",
+      text: "Show all setup steps and where to click" }));
+    var steps = S.setupSteps({ origin: advice.origin });
+    for (var i = 0; i < steps.length; i++) {
+      var step = steps[i];
+      var block = el("div");
+      block.style.cssText = "margin:8px 0 0;";
+      block.appendChild(el("strong", { text: (i + 1) + ". " + step.title }));
+      var det = el("p", { class: "card-muted" });
+      det.style.cssText = "font-size:.74rem;margin:2px 0 0;";
+      det.textContent = step.detail;
+      block.appendChild(det);
+      if (step.url) {
+        var link = el("a", { href: step.url, target: "_blank", rel: "noopener noreferrer",
+          text: step.linkLabel || step.url });
+        link.style.cssText = "font-size:.72rem;";
+        block.appendChild(link);
+      }
+      details.appendChild(block);
+    }
+    var docsLink = el("p", { class: "card-muted" });
+    docsLink.style.cssText = "font-size:.72rem;margin:10px 0 0;";
+    var docsHref = S.docsUrl ? S.docsUrl(typeof window !== "undefined" ? window.location : null) : S.DOCS_URL;
+    docsLink.appendChild(document.createTextNode("The same steps, plus every error message and what fixes it, live in "));
+    docsLink.appendChild(el("a", { href: docsHref, target: "_blank", rel: "noopener noreferrer",
+      text: "docs/google-drive-setup.md" }));
+    details.appendChild(docsLink);
+    container.appendChild(details);
+
+    idField.input.addEventListener("input", function () {
+      validateDriveField(idField.input, idField.err, S.validateClientId, "clientId");
+    });
+    keyField.input.addEventListener("input", function () {
+      validateDriveField(keyField.input, keyField.err, S.validateApiKey, "apiKey");
+    });
+
+    cancelBtn.addEventListener("click", function () {
+      container.classList.add("hidden");
+      container.innerHTML = "";
+      renderDriveSection();
+    });
+
+    connectBtn.addEventListener("click", function () {
+      /* Validate both before touching the network, and point at the offending
+       * field rather than reporting one message for the form. */
+      var idRes = validateDriveField(idField.input, idField.err, S.validateClientId, "clientId");
+      var keyRes = validateDriveField(keyField.input, keyField.err, S.validateApiKey, "apiKey");
+      if (!idRes.ok || !keyRes.ok) {
+        var bad = !idRes.ok ? idField : keyField;
+        driveMessage(formStatus, "Check the highlighted field: " + bad.err.textContent, "error");
+        bad.input.focus();
+        return;
+      }
+      connectBtn.disabled = true;
+      cancelBtn.disabled = true;
+      connectBtn.textContent = "Connecting…";
+      driveMessage(formStatus, "Saved. Opening the Google sign-in popup — finish it without closing the window.");
+      cloud.configure(idRes.value, keyRes.value).then(function () {
+        driveMessage(formStatus, "Connected. Your workouts are backing up to your Drive.");
+        container.classList.add("hidden");
+        container.innerHTML = "";
+        renderDriveSection();
+      }, function (err) {
+        connectBtn.disabled = false;
+        cancelBtn.disabled = false;
+        connectBtn.textContent = "Save and connect";
+        /* Validation failures come back as { field, message } and belong
+         * next to the input; Google failures are coded Errors and belong in
+         * the form status with a title. */
+        if (err && err.field) {
+          driveMessage(formStatus, err.message, "error");
+          var target = err.field === "clientId" ? idField : err.field === "apiKey" ? keyField : null;
+          if (target) {
+            target.err.textContent = err.message;
+            target.input.setAttribute("aria-invalid", "true");
+            target.input.focus();
+          }
+          return;
+        }
+        driveMessage(formStatus, (err && err.title ? err.title + " — " : "") +
+          ((err && err.message) || "Google sign-in failed for an unknown reason. Your keys were saved; fix the step named above and try again."), "error");
+      });
+    });
+
+    if (focusField) {
+      var focus = focusField === "apiKey" ? keyField.input : idField.input;
+      focus.focus();
+    }
+  }
+
   function renderDriveSection() {
     var statusEl = $("#drive-status");
     var areaEl = $("#drive-auth-area");
+    var setupEl = $("#drive-setup");
     if (!statusEl || !areaEl) return;
+    /* A sync callback can fire mid-setup. Re-rendering would tear out the
+     * form the user is filling in, so the open panel wins until they close
+     * it (which is the only thing that calls back in). */
+    if (setupEl && !setupEl.classList.contains("hidden")) return;
     var cloud = window.BRCloud;
-    if (!cloud || !window.BRDrive || !window.BRDrive.isDriveConfigured()) {
-      statusEl.textContent = "Not configured on this build. Add Google API keys in js/config.js to back up workouts to your Drive.";
+    if (!cloud || !window.BRDrive) {
+      driveMessage(statusEl, "The Drive layer did not load, so backup is unavailable. Everything else works — reload the page if this persists.", "error");
       areaEl.innerHTML = "";
+      if (setupEl) { setupEl.classList.add("hidden"); setupEl.innerHTML = ""; }
       return;
     }
+    if (!window.BRDrive.isDriveConfigured()) {
+      /* Not a dead end: this is the state the public build ships in, so it
+       * gets the guided setup rather than a "not configured on this build"
+       * message that tells a user nothing they can act on. */
+      statusEl.textContent = "Drive backup is off. Everything is stored on this device and the app works fully without it — set it up only if you want a Google Drive copy.";
+      driveMessage(statusEl, statusEl.textContent);
+      areaEl.innerHTML = "";
+      var setupBtn = el("button", { class: "btn btn-gold btn-sm", text: "Set up Google Drive" });
+      setupBtn.addEventListener("click", function () {
+        if (setupEl) renderDriveSetupPanel(setupEl);
+      });
+      areaEl.appendChild(setupBtn);
+      if (setupEl) { setupEl.classList.add("hidden"); setupEl.innerHTML = ""; }
+      return;
+    }
+    if (setupEl) { setupEl.classList.add("hidden"); setupEl.innerHTML = ""; }
     var st = cloud.getStatus();
     var user = cloud.user();
     if (st === "syncing") {
@@ -886,18 +1154,46 @@
         areaEl.appendChild(meta);
         areaEl.appendChild(syncNowBtn);
       } else {
-        meta.textContent = cloud.getLastSync()
-          ? "Last synced " + new Date(cloud.getLastSync()).toLocaleTimeString()
-          : (st === "error" ? "Sync failed (offline?) — will retry on next save." : "Backups go to your private “Battle Rhythm” Drive folder.");
+        var lastErr = cloud.getLastError && cloud.getLastError();
+        if (lastErr) {
+          /* The specific reason Drive gave, not a generic "offline?". */
+          meta.textContent = lastErr;
+          meta.style.color = "var(--red, #e2564a)";
+        } else {
+          meta.textContent = cloud.getLastSync()
+            ? "Last synced " + new Date(cloud.getLastSync()).toLocaleTimeString()
+            : (st === "error" ? "The last sync did not complete. It will retry on the next save." : "Backups go to your private “Battle Rhythm” Drive folder.");
+        }
         areaEl.appendChild(meta);
       }
       var signOutBtn = document.createElement("button");
       signOutBtn.className = "btn btn-ghost btn-sm";
       signOutBtn.textContent = "Sign out";
       signOutBtn.addEventListener("click", function () {
-        cloud.signOut().catch(function () {});
+        cloud.signOut().then(function () {
+          renderDriveSection();
+        }, function (err) {
+          driveMessage(statusEl, (err && err.message) || "Sign-out did not complete. Close the Google account you used and try again — nothing on this device is affected.", "error");
+        });
       });
       areaEl.appendChild(signOutBtn);
+      /* Removing the stored keys is separate from signing out: after signing
+       * out of Google, the user may want to stay in guest mode, swap keys, or
+       * hand the device to someone else. */
+      if (window.BRCredentials && typeof cloud.disconnect === "function" &&
+          window.BRCredentials.get().source === "local") {
+        var removeBtn = el("button", { class: "btn btn-ghost btn-sm", text: "Remove keys" });
+        removeBtn.addEventListener("click", function () {
+          removeBtn.disabled = true;
+          cloud.disconnect().then(function () {
+            renderDriveSection();
+          }, function (err) {
+            removeBtn.disabled = false;
+            driveMessage(statusEl, (err && err.message) || "The keys could not be removed from this browser.", "error");
+          });
+        });
+        areaEl.appendChild(removeBtn);
+      }
     } else {
       statusEl.textContent = "Sign in to back up your workouts to your own Google Drive in a private “Battle Rhythm” folder.";
       var signInBtn = document.createElement("button");
@@ -909,8 +1205,12 @@
         cloud.signIn().then(function () {
           renderDriveSection();
         }).catch(function (err) {
-          statusEl.textContent = (err && err.message) ? err.message : "Sign-in failed. Try again.";
-          renderDriveSection();
+          /* Keep the button usable and show the exact reason. renderDriveSection
+           * would overwrite this text, so it is not called on the failure path. */
+          signInBtn.disabled = false;
+          signInBtn.textContent = "Continue with Google";
+          driveMessage(statusEl, (err && err.title ? err.title + " — " : "") +
+            ((err && err.message) || "Google sign-in failed for an unknown reason. Allow pop-ups for this site and try again."), "error");
         });
       });
       areaEl.innerHTML = "";

@@ -43,12 +43,19 @@ Sessions, regiments, tracker logs, and tag groups can be backed up to your own G
 
 Sync state is surfaced in the Settings → *Google Drive backup* section: `syncing`, `pending` (N offline changes queued, + a Sync now button), `ready` (synced), `guest`, and `off`.
 
-To enable it:
+### Turning it on
 
-1. In the [Google Cloud Console](https://console.cloud.google.com), create/select a project, enable the **Google Drive API**.
-2. Create an **OAuth 2.0 Client ID** of type *Web application* and add this site's origin (e.g. `https://stoptalkingishh.github.io`) under **Authorized JavaScript origins**.
-3. Create an **API key**.
-4. Fill both into `js/config.js` (`BR_GOOGLE_CLIENT_ID`, `BR_GOOGLE_API_KEY`) and deploy. Both are public client-side identifiers, the same way `openquiz` bakes `NEXT_PUBLIC_GOOGLE_*` into its static build.
+`js/config.js` ships empty on purpose, so the public build starts in guest mode. Drive backup is then a self-service flow inside the app: **Settings → Google Drive backup → Set up Google Drive**.
+
+1. The panel shows this page's exact origin with a copy button — paste it into the OAuth client's **Authorized JavaScript origins** (no trailing slash, no path).
+2. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), create/select a project, enable the **Google Drive API**, create an **OAuth 2.0 Client ID** of type *Web application*, and create an **API key**.
+3. Paste both values into the Settings form and press **Save and connect**.
+
+Both values are stored in this browser's `localStorage` under `brdrive:credentials` — never in the app's source, never in the repository. They are public client-side identifiers (the OAuth client id is not a secret; the API key is a quota control, not an access control), and `npm run check:config` fails the build if either appears in tracked source.
+
+**Full walkthrough and the complete troubleshooting table: [`docs/google-drive-setup.md`](docs/google-drive-setup.md).** Every failure path in the app names the step that failed — `origin_mismatch`, Drive API disabled, a rejected or referrer-restricted key, a Testing-mode consent screen, an expired session, a blocked popup, a blocked script, offline, quota, 5xx — rather than reporting one generic failure. There is no "something went wrong" string anywhere in the flow.
+
+A self-hosted build can skip the setup form by filling in `js/config.js` instead; a populated `js/config.js` takes priority over anything saved in a browser. See `js/config.js.example`.
 
 ## Repository layout
 
@@ -57,6 +64,8 @@ index.html                        App shell, nav, modals; cache-busted script ta
 css/styles.css                    All styles
 js/app.js                         Views, state, localStorage, builder/tracker logic
 js/config.js                      Google client ID + API key for Drive backup (blank = guest mode)
+js/data/drive-setup.js            Credential validation, authorized-origin string, per-error messages (pure)
+js/credentials.js                 Per-browser credential storage + validation (window.BRCredentials)
 js/drive.js                       Google Identity Services auth + Drive v3 storage layer (reads/writes expose modifiedTime)
 js/cloud.js                       Hybrid sync: durable outbox, retry/online replay, reconcile-before-overwrite
 js/sync-core.js                   Pure merge/outbox/reconcile logic (window.BRSync); unit-tested in Node
@@ -77,6 +86,7 @@ assets/plates/ai-image-prompts.json  Master prompt store (80 prompts, source of 
 assets/plates/workout-cards.json  Manifest for card generation + plate intake
 scripts/generate-workout-cards.mjs  Regenerates SVG cards + js/data/workout-cards.js
 scripts/import-ai-plates.mjs      Local AI-plate import/validation tool
+docs/google-drive-setup.md        Self-service Drive setup + full troubleshooting table
 scripts/extract-atp-figures.py    Extracts public-domain figures from the ATP PDF
 scripts/generate-atp-exercises.py Regenerates js/data/exercises-atp.js
 blender/                          Source-only MakeHuman/Blender render pipeline (kept for reference)

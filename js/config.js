@@ -10,6 +10,11 @@
  * into its static build). With either missing, the app runs fully offline in
  * guest mode and everything stays in localStorage — no sign-in UI is offered.
  *
+ * You do not need to edit this file. Settings > Google Drive backup > Set up
+ * Google Drive validates and stores both values in this browser instead, and
+ * scripts/check-config.mjs fails the build if either is committed here. The
+ * full walkthrough is in docs/google-drive-setup.md.
+ *
  * The OAuth client must list this site's origin (e.g.
  * https://stoptalkingishh.github.io) under Authorized JavaScript origins.
  */
