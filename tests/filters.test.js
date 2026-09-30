@@ -165,12 +165,22 @@ test("haystack: exposes the searched fields, lowercased, and no others", () => {
 
 test("sessionTags: stringifies, trims and drops blanks", () => {
   assert.deepEqual(F.sessionTags({ tags: [" a ", "b", "", "   "] }), ["a", "b"]);
-  // null and undefined become the strings "null" and "undefined" and survive
-  // filter(Boolean) — a pre-existing wart (filed as #30), pinned as-is.
-  assert.deepEqual(F.sessionTags({ tags: ["a", null, undefined, 3] }), ["a", "null", "undefined", "3"]);
+  assert.deepEqual(F.sessionTags({ tags: ["a", null, undefined, 3] }), ["a", "3"], "nullish entries are dropped, not stringified (#30)");
   assert.deepEqual(F.sessionTags({ tags: [] }), []);
   assert.deepEqual(F.sessionTags({}), []);
   assert.deepEqual(F.sessionTags(null), []);
+});
+
+test("sessionTags: nullish entries are rejected before stringification", () => {
+  // String(null) is "null" and truthy, so filtering after String() would keep
+  // it. The whole point of #30 is that a nullish tag must never surface as a
+  // visible tag named "null".
+  assert.deepEqual(F.sessionTags({ tags: [null] }), []);
+  assert.deepEqual(F.sessionTags({ tags: [undefined] }), []);
+  assert.deepEqual(F.sessionTags({ tags: ["a", null, 3] }), ["a", "3"]);
+  assert.deepEqual(F.sessionTags({ tags: [null, "   ", undefined, ""] }), [], "nullish and blank entries both go");
+  // Only nullish is dropped — other falsy-but-real tags still stringify.
+  assert.deepEqual(F.sessionTags({ tags: [0, false] }), ["0", "false"]);
 });
 
 test("allTags: distinct across sessions, sorted, blanks ignored", () => {
@@ -184,6 +194,21 @@ test("allTags: distinct across sessions, sorted, blanks ignored", () => {
   assert.deepEqual(F.allTags(sessions), ["am", "pm", "ruck", "strength"]);
   assert.deepEqual(F.allTags([]), []);
   assert.deepEqual(F.allTags(undefined), []);
+});
+
+test("allTags: can never emit the strings \"null\" or \"undefined\" (#30)", () => {
+  // allTags() builds the tag list shown in the Builder; a "null" chip there
+  // becomes a group filter value that matches nothing meaningful.
+  const sessions = [
+    { tags: [null, undefined] },
+    { tags: ["a", null] },
+    { tags: [undefined, "a"] },
+    { tags: [null, " ", undefined] }
+  ];
+  const tags = F.allTags(sessions);
+  assert.deepEqual(tags, ["a"]);
+  assert.ok(!tags.includes("null"));
+  assert.ok(!tags.includes("undefined"));
 });
 
 /* ---------------- matchesGroup ---------------- */

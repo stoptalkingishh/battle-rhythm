@@ -79,10 +79,20 @@
     return (exercises || []).filter(function (exercise) { return matchesExercise(exercise, filter); });
   }
 
-  /** Tags are trimmed, stringified, and empties dropped: `[" a ", "", null]` -> `["a"]`. */
+  /** Tags are trimmed, stringified, and empties dropped: `[" a ", "", null]` -> `["a"]`.
+   *
+   * Nullish entries are rejected on the source value, before String() runs.
+   * String(null) is "null" and String(undefined) is "undefined" — both truthy —
+   * so filtering after stringifying would keep them: a tag chip would render
+   * literally reading "null", and allTags() would publish it as a group filter
+   * value that can never match anything meaningful. A partial save, an older
+   * schema or a JSON round-trip is all it takes to get one into a session. */
   function sessionTags(session) {
     var t = session && session.tags ? session.tags : [];
-    return t.map(function (x) { return String(x).trim(); }).filter(Boolean);
+    return t
+      .filter(function (x) { return x != null; })
+      .map(function (x) { return String(x).trim(); })
+      .filter(Boolean);
   }
 
   /** Every distinct tag across the sessions, sorted. */
