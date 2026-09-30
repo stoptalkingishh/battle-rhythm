@@ -221,7 +221,7 @@
       "id": "3-6",
       "name": "PD4 Proper technique to execute the Rower",
       "page": 43,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 386.8100280761719,
       "x1": 515.0799560546875,
       "y1": 670.4100341796875
@@ -248,7 +248,7 @@
       "id": "3-9",
       "name": "PD6 Proper technique to execute the Windmill",
       "page": 45,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 362.7799987792969,
       "x1": 512.9200439453125,
       "y1": 569.3800048828125
@@ -266,7 +266,7 @@
       "id": "3-11",
       "name": "PD8 Prone Row",
       "page": 47,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 263.41998291015625,
       "x1": 512.9500122070312,
       "y1": 429.719970703125
@@ -275,7 +275,7 @@
       "id": "3-12",
       "name": "PD9 Bent-Leg Body Twist",
       "page": 48,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 181.989990234375,
       "x1": 512.9599609375,
       "y1": 472.8399963378906
@@ -284,25 +284,25 @@
       "id": "3-13",
       "name": "PD10 Push-Up",
       "page": 48,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 515.9400024414062,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 685.1400146484375
     },
     {
       "id": "3-14",
       "name": "PD MOD1 Bend and Reach (modified)",
       "page": 50,
-      "x0": 153.0,
+      "x0": 153,
       "y0": 74.89999389648438,
-      "x1": 477.0,
+      "x1": 477,
       "y1": 384.5
     },
     {
       "id": "3-15",
       "name": "PD MOD2 Rear Lunge (modified)",
       "page": 50,
-      "x0": 153.0,
+      "x0": 153,
       "y0": 417.3999938964844,
       "x1": 476.9599914550781,
       "y1": 690.25
@@ -311,7 +311,7 @@
       "id": "3-16",
       "name": "PD MOD3 High Jumper (modified)",
       "page": 51,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 227.01995849609375,
       "x1": 476.9800109863281,
       "y1": 665.469970703125
@@ -320,7 +320,7 @@
       "id": "3-17",
       "name": "PD MOD4 Rower (modified)",
       "page": 52,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 217.57000732421875,
       "x1": 530.9400024414062,
       "y1": 362.2200012207031
@@ -338,7 +338,7 @@
       "id": "3-19",
       "name": "PD MOD6 Windmill (modified)",
       "page": 54,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.0999755859375,
       "x1": 530.9500122070312,
       "y1": 418.29998779296875
@@ -347,7 +347,7 @@
       "id": "3-20",
       "name": "PD MOD6 Windmill (modified) alternative movement",
       "page": 54,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 458.8000183105469,
       "x1": 530.9400024414062,
       "y1": 670.4500122070312
@@ -365,7 +365,7 @@
       "id": "3-22",
       "name": "PD MOD8 Prone Row (modified)",
       "page": 56,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 120.54998779296875,
       "x1": 530.9599609375,
       "y1": 234.29998779296875
@@ -374,7 +374,7 @@
       "id": "3-23",
       "name": "PD MOD8 Prone Row (modified) alternative movement",
       "page": 56,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 270.2900085449219,
       "x1": 530.9100341796875,
       "y1": 455.2900085449219
@@ -410,7 +410,7 @@
       "id": "4-2",
       "name": "HSD2 Medial Leg Raise",
       "page": 59,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 328.8600158691406,
       "x1": 512.9100341796875,
       "y1": 468.510009765625
@@ -428,7 +428,7 @@
       "id": "4-4",
       "name": "HSD4 Single-Leg Tuck",
       "page": 61,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.14999389648438,
       "x1": 513.0499877929688,
       "y1": 276.5
@@ -437,9 +437,9 @@
       "id": "4-5",
       "name": "HSD5 Single Leg Over",
       "page": 62,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 240.62998962402344,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 485.42999267578125
     },
     {
@@ -518,7 +518,7 @@
       "id": "5-3",
       "name": "CD1.3 Mountain Climber",
       "page": 72,
-      "x0": 90.0,
+      "x0": 90,
       "y0": 440.77001953125,
       "x1": 503.9700012207031,
       "y1": 686.27001953125
@@ -545,9 +545,9 @@
       "id": "5-6",
       "name": "CD1 MOD1 Power Jump (modified)",
       "page": 75,
-      "x0": 135.0,
+      "x0": 135,
       "y0": 83.67001342773438,
-      "x1": 495.0,
+      "x1": 495,
       "y1": 320.57000732421875
     },
     {
@@ -564,7 +564,7 @@
       "name": "CD1 MOD3 Mountain Climber (modified)",
       "page": 76,
       "x0": 83.25,
-      "y0": 456.0,
+      "y0": 456,
       "x1": 510.20001220703125,
       "y1": 571.2000122070312
     },
@@ -572,7 +572,7 @@
       "id": "5-9",
       "name": "CD1 MOD4 Leg-Tuck and Twist (modified)",
       "page": 77,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 374.30999755859375,
       "x1": 530.9500122070312,
       "y1": 459.260009765625
@@ -581,7 +581,7 @@
       "id": "5-10",
       "name": "CD1 MOD5 Push-Up (modified)",
       "page": 78,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 254.0699920654297,
       "x1": 512.2999877929688,
       "y1": 361.3699951171875
@@ -590,7 +590,7 @@
       "id": "5-11",
       "name": "CD2.1 Turn and Lunge",
       "page": 79,
-      "x0": 153.0,
+      "x0": 153,
       "y0": 83.67001342773438,
       "x1": 476.9800109863281,
       "y1": 465.9700012207031
@@ -599,7 +599,7 @@
       "id": "5-12",
       "name": "CD2.2 Supine Bicycle",
       "page": 80,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.8800048828125,
       "y1": 227.5
@@ -608,7 +608,7 @@
       "id": "5-13",
       "name": "CD2.3 Half Jack",
       "page": 80,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 463.8299865722656,
       "x1": 512.9000244140625,
       "y1": 634.4299926757812
@@ -635,7 +635,7 @@
       "id": "5-16",
       "name": "CD3.1 Y Squat",
       "page": 83,
-      "x0": 135.0,
+      "x0": 135,
       "y0": 83.67001342773438,
       "x1": 494.989990234375,
       "y1": 485.4200134277344
@@ -644,7 +644,7 @@
       "id": "5-17",
       "name": "CD3.2 Single-Leg Deadlift",
       "page": 84,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 494.9599914550781,
       "y1": 465.1000061035156
@@ -653,16 +653,16 @@
       "id": "5-18",
       "name": "CD3.3 Side-to-Side Knee Lifts",
       "page": 85,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 83.66998291015625,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 360.8699951171875
     },
     {
       "id": "5-19",
       "name": "CD3.4 Front Kick Alternate Toe Touch",
       "page": 86,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.9599609375,
       "y1": 327.6000061035156
@@ -673,7 +673,7 @@
       "page": 87,
       "x0": 110.9800033569336,
       "y0": 99.3900146484375,
-      "x1": 529.0,
+      "x1": 529,
       "y1": 386.25
     },
     {
@@ -705,7 +705,7 @@
     },
     {
       "id": "5-24",
-      "name": "CD3.9 Alternate \u00bc-Turn Jump",
+      "name": "CD3.9 Alternate ¼-Turn Jump",
       "page": 91,
       "x0": 102.75,
       "y0": 83.66998291015625,
@@ -716,7 +716,7 @@
       "id": "5-25",
       "name": "CD3.10 Alternate Staggered Squat Jump",
       "page": 92,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.2999877929688,
       "y1": 325.45001220703125
@@ -743,16 +743,16 @@
       "id": "6-3",
       "name": "CL1.3 Pull-Up",
       "page": 97,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 380.8999938964844
     },
     {
       "id": "6-4",
       "name": "CL1.4 Leg Tuck",
       "page": 98,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.9599609375,
       "y1": 387.3500061035156
@@ -770,7 +770,7 @@
       "id": "6-7",
       "name": "CL2.1 Flexed-Arm Hang",
       "page": 100,
-      "x0": 225.0,
+      "x0": 225,
       "y0": 351.8489990234375,
       "x1": 404.989990234375,
       "y1": 699.5989990234375
@@ -779,7 +779,7 @@
       "id": "6-10",
       "name": "GD1 Shoulder Roll",
       "page": 101,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 543.260986328125,
       "x1": 512.8399658203125,
       "y1": 625.3099975585938
@@ -788,7 +788,7 @@
       "id": "6-11",
       "name": "GD2 Lunge Walk",
       "page": 102,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 215.41000366210938,
       "x1": 530.9400024414062,
       "y1": 293.1600036621094
@@ -806,7 +806,7 @@
       "id": "7-1",
       "name": "RUD1.1 Heel Strike",
       "page": 105,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 82.10000610351562,
       "x1": 477.70001220703125,
       "y1": 367.95001220703125
@@ -824,7 +824,7 @@
       "id": "7-3",
       "name": "RUD1.3 8-Count Foot Strike",
       "page": 107,
-      "x0": 84.0,
+      "x0": 84,
       "y0": 82.0999755859375,
       "x1": 509.5,
       "y1": 383.79998779296875
@@ -869,7 +869,7 @@
       "id": "7-8",
       "name": "RUD2.3 Skip in Place",
       "page": 110,
-      "x0": 102.0,
+      "x0": 102,
       "y0": 369.28997802734375,
       "x1": 527.5,
       "y1": 644.3399658203125
@@ -887,7 +887,7 @@
       "id": "7-11",
       "name": "RUD2.6 Pendulum",
       "page": 112,
-      "x0": 102.0,
+      "x0": 102,
       "y0": 240.52001953125,
       "x1": 527.5,
       "y1": 527.0700073242188
@@ -905,7 +905,7 @@
       "id": "7-13",
       "name": "RUD2.8 Hip Raise Push-Up",
       "page": 114,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 531.7000122070312,
       "y1": 227.5
@@ -914,7 +914,7 @@
       "id": "7-14",
       "name": "RUD2.9 Single-Leg Hip Raise Push-Up",
       "page": 114,
-      "x0": 102.0,
+      "x0": 102,
       "y0": 440.781005859375,
       "x1": 528.25,
       "y1": 534.3800048828125
@@ -932,7 +932,7 @@
       "id": "7-16",
       "name": "RUD3.1 Alternating Foot Strike",
       "page": 116,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.0999755859375,
       "x1": 530.9599609375,
       "y1": 472.29998779296875
@@ -941,7 +941,7 @@
       "id": "7-17",
       "name": "RUD3.2 Hop in Place",
       "page": 117,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 494.9700012207031,
       "y1": 576.7000122070312
@@ -959,7 +959,7 @@
       "id": "7-19",
       "name": "RUD3.4 Backwards Run",
       "page": 119,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 118.489990234375,
       "x1": 512.9299926757812,
       "y1": 301.3399963378906
@@ -1031,7 +1031,7 @@
       "id": "8-1",
       "name": "MMD1.1 Vertical",
       "page": 124,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 467.6300048828125,
       "x1": 530.9299926757812,
       "y1": 654.0800170898438
@@ -1040,7 +1040,7 @@
       "id": "8-2",
       "name": "MMD1.2 Lateral",
       "page": 125,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 227.0179901123047,
       "x1": 512.8299560546875,
       "y1": 301.7699890136719
@@ -1058,7 +1058,7 @@
       "id": "8-4",
       "name": "MMD2.1 Power Skip",
       "page": 127,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.9200439453125,
       "y1": 288.70001220703125
@@ -1076,7 +1076,7 @@
       "id": "8-6",
       "name": "MMD2.3 Crouch Run",
       "page": 129,
-      "x0": 84.0,
+      "x0": 84,
       "y0": 82.10002136230469,
       "x1": 510.25,
       "y1": 260.6500244140625
@@ -1085,7 +1085,7 @@
       "id": "9-1",
       "name": "MB1.1 Chest Pass Lateral",
       "page": 130,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 485.27001953125,
       "x1": 530.9299926757812,
       "y1": 604.77001953125
@@ -1094,7 +1094,7 @@
       "id": "9-2",
       "name": "MB1.2 Alternating Side-Arm Throw",
       "page": 131,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 276.8699951171875,
       "x1": 512.9500122070312,
       "y1": 369.0199890136719
@@ -1121,7 +1121,7 @@
       "id": "9-5",
       "name": "MB1.5 Underhand Wall Throw",
       "page": 134,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10001373291016,
       "x1": 530.3900146484375,
       "y1": 187.20001220703125
@@ -1130,7 +1130,7 @@
       "id": "9-6",
       "name": "MB2.1 Diagonal Chop Throw",
       "page": 135,
-      "x0": 135.0,
+      "x0": 135,
       "y0": 72.80001831054688,
       "x1": 458.989990234375,
       "y1": 503.3500061035156
@@ -1139,18 +1139,18 @@
       "id": "9-7",
       "name": "MB2.2 Kneeling Side-Arm Throw",
       "page": 136,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10001373291016,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 187.95001220703125
     },
     {
       "id": "9-8",
       "name": "MB2.3 Sumo Wall Throw",
       "page": 136,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 422.66998291015625,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 618.469970703125
     },
     {
@@ -1166,7 +1166,7 @@
       "id": "9-10",
       "name": "MB2.5 Rainbow Slam",
       "page": 138,
-      "x0": 105.0,
+      "x0": 105,
       "y0": 82.10000610351562,
       "x1": 524.75,
       "y1": 241.95001220703125
@@ -1175,16 +1175,16 @@
       "id": "10-1",
       "name": "ST1.1 Suspension Push-Up",
       "page": 140,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 492.77703857421875,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 556.780029296875
     },
     {
       "id": "10-2",
       "name": "ST1.2 Incline Calf Raise",
       "page": 141,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 273.0899963378906,
       "x1": 512.3099975585938,
       "y1": 376.3800048828125
@@ -1193,7 +1193,7 @@
       "id": "10-3",
       "name": "ST1.3 Decline I-T-Y Raise",
       "page": 142,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.97998046875,
       "y1": 282.25
@@ -1202,9 +1202,9 @@
       "id": "10-4",
       "name": "ST1.4 Assisted Squat",
       "page": 142,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 454.3900146484375,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 524.9400024414062
     },
     {
@@ -1238,7 +1238,7 @@
       "id": "10-8",
       "name": "ST2.3 Decline Pull-Up",
       "page": 145,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 238.57000732421875,
       "x1": 512.6799926757812,
       "y1": 514.3200073242188
@@ -1265,9 +1265,9 @@
       "id": "10-11",
       "name": "ST2.5a Assisted Single-Leg Squat with alternative movement",
       "page": 147,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 582.2899780273438,
-      "x1": 477.0,
+      "x1": 477,
       "y1": 686.6900024414062
     },
     {
@@ -1355,7 +1355,7 @@
       "id": "11-4",
       "name": "LM1.4 180-Degree Landmine",
       "page": 153,
-      "x0": 87.0,
+      "x0": 87,
       "y0": 145.47999572753906,
       "x1": 507.5,
       "y1": 380.17999267578125
@@ -1364,7 +1364,7 @@
       "id": "11-5",
       "name": "LM1.5 Lateral Lunge",
       "page": 154,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.9599609375,
       "y1": 483.1000061035156
@@ -1373,7 +1373,7 @@
       "id": "11-6",
       "name": "LM2.1 Diagonal Lift to Press",
       "page": 155,
-      "x0": 90.0,
+      "x0": 90,
       "y0": 362.8100280761719,
       "x1": 503.29998779296875,
       "y1": 622.6600341796875
@@ -1382,18 +1382,18 @@
       "id": "11-7",
       "name": "LM2.2 Single-Arm Chest Press",
       "page": 156,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 229.07000732421875,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 344.9700012207031
     },
     {
       "id": "11-8",
       "name": "LM2.3 180-Degree Landmine Kneeling",
       "page": 157,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.0999755859375,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 406.1000061035156
     },
     {
@@ -1409,7 +1409,7 @@
       "id": "11-10",
       "name": "LM2.5 Rear Lunge to Press",
       "page": 158,
-      "x0": 105.0,
+      "x0": 105,
       "y0": 465.52001953125,
       "x1": 525.5,
       "y1": 651.27001953125
@@ -1427,10 +1427,10 @@
       "id": "12-2",
       "name": "P3T2 Oblique Sit-Up",
       "page": 162,
-      "x0": 102.0,
+      "x0": 102,
       "y0": 82.10000610351562,
       "x1": 527.5,
-      "y1": 319.0
+      "y1": 319
     },
     {
       "id": "12-3",
@@ -1443,7 +1443,7 @@
     },
     {
       "id": "12-4",
-      "name": "P3T3 Modified Sit-Up\u2014head lift",
+      "name": "P3T3 Modified Sit-Up—head lift",
       "page": 162,
       "x0": 106.5,
       "y0": 625.4710083007812,
@@ -1463,9 +1463,9 @@
       "id": "12-6",
       "name": "P3T4 Seated Trunk Curve",
       "page": 163,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 492.46795654296875,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 561.469970703125
     },
     {
@@ -1479,7 +1479,7 @@
     },
     {
       "id": "12-8",
-      "name": "P3T5 Deep Sumo Squat\u2014weight-assisted",
+      "name": "P3T5 Deep Sumo Squat—weight-assisted",
       "page": 164,
       "x0": 102.4000015258789,
       "y0": 340.7300109863281,
@@ -1488,7 +1488,7 @@
     },
     {
       "id": "12-9",
-      "name": "P3T5 Deep Sumo Squat\u2014from Standing position without weight",
+      "name": "P3T5 Deep Sumo Squat—from Standing position without weight",
       "page": 164,
       "x0": 102.75,
       "y0": 582.1799926757812,
@@ -1508,7 +1508,7 @@
       "id": "13-1",
       "name": "STC1 Sumo Squat",
       "page": 167,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.9599609375,
       "y1": 398.1499938964844
@@ -1526,7 +1526,7 @@
       "id": "13-3",
       "name": "STC3 Forward Lunge",
       "page": 169,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.0999755859375,
       "x1": 494.29998779296875,
       "y1": 509.04998779296875
@@ -1535,7 +1535,7 @@
       "id": "13-4",
       "name": "STC4 8-Count Step-up",
       "page": 170,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 131.98004150390625,
       "x1": 530.9599609375,
       "y1": 579.780029296875
@@ -1544,9 +1544,9 @@
       "id": "13-5",
       "name": "STC5A Pull-up",
       "page": 171,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 215.58001708984375,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 514.3800048828125
     },
     {
@@ -1591,7 +1591,7 @@
       "page": 174,
       "x0": 100.5,
       "y0": 531.6279907226562,
-      "x1": 529.0,
+      "x1": 529,
       "y1": 600.6300048828125
     },
     {
@@ -1623,7 +1623,7 @@
     },
     {
       "id": "14-3",
-      "name": "FW3 Deadlift\u2014straight bar",
+      "name": "FW3 Deadlift—straight bar",
       "page": 179,
       "x0": 81.75,
       "y0": 407.6300048828125,
@@ -1632,9 +1632,9 @@
     },
     {
       "id": "14-4",
-      "name": "FW3 Deadlift\u2014kettlebells",
+      "name": "FW3 Deadlift—kettlebells",
       "page": 179,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 537.8300170898438,
       "x1": 512.8699951171875,
       "y1": 668.8300170898438
@@ -1643,43 +1643,43 @@
       "id": "14-5",
       "name": "FW3 Straight-Leg Deadlift",
       "page": 180,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 291.3799743652344,
-      "x1": 531.0,
+      "x1": 531,
       "y1": 575.72998046875
     },
     {
       "id": "14-6",
-      "name": "FW4 Bench Press\u2014straight bar",
+      "name": "FW4 Bench Press—straight bar",
       "page": 181,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 427.5299987792969,
       "x1": 512.9400024414062,
       "y1": 628.3800048828125
     },
     {
       "id": "14-7",
-      "name": "FW4 Bench Press\u2014dumbbell",
+      "name": "FW4 Bench Press—dumbbell",
       "page": 182,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.9599609375,
       "y1": 313.20001220703125
     },
     {
       "id": "14-8",
-      "name": "FW4 Bench Press\u2014kettlebell",
+      "name": "FW4 Bench Press—kettlebell",
       "page": 182,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 346.60003662109375,
       "x1": 530.9200439453125,
       "y1": 560.4000244140625
     },
     {
       "id": "14-9",
-      "name": "FW4 Bench Press\u2014decline",
+      "name": "FW4 Bench Press—decline",
       "page": 183,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.0999755859375,
       "x1": 512.9100341796875,
       "y1": 267.0999755859375
@@ -1697,7 +1697,7 @@
       "id": "14-11",
       "name": "FW6 Sumo Deadlift",
       "page": 185,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.09999084472656,
       "x1": 512.9299926757812,
       "y1": 331.8999938964844
@@ -1706,7 +1706,7 @@
       "id": "14-12",
       "name": "FW7 Heel Raise",
       "page": 186,
-      "x0": 102.0,
+      "x0": 102,
       "y0": 82.10003662109375,
       "x1": 528.25,
       "y1": 513.4000244140625
@@ -1715,7 +1715,7 @@
       "id": "14-13",
       "name": "FW8 Bent-Over Row",
       "page": 187,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 170.53997802734375,
       "x1": 512.9500122070312,
       "y1": 446.989990234375
@@ -1724,14 +1724,14 @@
       "id": "14-14",
       "name": "FW9 Single-Arm Bent-Over Row",
       "page": 188,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 130.04002380371094,
       "x1": 530.8699951171875,
       "y1": 230.09002685546875
     },
     {
       "id": "14-15",
-      "name": "FW10 Upright Row\u2014straight bar",
+      "name": "FW10 Upright Row—straight bar",
       "page": 189,
       "x0": 81.75,
       "y0": 82.09999084472656,
@@ -1740,9 +1740,9 @@
     },
     {
       "id": "14-16",
-      "name": "FW10 Upright Row\u2014kettlebell",
+      "name": "FW10 Upright Row—kettlebell",
       "page": 189,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 342.0469665527344,
       "x1": 476.989990234375,
       "y1": 693.39697265625
@@ -1751,7 +1751,7 @@
       "id": "14-17",
       "name": "FW11 Overhead Push-Press",
       "page": 190,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 347.57000732421875,
       "x1": 530.969970703125,
       "y1": 515.3200073242188
@@ -1760,7 +1760,7 @@
       "id": "14-18",
       "name": "FW12 Bent-Arm Lateral Raise",
       "page": 191,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 131.99000549316406,
       "x1": 512.2999877929688,
       "y1": 371.0400085449219
@@ -1776,7 +1776,7 @@
     },
     {
       "id": "14-20",
-      "name": "FW14 Pull Over\u2014single dumbbell",
+      "name": "FW14 Pull Over—single dumbbell",
       "page": 193,
       "x0": 81.75,
       "y0": 82.10002136230469,
@@ -1785,7 +1785,7 @@
     },
     {
       "id": "14-21",
-      "name": "FW14 Pull Over\u2014double dumbbells",
+      "name": "FW14 Pull Over—double dumbbells",
       "page": 193,
       "x0": 81.75,
       "y0": 234.09999084472656,
@@ -1805,7 +1805,7 @@
       "id": "14-23",
       "name": "FW16 Biceps Curl",
       "page": 195,
-      "x0": 84.0,
+      "x0": 84,
       "y0": 82.10000610351562,
       "x1": 509.5,
       "y1": 307.45001220703125
@@ -1814,7 +1814,7 @@
       "id": "14-24",
       "name": "FW17 Weighted Trunk Flexion",
       "page": 195,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 535.719970703125,
       "x1": 512.2999877929688,
       "y1": 670.3699951171875
@@ -1832,7 +1832,7 @@
       "id": "15-1",
       "name": "STM Leg Press",
       "page": 199,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.0999755859375,
       "x1": 512.2999877929688,
       "y1": 274.3499755859375
@@ -1859,7 +1859,7 @@
       "id": "15-4",
       "name": "STM Single-Leg Curl",
       "page": 201,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 159.33999633789062,
       "x1": 512.9400024414062,
       "y1": 303.989990234375
@@ -1868,7 +1868,7 @@
       "id": "15-5",
       "name": "STM Lateral Raise",
       "page": 202,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.97998046875,
       "y1": 307.45001220703125
@@ -1877,7 +1877,7 @@
       "id": "15-6",
       "name": "STM Single-Arm Lateral Raise",
       "page": 202,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 432.19000244140625,
       "x1": 530.9400024414062,
       "y1": 658.239990234375
@@ -1886,7 +1886,7 @@
       "id": "15-7",
       "name": "STM Overhead Press",
       "page": 203,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 269.6299743652344,
       "x1": 512.9299926757812,
       "y1": 530.22998046875
@@ -1913,7 +1913,7 @@
       "id": "15-10",
       "name": "STM Single-Arm Lat Pull-Down",
       "page": 206,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.0999755859375,
       "x1": 530.97998046875,
       "y1": 514.7999877929688
@@ -1922,7 +1922,7 @@
       "id": "15-11",
       "name": "STM Seated Row",
       "page": 207,
-      "x0": 84.0,
+      "x0": 84,
       "y0": 118.55001831054688,
       "x1": 509.5,
       "y1": 374.85003662109375
@@ -1931,7 +1931,7 @@
       "id": "15-12",
       "name": "STM Single-Arm Seated Row",
       "page": 208,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.0999755859375,
       "x1": 530.97998046875,
       "y1": 343.45001220703125
@@ -1940,16 +1940,16 @@
       "id": "15-13",
       "name": "STM Trunk Extension",
       "page": 209,
-      "x0": 84.0,
+      "x0": 84,
       "y0": 82.0999984741211,
       "x1": 509.5,
-      "y1": 198.0
+      "y1": 198
     },
     {
       "id": "15-14",
       "name": "STM Triceps Extension",
       "page": 209,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 483.6299743652344,
       "x1": 512.2999877929688,
       "y1": 618.97998046875
@@ -1958,7 +1958,7 @@
       "id": "15-15",
       "name": "STM Single-Arm Triceps Extension",
       "page": 210,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 205.8900146484375,
       "x1": 530.969970703125,
       "y1": 370.0400085449219
@@ -1976,7 +1976,7 @@
       "id": "15-17",
       "name": "STM Single-Arm Chest Press",
       "page": 212,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 530.9500122070312,
       "y1": 407.45001220703125
@@ -1985,9 +1985,9 @@
       "id": "15-18",
       "name": "STM Trunk Flexion",
       "page": 213,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
-      "x1": 513.0,
+      "x1": 513,
       "y1": 460.1000061035156
     },
     {
@@ -2012,7 +2012,7 @@
       "id": "16-3",
       "name": "RD3 Extend and Flex",
       "page": 216,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 263.6309814453125,
       "x1": 530.2999877929688,
       "y1": 334.17999267578125
@@ -2033,7 +2033,7 @@
       "x0": 83.25,
       "y0": 274.79998779296875,
       "x1": 510.95001220703125,
-      "y1": 516.0
+      "y1": 516
     },
     {
       "id": "16-6",
@@ -2066,7 +2066,7 @@
       "id": "16-9",
       "name": "RD MOD1 Overhead Arm Pull (modified)",
       "page": 220,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10002136230469,
       "x1": 530.8399658203125,
       "y1": 187.9000244140625
@@ -2075,7 +2075,7 @@
       "id": "16-10",
       "name": "RD MOD2 Rear Lunge (modified)",
       "page": 221,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10000610351562,
       "x1": 512.969970703125,
       "y1": 417.6000061035156
@@ -2091,7 +2091,7 @@
     },
     {
       "id": "16-12",
-      "name": "RD MOD3 Extend and Flex (modified)\u2014standing",
+      "name": "RD MOD3 Extend and Flex (modified)—standing",
       "page": 222,
       "x0": 101.25,
       "y0": 232.239990234375,
@@ -2102,7 +2102,7 @@
       "id": "16-13",
       "name": "RD MOD4 Thigh Stretch (modified)",
       "page": 223,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 249.91000366210938,
       "x1": 509.7699890136719,
       "y1": 475.010009765625
@@ -2120,7 +2120,7 @@
       "id": "16-15",
       "name": "RD MOD6 Groin Stretch (modified)",
       "page": 225,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 82.10002136230469,
       "x1": 512.8399658203125,
       "y1": 187.9000244140625
@@ -2129,7 +2129,7 @@
       "id": "16-16",
       "name": "RD MOD7 Calf Stretch (modified)",
       "page": 225,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 404.2300109863281,
       "x1": 516.0400390625,
       "y1": 663.0800170898438
@@ -2145,7 +2145,7 @@
     },
     {
       "id": "16-18",
-      "name": "RD MOD8 Hamstring (modified)\u2014single leg",
+      "name": "RD MOD8 Hamstring (modified)—single leg",
       "page": 226,
       "x0": 103.30000305175781,
       "y0": 391.7099914550781,
@@ -2154,54 +2154,54 @@
     },
     {
       "id": "17-1",
-      "name": "PMCS1 Spine\u2014neck",
+      "name": "PMCS1 Spine—neck",
       "page": 229,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 96.02001953125,
       "x1": 512.6300048828125,
       "y1": 644.52001953125
     },
     {
       "id": "17-2",
-      "name": "PMCS1 Spine\u2014mid-back seated",
+      "name": "PMCS1 Spine—mid-back seated",
       "page": 230,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 131.19000244140625,
       "x1": 530.3699951171875,
       "y1": 404.510009765625
     },
     {
       "id": "17-3",
-      "name": "PMCS1 Spine\u2014mid-back standing mobility",
+      "name": "PMCS1 Spine—mid-back standing mobility",
       "page": 231,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 82.10000610351562,
       "x1": 494.9700012207031,
       "y1": 399.6000061035156
     },
     {
       "id": "17-4",
-      "name": "PMCS1 Spine\u2014mid-back prone mobility",
+      "name": "PMCS1 Spine—mid-back prone mobility",
       "page": 231,
-      "x0": 117.0,
+      "x0": 117,
       "y0": 476.3399658203125,
       "x1": 476.760009765625,
       "y1": 670.72998046875
     },
     {
       "id": "17-5",
-      "name": "PMCS1 Spine\u2014low back prone",
+      "name": "PMCS1 Spine—low back prone",
       "page": 232,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 139.54002380371094,
       "x1": 530.6700439453125,
       "y1": 264.09002685546875
     },
     {
       "id": "17-6",
-      "name": "PMCS1 Spine\u2014low back standing",
+      "name": "PMCS1 Spine—low back standing",
       "page": 232,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 355.7399597167969,
       "x1": 530.3900146484375,
       "y1": 683.3399658203125
@@ -2210,16 +2210,16 @@
       "id": "17-7",
       "name": "PMCS2 Ankle",
       "page": 233,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 252.010009765625,
       "x1": 512.6300048828125,
       "y1": 443.9200134277344
     },
     {
       "id": "17-8",
-      "name": "PMCS2 Ankle\u2014kneeling",
+      "name": "PMCS2 Ankle—kneeling",
       "page": 233,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 497.77398681640625,
       "x1": 512.6300048828125,
       "y1": 589.0399780273438
@@ -2228,7 +2228,7 @@
       "id": "17-9",
       "name": "PMCS3 Knee",
       "page": 234,
-      "x0": 99.0,
+      "x0": 99,
       "y0": 258.719970703125,
       "x1": 530.6900024414062,
       "y1": 628.97998046875
@@ -2237,23 +2237,23 @@
       "id": "17-10",
       "name": "PMCS4 Hip",
       "page": 235,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 275.2699890136719,
       "x1": 512.6300048828125,
       "y1": 467.17999267578125
     },
     {
       "id": "17-11",
-      "name": "PMCS4 Hip\u2014supine",
+      "name": "PMCS4 Hip—supine",
       "page": 235,
-      "x0": 81.0,
+      "x0": 81,
       "y0": 511.3810119628906,
       "x1": 512.9500122070312,
       "y1": 607.1300048828125
     },
     {
       "id": "17-12",
-      "name": "PMCS5 Shoulder\u2014partner assisted",
+      "name": "PMCS5 Shoulder—partner assisted",
       "page": 236,
       "x0": 100.5,
       "y0": 290.3699951171875,
@@ -2282,10 +2282,327 @@
       "id": "17-15",
       "name": "PMCS6 Elbow and wrist",
       "page": 238,
-      "x0": 108.0,
+      "x0": 108,
       "y0": 82.10002136230469,
       "x1": 521.5899658203125,
       "y1": 195.1500244140625
+    }
+  ],
+  "notShipped": [
+    {
+      "id": "1-1",
+      "name": "Platoon rectangular formation",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-2",
+      "name": "Platoon rectangular formation extended and uncovered",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-3",
+      "name": "Forming a company, company in line with platoons in column",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-4",
+      "name": "Company extended and uncovered, company in line with platoons in column",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-5",
+      "name": "Formation of company en masse",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-6",
+      "name": "Company en masse extended and uncovered",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-7",
+      "name": "Platoon formation en masse",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "1-8",
+      "name": "Platoon formation extended and covered",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-1",
+      "name": "Positions",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-2",
+      "name": "Squat position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-3",
+      "name": "Front Leaning Rest position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-4",
+      "name": "Six-Point Stance position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-5",
+      "name": "Straddle Stance position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-6",
+      "name": "The Forward Leaning Stance",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-7",
+      "name": "Prone position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-8",
+      "name": "Supine position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-9",
+      "name": "Half-Kneeling position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-10",
+      "name": "Sitting position",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "2-11",
+      "name": "Grips",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-3",
+      "name": "PD2 Proper technique to execute the Rear Lunge",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-6",
+      "name": "PD4 Proper technique to execute the Rower",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-7",
+      "name": "PD5 Squat Bender",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-9",
+      "name": "PD6 Proper technique to execute the Windmill",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-10",
+      "name": "PD7 Forward Lunge",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-14",
+      "name": "PD MOD1 Bend and Reach (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-15",
+      "name": "PD MOD2 Rear Lunge (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-16",
+      "name": "PD MOD3 High Jumper (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-17",
+      "name": "PD MOD4 Rower (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-18",
+      "name": "PD MOD5 Squat Bender (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-19",
+      "name": "PD MOD6 Windmill (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-20",
+      "name": "PD MOD6 Windmill (modified) alternative movement",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-21",
+      "name": "PD MOD7 Forward Lunge (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-22",
+      "name": "PD MOD8 Prone Row (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-23",
+      "name": "PD MOD8 Prone Row (modified) alternative movement",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-24",
+      "name": "PD MOD9 Bent-Leg Body Twist (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "3-25",
+      "name": "PD MOD10 Push-Up (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "4-10",
+      "name": "SSD5 W Raise with improper form",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "5-6",
+      "name": "CD1 MOD1 Power Jump (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "5-7",
+      "name": "CD1 MOD2 V-Up (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "5-8",
+      "name": "CD1 MOD3 Mountain Climber (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "5-9",
+      "name": "CD1 MOD4 Leg-Tuck and Twist (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "5-10",
+      "name": "CD1 MOD5 Push-Up (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "10-11",
+      "name": "ST2.5a Assisted Single-Leg Squat with alternative movement",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-1",
+      "name": "P3T1 Reverse Sit-Up",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-2",
+      "name": "P3T2 Oblique Sit-Up",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-3",
+      "name": "P3T3 Modified Sit-Up",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-4",
+      "name": "P3T3 Modified Sit-Up—head lift",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-5",
+      "name": "P3T4 Standing Trunk Curve",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-6",
+      "name": "P3T4 Seated Trunk Curve",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-7",
+      "name": "P3T5 Deep Sumo Squat",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-8",
+      "name": "P3T5 Deep Sumo Squat—weight-assisted",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-9",
+      "name": "P3T5 Deep Sumo Squat—from Standing position without weight",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "12-10",
+      "name": "P3T6 Pelvic Clock",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-9",
+      "name": "RD MOD1 Overhead Arm Pull (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-10",
+      "name": "RD MOD2 Rear Lunge (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-11",
+      "name": "RD MOD3 Extend and Flex (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-12",
+      "name": "RD MOD3 Extend and Flex (modified)—standing",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-13",
+      "name": "RD MOD4 Thigh Stretch (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-14",
+      "name": "RD MOD5 Single-Leg Over (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-15",
+      "name": "RD MOD6 Groin Stretch (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-16",
+      "name": "RD MOD7 Calf Stretch (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-17",
+      "name": "RD MOD8 Hamstring (modified)",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
+    },
+    {
+      "id": "16-18",
+      "name": "RD MOD8 Hamstring (modified)—single leg",
+      "reason": "extracted from ATP 7-22.02 but mapped to no exercise"
     }
   ]
 }

@@ -282,6 +282,43 @@ test("a declared SVG card override still matches the file on disk", () => {
   assert.deepEqual(wrong, [], `stale or wrong SVG card overrides:\n  ${wrong.join("\n  ")}`);
 });
 
+/* The ATP payload is the largest thing in the repository, and it is easy to
+ * grow it by accident: the extraction script writes every figure it finds, while
+ * only the ones an exercise maps to are ever displayed. #12 dropped the 63 that
+ * nothing referenced (2.83 MiB of 15.55 MiB). These three tests keep the set
+ * honest in both directions, so the payload cannot silently regrow and the
+ * record of what was extracted cannot drift from what is shipped. */
+const atpFigureMap = loadWindow("js/data/atp-figures.js").BR_ATP_FIGURES;
+const atpCatalog = JSON.parse(fs.readFileSync(path.join(root, "assets/plates/atp/atp-catalog.json"), "utf8"));
+const atpStems = fs.readdirSync(path.join(root, "assets/plates/atp")).filter(n => n.endsWith(".webp")).map(n => n.replace(/\.webp$/, ""));
+const atpMapped = new Set(Object.values(atpFigureMap).filter(Boolean));
+const atpNotShipped = new Set((atpCatalog.notShipped || []).map(f => f.id));
+
+test("no ATP figure is committed that no exercise maps to", () => {
+  const orphans = atpStems.filter(stem => !atpMapped.has(stem));
+  assert.deepEqual(orphans, [], `these figures are committed but unreachable — map them to an exercise or add them to "notShipped" in atp-catalog.json:\n  ${orphans.join("\n  ")}`);
+});
+
+test("every mapped ATP figure has a file on disk", () => {
+  const missing = [...atpMapped].filter(stem => !atpStems.includes(stem));
+  assert.deepEqual(missing, [], `BR_ATP_FIGURES maps to figures that are not on disk:\n  ${missing.join("\n  ")}`);
+});
+
+test("the catalog accounts for every figure: shipped or explicitly not shipped", () => {
+  // The catalog is the record of what scripts/extract-atp-figures.py pulled out
+  // of the public-domain source, so it is kept in full. What must not happen is
+  // a figure that is in neither column: silently dropped, or shipped without
+  // being catalogued.
+  const catalogued = new Set(atpCatalog.figures.map(f => f.id));
+  const unaccounted = catalogued.size !== atpStems.length + atpNotShipped.size;
+  const overlap = [...atpNotShipped].filter(id => atpStems.includes(id));
+
+  assert.deepEqual(overlap, [], `listed as not shipped but the file is present:\n  ${overlap.join("\n  ")}`);
+  assert.ok(!unaccounted, `catalog lists ${catalogued.size} figures but ${atpStems.length} are shipped and ${atpNotShipped.size} are marked not shipped — those must add up`);
+  const uncatalogued = atpStems.filter(stem => !catalogued.has(stem));
+  assert.deepEqual(uncatalogued, [], `shipped figures missing from the catalog:\n  ${uncatalogued.join("\n  ")}`);
+});
+
 test("every exercise with an SVG fallback has a real file at the generated path", () => {
   // The fallback is addressed by convention, not by a manifest entry:
   // assets/plates/svg/<exercise id>.svg. A missing file is a broken tile.
