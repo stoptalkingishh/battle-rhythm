@@ -137,6 +137,58 @@
     return hasValue(ref) ? ref : null;
   }
 
+  /* Monday-first weekday index for a day NAME — "Mon" and "Monday" both give
+   * 0, "sunday"/"SUN" give 6, and anything unrecognised gives null rather than
+   * defaulting to Monday. Regiments store their days by name, so this is how a
+   * regiment's schedule is addressed. */
+  var WEEKDAY_BY_NAME = {};
+  WEEKDAY_NAMES.forEach(function (n, i) { WEEKDAY_BY_NAME[n.toLowerCase()] = i; });
+  WEEKDAY_SHORT.forEach(function (n, i) { WEEKDAY_BY_NAME[n.toLowerCase()] = i; });
+  function weekdayFromName(name) {
+    if (typeof name !== "string") return null;
+    var key = name.trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(WEEKDAY_BY_NAME, key) ? WEEKDAY_BY_NAME[key] : null;
+  }
+
+  /* Turn a regiment's schedule into a weekly plan. A regiment day lists the
+   * sessions assigned to it; a plan holds at most ONE session per weekday, so
+   * the first is taken and any extras are reported rather than dropped
+   * silently. Days whose name is not a weekday are reported too.
+   *
+   * Returns { plan, assigned, unassigned }:
+   *   assigned    [{ weekday, ref }] in Mon..Sun order
+   *   unassigned  [{ name, ref, reason }] reason is "extra-session" (the day's
+   *               first session took the slot) or "unknown-day" (the day name
+   *               does not resolve to a weekday)
+   *
+   * Pure, and it returns a NEW plan: an existing one is passed in as `base`
+   * and untouched days keep whatever they already had. Never mutates. */
+  function planFromRegiment(regiment, base) {
+    var days = regiment && Array.isArray(regiment.days) ? regiment.days : [];
+    var plan = clonePlan(base);
+    var assigned = [];
+    var unassigned = [];
+    days.forEach(function (day) {
+      if (!day || typeof day !== "object") return;
+      var wd = weekdayFromName(day.name);
+      var sessions = Array.isArray(day.sessions) ? day.sessions.filter(hasValue) : [];
+      if (wd == null) {
+        sessions.forEach(function (ref) { unassigned.push({ name: day.name, ref: ref, reason: "unknown-day" }); });
+        if (!sessions.length && hasValue(day.name)) unassigned.push({ name: day.name, ref: null, reason: "unknown-day" });
+        return;
+      }
+      if (!sessions.length) return;
+      var take = sessions[0];
+      sessions.slice(1).forEach(function (ref) {
+        unassigned.push({ name: day.name, ref: ref, reason: "extra-session" });
+      });
+      plan[wd] = take;
+      assigned.push({ weekday: wd, ref: take });
+    });
+    assigned.sort(function (a, b) { return a.weekday - b.weekday; });
+    return { plan: plan, assigned: assigned, unassigned: unassigned };
+  }
+
   /* Weekday indices (0..6, Monday-first) that have a session scheduled. */
   function weekdays(plan) {
     var out = [];
@@ -155,6 +207,8 @@
     move: move,
     sessionsFor: sessionsFor,
     activeFor: activeFor,
-    weekdays: weekdays
+    weekdays: weekdays,
+    weekdayFromName: weekdayFromName,
+    planFromRegiment: planFromRegiment
   };
 });

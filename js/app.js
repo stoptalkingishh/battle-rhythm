@@ -36,6 +36,7 @@
   var TEXT = window.BR_SESSION_TEXT || null;
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
+  var REGANA = window.BR_REGIMENT_ANALYTICS || null;
   var I18N = window.BR_I18N || null;
   /* -- localization (#20) ------------------------------------------------
    * The lookup seam. t() falls back to the English catalog key-by-key and
@@ -86,6 +87,7 @@
     session: null,
     sessionReadOnly: false,
     regiment: null,
+    regimentAnalytics: "",   /* id of the regiment shown in Progress > Block analytics */
     groupFilter: null,
     editingGroup: null,
     date: todayStr()
@@ -1618,8 +1620,10 @@
         el("h3", { class: "card-title", text: r.name }),
         el("p", { class: "card-muted", style: "font-size:.82rem;", text: sub }),
         el("div", { class: "exercise-card-actions" }, [
-          el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.regiment = r; renderBuilder(); } }),
-          el("button", { class: "btn btn-gold btn-sm", text: "Copy", onclick: function () { openCopyModal(regimentPlainText(r)); } }),
+                  el("button", { class: "btn btn-ghost btn-sm", text: "Edit", onclick: function () { STATE.regiment = r; renderBuilder(); } }),
+                  el("button", { class: "btn btn-ghost btn-sm", text: "Plan week", title: "Generate this regiment's weekly plan", onclick: function () { generateWeekFromRegiment(r); } }),
+                  el("button", { class: "btn btn-ghost btn-sm", text: "Analytics", title: "Block analytics for this regiment", onclick: function () { STATE.regimentAnalytics = r.id; nav("progress"); } }),
+                  el("button", { class: "btn btn-gold btn-sm", text: "Copy", onclick: function () { openCopyModal(regimentPlainText(r)); } }),
           el("button", { class: "btn btn-danger btn-sm", text: "x", title: "Delete", onclick: function () {
             saveRegiments(getRegiments().filter(function (x) { return x.id !== r.id; }));
             renderBuilder();
@@ -1628,6 +1632,24 @@
       ]);
       host.appendChild(card);
     });
+  }
+
+  /* Push a regiment's schedule into the weekly plan the Tracker runs off.
+   * The scheduling itself is weekly-plan.js (planFromRegiment); this only
+   * supplies the current plan as the base and reports what did not fit, since
+   * a plan holds one session per weekday and a regiment day can hold several. */
+  function generateWeekFromRegiment(regiment) {
+    if (!WP || typeof WP.planFromRegiment !== "function") { toast("Weekly-plan module not loaded."); return; }
+    var res = WP.planFromRegiment(regiment, load("br_week", {}));
+    if (!res.assigned.length) { toast("This regiment has no sessions assigned to a weekday."); return; }
+    saveWeek(res.plan);
+    var names = res.assigned.map(function (a) { return weekdayName(a.weekday) + ": " + sessionName(a.ref); }).join("  |  ");
+    toast("Weekly plan updated \u2014 " + names);
+    if (res.unassigned.length) {
+      toast(res.unassigned.length + " session(s) not scheduled \u2014 a weekday holds one session. " +
+        res.unassigned.map(function (u) { return (u.name || "day") + (u.ref ? ": " + sessionName(u.ref) : ""); }).join(", "));
+    }
+    renderWeeklyPlan();
   }
 
   /* ==================== TRACKER ==================== */
@@ -2377,7 +2399,148 @@
     return "";
   }
 
+  /* ---- Block analytics (#19) -------------------------------------------------
+   * Rendering only. Every number comes from BR_REGIMENT_ANALYTICS.blockAnalytics,
+   * which is the thing that decides what is reportable; this formats what it
+   * returned and prints the module's own empty state when there is nothing.
+   * A null in the report renders as "not enough data" \u2014 never as 0. */
+  function regimentAnalyticsData(regiment) {
+    if (!REGANA || !ADAPT) return null;
+    var logs = getLogs();
+    var raw = ADAPT.workoutsFromLogs(logs);
+    var sessions = getSessions();
+    var keyed = ADAPT.keyWorkoutsByRef(raw, function (itemId) {
+      return snapshotItemRef(logs, sessions, itemId);
+    });
+    /* Session RPEs the user typed at finish, in chronological order. */
+    var rpes = [];
+    var dates = Object.keys(logs).filter(function (d) { return d !== "schemaVersion"; }).sort();
+    dates.forEach(function (d) {
+      var day = logs[d];
+      Object.keys((day && day.sessions) || {}).forEach(function (sid) {
+        var s = day.sessions[sid];
+        if (s && s.complete === true && s.rpeActual != null && String(s.rpeActual).trim() !== "") rpes.push(s.rpeActual);
+      });
+    });
+    var completed = [];
+    dates.forEach(function (d) {
+      var day = logs[d];
+      Object.keys((day && day.sessions) || {}).forEach(function (sid) {
+        if (day.sessions[sid] && day.sessions[sid].complete === true) completed.push(d);
+      });
+    });
+    return REGANA.blockAnalytics({
+      regiment: regiment,
+      workouts: keyed,
+      loggedDates: completed,
+      rpes: rpes,
+      bodyweight: loadBW()
+    });
+  }
+
+  /* A stat tile. `value` is pre-formatted by the caller so no arithmetic
+   * happens in the renderer. */
+  function statTile(label, value, note) {
+    return el("div", { class: "card", style: "padding:10px 12px;" }, [
+      el("div", { class: "card-muted", style: "font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;", text: label }),
+      el("div", { style: "font-size:1.25rem;font-weight:700;margin:2px 0;", text: value }),
+      note ? el("div", { class: "card-muted", style: "font-size:.74rem;", text: note }) : null
+    ]);
+  }
+
+  var DIR_WORD = { up: "rising", down: "falling", flat: "flat", insufficient: "not enough data" };
+
+  function pctText(pct) {
+    if (pct == null) return "\u2014";
+    return (pct > 0 ? "+" : "") + pct + "%";
+  }
+
+  function renderRegimentAnalytics() {
+    var host = $("#regiment-analytics");
+    if (!host) return;
+    host.innerHTML = "";
+    var regiments = getRegiments();
+    if (!REGANA) { host.appendChild(el("p", { class: "card-muted", text: "Regiment analytics module not loaded." })); return; }
+
+    var sel = el("select", { class: "select", style: "max-width:260px;", id: "regiment-analytics-pick" });
+    sel.appendChild(el("option", { value: "", text: regiments.length ? "Choose a regiment\u2026" : "No regiments yet" }));
+    regiments.forEach(function (r) { sel.appendChild(el("option", { value: r.id, text: r.name || "(unnamed regiment)" })); });
+    var current = regiments.filter(function (r) { return r.id === STATE.regimentAnalytics; })[0] || null;
+    if (current) sel.value = current.id;
+    sel.addEventListener("change", function () { STATE.regimentAnalytics = sel.value; renderRegimentAnalytics(); });
+
+    var head = el("div", { style: "display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;" }, [
+      el("label", { class: "field-label", for: "regiment-analytics-pick", text: "Regiment" }), sel
+    ]);
+    host.appendChild(head);
+
+    if (!regiments.length) {
+      host.appendChild(el("div", { class: "chart-empty", text: "Create a regiment in the Builder to see how its block is going." }));
+      return;
+    }
+    if (!current) {
+      host.appendChild(el("div", { class: "chart-empty", text: "Pick a regiment to see volume, load and phase trend across its block." }));
+      return;
+    }
+
+    var r = regimentAnalyticsData(current);
+    if (!r) { host.appendChild(el("div", { class: "chart-empty", text: "Regiment analytics module not loaded." })); return; }
+
+    host.appendChild(el("div", { class: "tag-row", style: "margin-bottom:8px;" }, [tag(current.period || "No period")]));
+    host.appendChild(el("p", { class: "card-muted", style: "margin:0 0 10px;", text: r.sessionCount + " completed session(s) in the logged history." }));
+
+    if (!r.hasData) {
+      host.appendChild(el("div", { class: "chart-empty", text: "No completed sessions logged yet \u2014 there is nothing to analyse for this regiment. Complete sets in the Tracker and they will appear here." }));
+      return;
+    }
+
+    var tiles = el("div", { class: "card-grid", style: "margin-bottom:12px;" }, [
+      statTile("Volume per week", r.volume.first == null ? "\u2014" : Math.round(r.volume.first), DIR_WORD[r.volume.direction] + (r.volume.deltaPct == null ? "" : " (" + pctText(r.volume.deltaPct) + " vs first week)")),
+      statTile("Est. strength", r.strength.last == null ? "\u2014" : Math.round(r.strength.last), DIR_WORD[r.strength.direction] + " across " + r.strength.exercises + " exercise(s)"),
+      statTile("Block adherence", r.adherence.rate == null ? "\u2014" : r.adherence.rate + "%", r.adherence.expected == null ? "no schedule to measure against" : r.adherence.logged + " of " + r.adherence.expected + " scheduled"),
+      statTile("Session RPE", r.rpe.avg == null ? "\u2014" : r.rpe.avg, r.rpe.n + " of " + (r.rpe.n + r.rpe.unrecorded) + " sessions recorded an RPE"),
+      statTile("Body weight", r.bodyweight.delta == null ? "\u2014" : (r.bodyweight.delta > 0 ? "+" : "") + r.bodyweight.delta + " " + ((getBWGoal() && getBWGoal().unit) || "lb"), r.bodyweight.n + " weigh-in(s) in the block")
+    ]);
+    host.appendChild(tiles);
+
+    /* The verdict, in the phase's own words, with the doctrine citation. */
+    if (r.verdict) {
+      var v = r.verdict;
+      var verdictText = v.verdict === "matches"
+        ? "Volume and load are moving the way the " + (v.phase.expectation.label || current.period) + " period calls for."
+        : v.verdict === "off-phase"
+          ? "Off-phase: " + v.offOn.join(" and ") + " moved against what the " + (v.phase.expectation.label || current.period) + " period calls for."
+          : "Not enough logged sessions to judge this block against its phase yet.";
+      var vEl = el("p", { class: "card-muted", style: "margin:0 0 10px;font-size:.84rem;", text: verdictText + (v.phase.expectation.citation ? "  (" + v.phase.expectation.citation + ")" : "") });
+      host.appendChild(vEl);
+    }
+
+    /* Per-exercise e1RM across the block, with the sets the numbers came from. */
+    if (!r.load.length) {
+      host.appendChild(el("div", { class: "chart-empty", text: "No weight-and-rep sets logged for this block, so there is no e1RM progression to show." }));
+      return;
+    }
+    var wrap = el("div", { class: "table-wrap" }, []);
+    var table = el("table", { class: "table" }, [
+      el("thead", {}, [el("tr", {}, [el("th", { text: "Exercise" }), el("th", { text: "Block e1RM" }), el("th", { text: "Change" })])]),
+      el("tbody", {}, r.load.map(function (p) {
+        var ex = exerciseIndex()[p.id];
+        var span = p.from && p.to
+          ? p.from.w + "\u00d7" + p.from.r + " (" + p.from.d + ") \u2192 " + p.to.w + "\u00d7" + p.to.r + " (" + p.to.d + ")"
+          : "";
+        return el("tr", {}, [
+          el("td", { text: ex ? ex.name : p.id }),
+          el("td", { text: p.first == null ? "\u2014" : p.first + (span ? "  \u2014  " + span : "") }),
+          el("td", { text: p.direction === "insufficient" ? DIR_WORD[p.direction] + " (" + p.points + " session)" : pctText(p.deltaPct) + "  " + DIR_WORD[p.direction] })
+        ]);
+      }))
+    ]);
+    wrap.appendChild(table);
+    host.appendChild(wrap);
+  }
+
   function renderProgress() {
+    renderRegimentAnalytics();
     if (!ONE_RM || !ADAPT || !SET_H || !CHART) {
       var emptyEl = $("#progress-empty");
       if (emptyEl) emptyEl.textContent = "Progress modules not loaded.";
