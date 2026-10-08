@@ -157,12 +157,15 @@
   }
 
   /* Consume the verifier for a returned state and delete it. A state we never
-   * issued yields null, which is how a forged or stale callback is rejected. */
+   * issued yields null, which is how a forged or stale callback is rejected.
+   * Read before deleting: the verification and the cleanup cannot be reordered
+   * without the state check silently failing every time. */
   function consumeVerifier(state) {
+    var issued = sessionGet(STATE_PREFIX + state) === state;
     var verifier = sessionGet(VERIFIER_PREFIX + state);
     sessionDel(VERIFIER_PREFIX + state);
     sessionDel(STATE_PREFIX + state);
-    return sessionGet(STATE_PREFIX + state) === state ? verifier : null;
+    return issued ? verifier : null;
   }
 
   function postToken(body) {
