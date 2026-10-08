@@ -86,9 +86,7 @@
      * listed so a 404 is visible in the notice. */
     { global: "BR_I18N", module: "js/data/i18n.js", required: false },
     { global: "BR_LOCALE_EN", module: "js/data/locale-en.js", required: false },
-    { global: "BR_LOCALE_ES", module: "js/data/locale-es.js", required: false },
-    { global: "BR_VAULT", module: "js/data/crypto-vault.js", required: false },
-    { global: "BRVault", module: "js/vault.js", required: false }
+    { global: "BR_LOCALE_ES", module: "js/data/locale-es.js", required: false }
   ];
 
   /* null/undefined only. An empty array or object means the file loaded and

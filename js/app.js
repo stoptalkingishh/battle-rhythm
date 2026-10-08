@@ -62,7 +62,7 @@
     store(LOCALE_KEY, I18N.getLocale());
     renderWeeklyPlan();
   }
-  var VAULT = null; /* built in initStorage(); stays null when js/vault.js is absent */
+  
 
   var COMPONENTS = {
     "muscular-strength": { label: "Muscular Strength", badge: "badge-ms" },
@@ -102,28 +102,19 @@
   var TIMER_CREATE = (window.BRTimer && typeof window.BRTimer.create === "function") ? window.BRTimer.create : null;
   var activeTimers = [];
 
-  /* The vault (js/vault.js) is the only thing that touches localStorage for
-   * app data now. With no vault record on disk it is a pass-through, so this
-   * is exactly the behaviour that shipped before encryption existed. See
-   * js/vault.js for why the decrypted mirror is held in memory. */
+  /* All app data lives as plaintext JSON in localStorage. Data safety comes
+   * from Google Drive backup (js/cloud.js) rather than encryption at rest —
+   * same trade-off as the openquiz sibling app. */
   function store(key, val) {
-    /* The else branch matters as much as the if: if js/vault.js fails to load,
-     * every save would be silently dropped rather than falling back to
-     * localStorage. A missing optional module must cost the feature, not the
-     * user's data. */
-    if (VAULT) VAULT.set(key, val);
-    else { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
     if (window.BRCloud && window.BRCloud.isActive()) {
       try { window.BRCloud.mirror(key); } catch (e) {}
     }
   }
   function load(key, def) {
-    if (VAULT) return VAULT.get(key, def);
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
   }
-  /* Removing a key has to go through the same layer, or a collection the user
-   * cleared would come straight back out of the vault's in-memory mirror. */
-  function unstore(key) { if (VAULT) VAULT.remove(key); else { try { localStorage.removeItem(key); } catch (e) {} } }
+  function unstore(key) { try { localStorage.removeItem(key); } catch (e) {} }
   function uid() { return "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function todayStr() {
     var d = new Date();
@@ -829,9 +820,6 @@
   }
   function saveRegiments(list) { store(KEYS.regiments, list); }
 
-  /* ---- password protection ---- */
-  function getSettings() { return load("br_settings", {}); }
-  function saveSettings(s) { store("br_settings", s); }
   function getAftResults() {
     if (!AFT_RESULTS) return [];
     var raw = load(KEYS.aft, []);
@@ -839,208 +827,9 @@
     return raw.map(function (x) { return AFT_RESULTS.make(x); }).filter(Boolean);
   }
   function saveAftResults(list) { store(KEYS.aft, list); }
-  function hashPw(str) {
-    var h = 5381;
-    var s = String(str || "");
-    for (var i = 0; i < s.length; i++) { h = ((h << 5) + h) + s.charCodeAt(i); h = h & h; }
-    return "h" + (h >>> 0).toString(36) + "." + s.length;
-  }
-  function hasPassword() { return !!getSettings().pwHash; }
-  function passwordMatches(input) {
-    var cfg = getSettings();
-    return !!cfg.pwHash && hashPw(input) === cfg.pwHash;
-  }
-  var pendingAuth = null;
-  function requirePassword(onSuccess) {
-    pendingAuth = onSuccess;
-    if (!hasPassword()) {
-      toast("Set a master password in Settings first");
-      openSettings();
-      return;
-    }
-    showPw();
-  }
   function openSettings() {
-    var has = hasPassword();
-    $("#settings-status").textContent = has ? "A master password is set." : "No master password yet. Set one to protect builder changes.";
-    $("#settings-new-pw").value = "";
-    $("#settings-confirm-pw").value = "";
     renderDriveSection();
-    renderVaultPanel();
     $("#settings-modal").classList.remove("hidden");
-  }
-
-  /* ---- local encryption vault (issue #16) ----
-     *
-     * Opt-in, off by default, and deliberately not automatic: a user's data is
-     * never encrypted behind their back. Without a vault record on disk,
-     * VAULT.get/set are a pass-through to localStorage and the app behaves
-     * exactly as it did before this feature existed.
-     *
-     * WHAT THIS PROTECTS, stated plainly so the UI can state it plainly: the
-     * stored bytes. Someone who copies this browser profile, or opens
-     * localStorage from another account on the machine, cannot read the
-     * training data without the passphrase.
-     *
-     * WHAT IT DOES NOT: anything running on this origin. An XSS payload can
-     * read the plaintext while the app is open, and the app holds the derived
-     * key in memory for the whole session. This is a real KDF and real
-     * authenticated encryption; it is not a sandbox.
-     *
-     * RECOVERY: none, by design. A forgotten passphrase means the data is
-     * permanently unreadable, so the UI says so before the user opts in and
-     * points at the JSON export as the only backup. There is deliberately no
-     * escrow copy, no hint key, and no reset button. */
-  function initStorage() {
-    var crypto = window.BR_VAULT;
-    var factory = window.BRVault;
-    /* Either module missing: no vault, no change in behaviour. The capability
-     * notice already tells the user which file did not load. */
-    if (!crypto || !factory || typeof factory.create !== "function") return;
-    try {
-      VAULT = factory.create(crypto, { storage: window.localStorage, crypto: window.crypto });
-    } catch (e) {
-      console.error("Battle Rhythm: local encryption unavailable -", e);
-      VAULT = null;
-    }
-    /* A write that is still being sealed must not be lost to a tab close. The
-     * browser will not wait on an async task during unload, so this is
-     * best-effort - which is why the UI tells the user to keep the export. */
-    window.addEventListener("pagehide", function () { if (VAULT) VAULT.flush(); });
-  }
-
-  function vaultAvailable() { return !!VAULT; }
-
-  /* The unlock gate. Shown before the app renders anything when a vault record
-   * exists: without the passphrase there is nothing to show, and rendering an
-   * empty dataset would read as "your data is gone". */
-  function vaultGate() {
-    return VAULT && VAULT.isEnabled() && !VAULT.isUnlocked();
-  }
-
-  function showVaultGate(onUnlocked) {
-    if (!$("#vault-modal")) { onUnlocked(); return; }
-    $("#vault-unlock-input").value = "";
-    $("#vault-unlock-error").textContent = "";
-    $("#vault-modal").classList.remove("hidden");
-    var submit = function () {
-      var val = $("#vault-unlock-input").value;
-      var errEl = $("#vault-unlock-error");
-      /* Deliberately identical message for a wrong passphrase and a corrupt
-       * record: telling them apart is a confirmation oracle for the
-       * passphrase, and there is nothing actionable in the difference. */
-      errEl.textContent = "Unlocking...";
-      VAULT.unlock(val).then(function (ok) {
-        if (!ok) {
-          errEl.textContent = "That passphrase did not unlock your data.";
-          $("#vault-unlock-input").value = "";
-          return;
-        }
-        errEl.textContent = "";
-        $("#vault-modal").classList.add("hidden");
-        onUnlocked();
-      });
-    };
-    $("#vault-unlock-submit").onclick = submit;
-    $("#vault-unlock-input").onkeydown = function (e) { if (e.key === "Enter") submit(); };
-    setTimeout(function () { $("#vault-unlock-input").focus(); }, 30);
-  }
-
-  /* The Settings panel. Rendered from state rather than declared in
-   * index.html, because the controls that make sense differ entirely between
-   * "encryption off", "on and unlocked", and "module unavailable". */
-  function renderVaultPanel() {
-    var statusEl = $("#vault-status");
-    var panel = $("#vault-panel");
-    if (!statusEl || !panel) return;
-    panel.innerHTML = "";
-
-    if (!vaultAvailable()) {
-      statusEl.textContent = "Local encryption is not available in this browser, so data is stored unencrypted.";
-      return;
-    }
-
-    if (!VAULT.isEnabled()) {
-      statusEl.textContent = "Off. Your sessions, logs, weigh-ins and AFT results are stored in plain text in this browser, readable by anything with access to this profile.";
-      var field = el("div", {}, [
-        el("label", { class: "field-label", for: "vault-new-pass", text: "Choose an encryption passphrase" }),
-        el("input", { class: "input", id: "vault-new-pass", type: "password", autocomplete: "new-password" }),
-        el("label", { class: "field-label", for: "vault-new-pass-2", text: "Repeat it", style: "margin-top:10px;" }),
-        el("input", { class: "input", id: "vault-new-pass-2", type: "password", autocomplete: "new-password" }),
-        el("p", {
-          class: "card-muted",
-          style: "margin:8px 0 0;font-size:.76rem;",
-          text: "At least " + window.BRVault.MIN_PASSPHRASE + " characters. This is separate from the master password above, and is not stored anywhere."
-        })
-      ]);
-      /* No recovery exists, so say it before the switch, not after. */
-      var warn = el("p", {
-        class: "card-muted",
-        style: "margin:10px 0 0;font-size:.76rem;",
-        text: "There is no recovery. If you forget this passphrase your data cannot be read again by anyone, including you. Export a JSON backup below first if you have not already."
-      });
-      var btn = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Turn on encryption" });
-      btn.addEventListener("click", function () {
-        var a = $("#vault-new-pass").value;
-        var b = $("#vault-new-pass-2").value;
-        if (a !== b) { toast("Passphrases do not match"); return; }
-        if (!window.confirm("Encrypt the data stored in this browser?\n\nAnyone with access to this browser profile will need this passphrase to read your training data. There is no recovery if it is lost.")) return;
-        btn.disabled = true;
-        btn.textContent = "Encrypting...";
-        VAULT.enable(a).then(function (res) {
-          btn.disabled = false;
-          btn.textContent = "Turn on encryption";
-          if (!res.ok) { toast(res.error); renderVaultPanel(); return; }
-          $("#vault-new-pass").value = "";
-          $("#vault-new-pass-2").value = "";
-          toast("Local encryption is on");
-          renderVaultPanel();
-        });
-      });
-      panel.appendChild(field);
-      panel.appendChild(warn);
-      panel.appendChild(el("div", { style: "margin-top:10px;" }, [btn]));
-      return;
-    }
-
-    statusEl.textContent = VAULT.isUnlocked()
-      ? "On. Your data is encrypted at rest with AES-GCM; the key is derived from your passphrase with PBKDF2 and is held in memory only while this tab is open. Export a JSON backup regularly - it is the only copy that survives a forgotten passphrase."
-      : "On, and locked in this tab.";
-
-    if (!VAULT.isUnlocked()) {
-      var unlockBtn = el("button", { class: "btn btn-gold btn-sm", type: "button", text: "Unlock in this tab" });
-      unlockBtn.addEventListener("click", function () { showVaultGate(function () { renderVaultPanel(); }); });
-      panel.appendChild(el("div", {}, [unlockBtn]));
-      return;
-    }
-
-    var offBtn = el("button", { class: "btn btn-ghost btn-sm", type: "button", text: "Turn off encryption" });
-    offBtn.addEventListener("click", function () {
-      var val = $("#vault-off-pass").value;
-      if (!val) { toast("Enter your current passphrase to turn encryption off"); return; }
-      if (!window.confirm("Turn off encryption?\n\nYour data goes back to being stored in plain text, readable by anything with access to this browser profile.")) return;
-      offBtn.disabled = true;
-      offBtn.textContent = "Turning off...";
-      VAULT.disable(val).then(function (res) {
-        offBtn.disabled = false;
-        offBtn.textContent = "Turn off encryption";
-        if (!res.ok) { toast(res.error); return; }
-        $("#vault-off-pass").value = "";
-        toast("Local encryption is off; your data is readable again");
-        renderVaultPanel();
-        refreshView();
-      });
-    });
-    panel.appendChild(el("p", {
-      class: "card-muted",
-      style: "margin:0 0 10px;font-size:.76rem;",
-      text: "This does not protect against anything running in this page while it is open. A malicious script on this origin can read your data with the key already in memory."
-    }));
-    panel.appendChild(el("div", { class: "field" }, [
-      el("label", { class: "field-label", for: "vault-off-pass", text: "Current passphrase" }),
-      el("input", { class: "input", id: "vault-off-pass", type: "password", autocomplete: "off" })
-    ]));
-    panel.appendChild(el("div", { style: "margin-top:10px;" }, [offBtn]));
   }
 
   /* ---- Google Drive backup section (Settings modal) ---- */
@@ -1161,13 +950,6 @@
     copy.name = (s.name || "Session") + " (copy)";
     copy.safetyConfirmed = false;
     return copy;
-  }
-
-  function showPw() {
-    $("#pw-input").value = "";
-    $("#pw-error").textContent = "";
-    $("#pw-modal").classList.remove("hidden");
-    setTimeout(function () { $("#pw-input").focus(); }, 30);
   }
 
   /* ---- groups modal ---- */
@@ -2785,7 +2567,7 @@
         bodyweight: loadBW(),
         groups: getGroups(),
         customExercises: getCustom(),
-        settings: getSettings()
+        settings: load("br_settings", {})
       };
     }
     /* The modules that own each record shape, handed to the pure module so an
@@ -2794,18 +2576,11 @@
       return { planShare: PLAN, trackerSchema: TS, aft: AFT_RESULTS, bodyweight: BW, custom: CUST };
     }
     /* Apply a validated envelope. Writes go through store() so the Drive mirror
-     * and outbox see them like any other save; the settings write keeps this
-     * device's password hash, which the file deliberately never carries. */
+     * and outbox see them like any other save. */
     function applyDataImport(data) {
       DATA.COLLECTIONS.forEach(function (c) {
-        if (c.key === "settings") return;
         store(c.localKey, data.collections[c.key]);
       });
-      var settings = {};
-      Object.keys(data.collections.settings).forEach(function (k) { settings[k] = data.collections.settings[k]; });
-      var live = getSettings();
-      DATA.PRESERVED_SETTINGS.forEach(function (k) { if (live && live[k] != null) settings[k] = live[k]; });
-      store("br_settings", settings);
       /* Imported data can leave the view pointing at a record it no longer has. */
       STATE.session = null;
       STATE.groupFilter = null;
@@ -2918,16 +2693,14 @@
         if (s.rpe > 5) { toast("Active-recovery circuits require a target RPE of 5 or lower"); return; }
         if (s.phases.activity.items.length < 2) { toast("Add at least two activity stations to the circuit"); return; }
       }
-      requirePassword(function () {
-        var all = getSessions();
-        var idx = all.findIndex(function (x) { return x.id === s.id; });
-        if (idx === -1) all.push(s); else all[idx] = s;
-        saveSessions(all);
-        toast("Session saved");
-        STATE.session = null;
-        STATE.sessionReadOnly = false;
-        renderBuilder();
-      });
+      var all = getSessions();
+      var idx = all.findIndex(function (x) { return x.id === s.id; });
+      if (idx === -1) all.push(s); else all[idx] = s;
+      saveSessions(all);
+      toast("Session saved");
+      STATE.session = null;
+      STATE.sessionReadOnly = false;
+      renderBuilder();
     });
 
     $("#new-regiment-btn").addEventListener("click", function () { STATE.regiment = blankRegiment(); renderBuilder(); });
@@ -2986,42 +2759,10 @@
     $("#copy-modal-close").addEventListener("click", closeCopyModal);
     $("#copy-btn").addEventListener("click", function () { doCopy(copyModalText); });
 
-    /* password + settings + groups bindings */
+    /* settings + groups bindings */
     $("#settings-btn").addEventListener("click", function () { openSettings(); });
-    $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
-    $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); pendingAuth = null; });
-    $("#settings-save-pw").addEventListener("click", function () {
-      var np = $("#settings-new-pw").value;
-      var cp = $("#settings-confirm-pw").value;
-      if (np || cp) {
-        if (np.length < 4) { toast("Password must be at least 4 characters"); return; }
-        if (np !== cp) { toast("Passwords do not match"); return; }
-      }
-      var cfg = getSettings();
-      if (np) { cfg.pwHash = hashPw(np); } else if (!cfg.pwHash) { toast("Enter a new password"); return; }
-      saveSettings(cfg);
-      $("#settings-new-pw").value = "";
-      $("#settings-confirm-pw").value = "";
-      $("#settings-modal").classList.add("hidden");
-      toast("Master password " + (np ? "set" : "kept"));
-      if (pendingAuth) { showPw(); }
-    });
-
-    $("#pw-modal-close").addEventListener("click", function () { $("#pw-modal").classList.add("hidden"); pendingAuth = null; });
-    $("#pw-cancel").addEventListener("click", function () { $("#pw-modal").classList.add("hidden"); pendingAuth = null; });
-    $("#pw-submit").addEventListener("click", function () {
-      var val = $("#pw-input").value;
-      if (passwordMatches(val)) {
-        $("#pw-modal").classList.add("hidden");
-        var cb = pendingAuth; pendingAuth = null;
-        if (cb) cb();
-      } else {
-        $("#pw-error").textContent = "Incorrect password";
-        $("#pw-input").value = "";
-        setTimeout(function () { $("#pw-input").focus(); }, 30);
-      }
-    });
-    $("#pw-input").addEventListener("keydown", function (e) { if (e.key === "Enter") $("#pw-submit").click(); });
+    $("#settings-modal-close").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
+    $("#settings-cancel").addEventListener("click", function () { $("#settings-modal").classList.add("hidden"); });
 
     $("#manage-groups-btn").addEventListener("click", function () { openGroupsModal(); });
     $("#groups-modal-close").addEventListener("click", function () { $("#groups-modal").classList.add("hidden"); });
@@ -3066,10 +2807,8 @@
 
     $$(".modal").forEach(function (m) {
       if (m) m.addEventListener("click", function (ev) {
-        if (m.id === "vault-modal") return;
         if (ev.target.classList.contains("modal")) {
           ev.target.classList.add("hidden");
-          pendingAuth = null;
           if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
         }
       });
@@ -3078,9 +2817,7 @@
       var openModal = $$(".modal").find(function (modal) { return !modal.classList.contains("hidden"); });
       if (!openModal) return;
       if (event.key === "Escape" && openModal) {
-        if (openModal.id === "vault-modal") return;
         openModal.classList.add("hidden");
-        pendingAuth = null;
         if (lastModalFocus && lastModalFocus.focus) lastModalFocus.focus();
         return;
       }
@@ -3168,18 +2905,6 @@
   function init() {
     initI18n();
     startCapabilities();
-    initStorage();
-    if (vaultGate()) {
-      /* Nothing may render before the passphrase: the collections read as empty
-       * while locked, and an empty library looks like data loss. */
-      showVaultGate(function () {
-        seedPresets();
-        bindEvents();
-        nav(initialView());
-        if (window.BRCloud) startCloud();
-      });
-      return;
-    }
     seedPresets();
     bindEvents();
     nav(initialView());
@@ -3191,7 +2916,6 @@
     window.BRCloud.init(function (dataChanged) {
       if (dataChanged && !hasOpenModal()) refreshView();
       renderDriveSection();
-      renderVaultPanel();
     });
   }
 

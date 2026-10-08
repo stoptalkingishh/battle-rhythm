@@ -502,21 +502,16 @@
 
   /* ---- settings ---- */
 
-  /* Settings must not travel verbatim. The master-password hash (pwHash) is
-   * device-local by design — README: "the master password hash is intentionally
-   * not synced" — so exporting it would put credential material in a file the
-   * user mails around, and importing it would let a crafted file set a password
-   * the user never chose. Everything else is a scalar preference, so only
-   * scalars survive; nested values are dropped rather than deep-cloned. */
-  var SETTINGS_DENY = ["pwHash"];
-
+  /* Settings are a flat bag of scalar preferences. Only scalars survive the
+   * round trip; nested values are dropped rather than deep-cloned, so a crafted
+   * file cannot smuggle a structure into the live store. */
   function sanitizeSettings(v) {
     var out = {};
     if (!isObj(v)) return out;
     var keys = Object.keys(v);
     for (var i = 0; i < keys.length && Object.keys(out).length < MAX_SETTING_KEYS; i++) {
       var key = str(keys[i], MAX_SETTING_KEY);
-      if (!key || SETTINGS_DENY.indexOf(key) !== -1) continue;
+      if (!key) continue;
       var val = v[keys[i]];
       if (typeof val === "string") out[key] = str(val, MAX_SETTING_STR);
       else if (typeof val === "number" && isFinite(val)) out[key] = val;
@@ -635,9 +630,6 @@
     VERSION: VERSION,
     MAX_FILE_BYTES: MAX_FILE_BYTES,
     COLLECTIONS: COLLECTIONS,
-    /* The setting key an import must carry across from the live store, because
-     * sanitizeSettings deliberately keeps it out of the file. */
-    PRESERVED_SETTINGS: SETTINGS_DENY,
     sanitizeSettings: sanitizeSettings,
     countsOf: countsOf,
     buildExport: buildExport,

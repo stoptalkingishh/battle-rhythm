@@ -1,9 +1,11 @@
 "use strict";
 /* Google Drive data + auth layer (port of the openquiz drive.ts mechanic).
  *
- * Uses Google Identity Services (OAuth token client) for sign-in and the
+ * Uses the OAuth 2.0 Authorization Code flow with PKCE for sign-in and the
  * Drive API v3 to store app data as JSON files inside a per-user folder named
- * "Battle Rhythm" in the signed-in user's own Google Drive.
+ * "Battle Rhythm" in the signed-in user's own Google Drive. The refresh token
+ * means sync survives past the ~1 hour access token and past the browser's
+ * Google session cookie.
  *
  * Scope is limited to drive.file (only files this app creates). When the
  * Google keys are not configured (see js/config.js), everything falls back to
@@ -20,11 +22,30 @@
   var DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
   var FOLDER_NAME = "Battle Rhythm";
 
+  var AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+  var TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+
+  /* OAuth 2.0 Authorization Code flow with PKCE (RFC 7636).
+   *
+   * The previous implementation used the GIS initTokenClient, which is the
+   * implicit flow: about a one-hour access token and NO refresh token. Renewing
+   * it leaned on Google's browser session cookie, so Drive sync stopped after
+   * roughly an hour and looked to the user like being signed out. With the code
+   * flow and access_type=offline Google returns a refresh token that mints new
+   * access tokens silently, which decouples persistence from that session.
+   *
+   * This is a public client with no server, so there is no client secret and
+   * PKCE supplies the protection a secret otherwise would. */
+  var REFRESH_KEY = "brdrive:refresh_token";
+  var VERIFIER_PREFIX = "brdrive:pkce_verifier:";
+  var STATE_PREFIX = "brdrive:pkce_state:";
+
   var initialized = false;
   var currentToken = null;
   var currentUser = null;
   var driveReady = null;
   var lastIdToken = null;
+  var expiresAt = 0;
 
   function isDriveConfigured() {
     return Boolean(CLIENT_ID && API_KEY);
@@ -43,12 +64,13 @@
     });
   }
 
+  /* Only the Drive API client library is loaded now. The GIS script is gone: the
+   * PKCE flow talks to Google's endpoints with plain fetch. */
   function initGapi() {
     if (!initialized) {
       initialized = true;
       driveReady = (async function () {
         try {
-          await loadScript("https://accounts.google.com/gsi/client");
           await loadScript("https://apis.google.com/js/api.js");
           await new Promise(function (resolve, reject) {
             window.gapi.load("client", {
@@ -69,25 +91,169 @@
     return driveReady;
   }
 
-  function requestToken(prompt) {
-    return new Promise(function (resolve, reject) {
-      var client = window.google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID,
-        scope: SCOPE,
-        callback: function (response) {
-          if (response && response.access_token) {
-            lastIdToken = response.id_token || null;
-            resolve(response.access_token);
-          } else {
-            reject(new Error((response && (response.error_description || response.error)) || "Google sign-in failed"));
-          }
-        },
-        error_callback: function (error) {
-          reject(new Error((error && error.error_description) || (error && error.error) || "Google sign-in was cancelled"));
-        }
-      });
-      client.requestAccessToken({ prompt: prompt });
+  function base64UrlEncode(bytes) {
+    var binary = "";
+    for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  /* 32 random bytes base64url-encode to 43 characters, the RFC 7636 minimum. */
+  function generateCodeVerifier() {
+    var buf = new Uint8Array(32);
+    window.crypto.getRandomValues(buf);
+    return base64UrlEncode(buf);
+  }
+
+  function generateCodeChallenge(verifier) {
+    return window.crypto.subtle
+      .digest("SHA-256", new TextEncoder().encode(verifier))
+      .then(function (digest) { return base64UrlEncode(new Uint8Array(digest)); });
+  }
+
+  function generateState() {
+    var buf = new Uint8Array(16);
+    window.crypto.getRandomValues(buf);
+    return base64UrlEncode(buf);
+  }
+
+  function sessionGet(key) {
+    try { return window.sessionStorage.getItem(key); } catch (e) { return null; }
+  }
+  function sessionSet(key, value) {
+    try { window.sessionStorage.setItem(key, value); } catch (e) {
+      throw new Error("Could not start sign-in: browser storage is unavailable.");
+    }
+  }
+  function sessionDel(key) {
+    try { window.sessionStorage.removeItem(key); } catch (e) {}
+  }
+
+  function redirectUri() {
+    return window.location.origin + window.location.pathname;
+  }
+
+  /* Start the redirect flow. Full-page navigation, not a popup: the code
+   * arrives on our own origin, which is where the verifier lives. */
+  function beginSignIn(promptConsent) {
+    var verifier = generateCodeVerifier();
+    var state = generateState();
+    return generateCodeChallenge(verifier).then(function (challenge) {
+      sessionSet(VERIFIER_PREFIX + state, verifier);
+      sessionSet(STATE_PREFIX + state, state);
+      var params = [
+        "client_id=" + encodeURIComponent(CLIENT_ID),
+        "redirect_uri=" + encodeURIComponent(redirectUri()),
+        "response_type=code",
+        "scope=" + encodeURIComponent(SCOPE),
+        "code_challenge=" + encodeURIComponent(challenge),
+        "code_challenge_method=S256",
+        "state=" + encodeURIComponent(state),
+        "access_type=offline",
+        "include_granted_scopes=true"
+      ];
+      if (promptConsent) params.push("prompt=consent");
+      window.location.assign(AUTH_ENDPOINT + "?" + params.join("&"));
     });
+  }
+
+  /* Consume the verifier for a returned state and delete it. A state we never
+   * issued yields null, which is how a forged or stale callback is rejected. */
+  function consumeVerifier(state) {
+    var verifier = sessionGet(VERIFIER_PREFIX + state);
+    sessionDel(VERIFIER_PREFIX + state);
+    sessionDel(STATE_PREFIX + state);
+    return sessionGet(STATE_PREFIX + state) === state ? verifier : null;
+  }
+
+  function postToken(body) {
+    return fetch(TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.join("&")
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (json) {
+        if (!res.ok) {
+          throw new Error(json.error_description || json.error || ("token request failed (" + res.status + ")"));
+        }
+        return json;
+      });
+    });
+  }
+
+  function exchangeCode(code, verifier) {
+    return postToken([
+      "client_id=" + encodeURIComponent(CLIENT_ID),
+      "code=" + encodeURIComponent(code),
+      "code_verifier=" + encodeURIComponent(verifier),
+      "grant_type=authorization_code",
+      "redirect_uri=" + encodeURIComponent(redirectUri())
+    ]).then(function (tokens) {
+      /* Google only issues a refresh token on the first grant. Without one the
+       * app is back to hourly re-auth, so treat its absence as a failure the
+       * user can act on rather than silently degrading. */
+      if (tokens.refresh_token) localSet(REFRESH_KEY, tokens.refresh_token);
+      if (!localGet(REFRESH_KEY)) {
+        throw new Error("Google did not return a refresh token. Revoke this app's access and sign in again.");
+      }
+      lastIdToken = tokens.id_token || null;
+      currentToken = tokens.access_token;
+      expiresAt = Date.now() + (Number(tokens.expires_in) || 3600) * 1000;
+      return currentToken;
+    });
+  }
+
+  /* Called once at startup: if we are on the redirect URI with a code, finish
+   * the exchange. Resolves to null when there is nothing to complete. */
+  function completeSignInFromRedirect() {
+    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get("code");
+    var state = params.get("state");
+    var oauthError = params.get("error");
+    if (!code && !oauthError) return Promise.resolve(null);
+
+    /* Clear the query before anything else can throw, or a reload re-runs the
+     * exchange with an already-consumed verifier. */
+    var clean = window.location.origin + window.location.pathname;
+    window.history.replaceState({}, document.title, clean);
+
+    if (oauthError) {
+      return Promise.reject(new Error(params.get("error_description") || oauthError));
+    }
+    var verifier = state ? consumeVerifier(state) : null;
+    if (!verifier) return Promise.reject(new Error("Sign-in could not be verified. Please try again."));
+    return exchangeCode(code, verifier);
+  }
+
+  function refreshAccessToken() {
+    var stored = localGet(REFRESH_KEY);
+    if (!stored) return Promise.resolve(null);
+    return postToken([
+      "client_id=" + encodeURIComponent(CLIENT_ID),
+      "refresh_token=" + encodeURIComponent(stored),
+      "grant_type=refresh_token"
+    ]).then(function (tokens) {
+      currentToken = tokens.access_token;
+      expiresAt = Date.now() + (Number(tokens.expires_in) || 3600) * 1000;
+      if (window.gapi && window.gapi.client) window.gapi.client.setToken({ access_token: currentToken });
+      return currentToken;
+    }).catch(function (err) {
+      /* invalid_grant means the refresh token was revoked or expired: the user
+       * must re-authenticate, which is not a transient failure to retry. */
+      console.error("Drive token refresh failed:", err);
+      currentToken = null;
+      expiresAt = 0;
+      return null;
+    });
+  }
+
+  /* The single access point for a usable access token: returns the cached one
+   * while it is fresh, mints a new one from the refresh token otherwise, and
+   * returns null when the user has to sign in again. */
+  function accessToken() {
+    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
+    if (currentToken && Date.now() < expiresAt - 60000) return Promise.resolve(currentToken);
+    return refreshAccessToken();
   }
 
   /* Decode the id_token Google returns alongside the access token. It contains
@@ -136,63 +302,54 @@
     }).then(function (info) { return toDriveUser(info); });
   }
 
-  /* If the user already has a Google session, grab a token without a popup. */
   function getDriveToken() {
-    if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
-    if (currentToken) return Promise.resolve(currentToken);
-    return initGapi().then(function (ok) {
-      if (!ok) return null;
-      return requestToken("").then(function (token) {
-        currentToken = token;
-        window.gapi.client.setToken({ access_token: currentToken });
-        return currentToken;
-      }).catch(function () {
-        currentToken = null;
-        return null;
+    return accessToken().then(function (token) {
+      if (!token) return null;
+      return initGapi().then(function (ok) {
+        if (!ok) return null;
+        window.gapi.client.setToken({ access_token: token });
+        return token;
       });
     });
   }
 
+  /* Redirects away to Google. The promise never settles in the normal case:
+   * the page navigates, and completeSignInFromRedirect finishes the job on
+   * return. Callers treat the navigation itself as success. */
   function signInToDrive() {
     if (!isDriveConfigured()) return Promise.reject(new Error("Google sign-in is not configured on this build."));
     if (typeof window === "undefined") return Promise.reject(new Error("Not in browser"));
-    return initGapi().then(function (ok) {
-      if (!ok) throw new Error("Could not initialize Google Drive client");
-      return requestToken("consent").then(function (token) {
-        currentToken = token;
-        window.gapi.client.setToken({ access_token: token });
-        return fetchProfile(token).then(function (user) {
-          currentUser = user;
-          return user;
-        });
-      });
-    });
+    return beginSignIn(true);
   }
 
   function restoreDriveSession() {
     if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
-    return getDriveToken().then(function (token) {
+    return completeSignInFromRedirect().catch(function (err) {
+      console.error("Drive sign-in callback failed:", err);
+      return null;
+    }).then(function (token) {
+      return (token ? Promise.resolve(token) : accessToken());
+    }).then(function (token) {
       if (!token) return null;
-      return fetchProfile(token).then(function (user) {
-        currentUser = user;
-        return user;
-      }).catch(function () { return null; });
+      return getDriveToken().then(function (live) {
+        if (!live) return null;
+        return fetchProfile(live).then(function (user) {
+          currentUser = user;
+          return user;
+        }).catch(function () { return null; });
+      });
     });
   }
 
   function signOutFromDrive() {
     if (typeof window === "undefined") return Promise.resolve();
-    var revoke = window.google && window.google.accounts && window.google.accounts.oauth2 && window.google.accounts.oauth2.revoke;
-    if (currentToken && revoke) {
-      return new Promise(function (resolve) {
-        revoke(currentToken, function () { resolve(); });
-      }).then(function () {
-        currentToken = null;
-        currentUser = null;
-      });
-    }
+    /* Clearing the refresh token is what actually ends the session locally.
+     * The access token is short-lived and Google will expire it on its own. */
+    try { window.localStorage.removeItem(REFRESH_KEY); } catch (e) {}
     currentToken = null;
     currentUser = null;
+    lastIdToken = null;
+    expiresAt = 0;
     return Promise.resolve();
   }
 
@@ -370,6 +527,7 @@
 
   window.BRDrive = {
     isDriveConfigured: isDriveConfigured,
+    completeSignInFromRedirect: completeSignInFromRedirect,
     signInToDrive: signInToDrive,
     signOutFromDrive: signOutFromDrive,
     restoreDriveSession: restoreDriveSession,

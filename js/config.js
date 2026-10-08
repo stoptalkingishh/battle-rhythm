@@ -1,17 +1,21 @@
 "use strict";
 /* Google Drive backup configuration.
  *
- * Fill these in to enable storing workouts in your own Google Drive:
- *   - BR_GOOGLE_CLIENT_ID: OAuth 2.0 Client ID (Web application) from
- *     https://console.cloud.google.com/apis/credentials
- *   - BR_GOOGLE_API_KEY:  API key from the same console (Google Drive API enabled)
+ * Both values are public client-side identifiers (the same kind openquiz bakes
+ * into its static build). They are NOT committed: set the repository secrets
+ * BR_GOOGLE_CLIENT_ID and BR_GOOGLE_API_KEY, and the deploy job runs
+ * scripts/write-config.mjs to generate this file in the published artifact.
+ * That keeps credentials out of git history while
+ * scripts/check-config.mjs enforces that this tracked copy stays empty.
  *
- * Both values are public client-side identifiers (the same ones openquiz bakes
- * into its static build). With either missing, the app runs fully offline in
- * guest mode and everything stays in localStorage — no sign-in UI is offered.
+ * With either missing, the app runs fully offline in guest mode and everything
+ * stays in localStorage — no sign-in UI is offered. There is no client secret:
+ * this is a browser-only app with no server, and sign-in uses the
+ * Authorization Code flow with PKCE instead.
  *
- * The OAuth client must list this site's origin (e.g.
- * https://stoptalkingishh.github.io) under Authorized JavaScript origins.
+ * The OAuth client must list this site's origin under Authorized JavaScript
+ * origins AND this page's URL under Authorized redirect URIs, because sign-in
+ * redirects back here with an authorization code.
  */
 window.BR_GOOGLE_CLIENT_ID = "";
 window.BR_GOOGLE_API_KEY = "";

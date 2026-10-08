@@ -87,25 +87,7 @@ describe('Builder -> Tracker -> Progress (browser E2E)', { skip: unavailable ? '
     assert.deepEqual(broken.map((r) => r.path), [], '404s on assets referenced by index.html');
   });
 
-  it('sets a master password so the Builder can save', async () => {
-    await page.evaluate('document.querySelector("#settings-btn").click()');
-    await page.waitFor('!document.querySelector("#settings-modal").classList.contains("hidden")',
-      { label: 'settings modal open' });
-    await page.run(`
-      const set = (sel, v) => {
-        const el = document.querySelector(sel);
-        el.value = v;
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-      };
-      set('#settings-new-pw', 'e2e-master');
-      set('#settings-confirm-pw', 'e2e-master');
-      document.querySelector('#settings-save-pw').click();
-    `);
-    await page.waitFor('document.querySelector("#settings-modal").classList.contains("hidden")',
-      { label: 'settings modal closed' });
-    const hash = await page.evaluate('JSON.parse(localStorage.getItem("br_settings") || "{}").pwHash || ""');
-    assert.ok(hash.length > 0, 'a password hash was not stored');
-  });
+  
 
   it('builds a session in the Builder with prep, activity and recovery', async () => {
     await page.evaluate('document.querySelector(\'.nav-btn[data-view="builder"]\').click()');
@@ -148,17 +130,7 @@ describe('Builder -> Tracker -> Progress (browser E2E)', { skip: unavailable ? '
       safety.dispatchEvent(new Event('change', { bubbles: true }));
       document.querySelector('#session-save').click();
     `);
-    /* Saving is gated behind the master password prompt. */
-    await page.waitFor('!document.querySelector("#pw-modal").classList.contains("hidden")',
-      { label: 'password prompt' });
-    await page.run(`
-      const pw = document.querySelector('#pw-input');
-      pw.value = 'e2e-master';
-      document.querySelector('#pw-submit').click();
-    `);
-    await page.waitFor('document.querySelector("#pw-modal").classList.contains("hidden")',
-      { label: 'password prompt dismissed' });
-
+    /* Saving is immediate — there is no password prompt. */
     await page.waitFor(
       'Array.from(document.querySelectorAll("#sessions-list .list-item")).some(n => n.textContent.includes(' +
         JSON.stringify(SESSION_NAME) + '))',

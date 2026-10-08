@@ -19,7 +19,7 @@
  *
  *   - User-visible sync state (free text via getStatus): off | guest |
  *     syncing | pending (offline changes queued) | ready (synced). Settings and
- *     the master-password hash (br_settings / br_presets_hidden) are never
+ *     preferences (br_settings) and UI state (br_presets_hidden) are never
  *     synced and stay device-local.
  *
  * Merge/outbox/retry math is pure and lives in js/sync-core.js (window.BRSync
@@ -263,6 +263,11 @@
     if (!window.BRDrive) return Promise.reject(new Error("Drive layer not loaded"));
     status = "syncing";
     emit(false);
+    /* signInToDrive() navigates the page to Google (the PKCE flow returns an
+     * authorization code to our own origin), so in the normal case this promise
+     * never settles: the document is replaced. If the user declines consent,
+     * Google redirects back with ?error=..., restoreDriveSession() absorbs it
+     * and this status resolves itself to guest on the next appraise. */
     return window.BRDrive.signInToDrive().then(function (user) {
       return syncNow().then(function () {
         appraise();

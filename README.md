@@ -39,16 +39,20 @@ Sessions, regiments, tracker logs, and tag groups can be backed up to your own G
 - **No silent overwrite — reconcile first:** before it overwrites a collection, the cloud layer reads the current Drive `modifiedTime`. If it differs from the last modifiedTime this device wrote, the remote collection is **merged into local** (Drive wins id collisions; local-only rows are kept) before anything is pushed, so a collection changed from another device/browser is reconciled rather than clobbered.
 - **Healthy conflict/`modifiedTime` plumbing:** `js/drive.js` reads and writes expose `modifiedTime`; the cloud layer records the last verified base modifiedTime per file (`brsync_mtime_*`) so it can detect a changed remote.
 - **Bootstrap restore:** if `localStorage` is cleared or empty but Drive has records, sign-in pulls Drive into local (local-only reconciliation keeps both). Sign-out keeps the outbox device-local so queued changes flush on the next sign-in.
-- The master password hash is intentionally **not** synced — it stays local to the device.
+- Sign-in uses the OAuth 2.0 **Authorization Code flow with PKCE** and `access_type=offline`, so Google issues a refresh token. Sync therefore survives the ~1 hour access token and the browser's Google session cookie. This is a public client with no server, so there is **no client secret**; PKCE supplies that protection.
 
 Sync state is surfaced in the Settings → *Google Drive backup* section: `syncing`, `pending` (N offline changes queued, + a Sync now button), `ready` (synced), `guest`, and `off`.
 
 To enable it:
 
 1. In the [Google Cloud Console](https://console.cloud.google.com), create/select a project, enable the **Google Drive API**.
-2. Create an **OAuth 2.0 Client ID** of type *Web application* and add this site's origin (e.g. `https://stoptalkingishh.github.io`) under **Authorized JavaScript origins**.
-3. Create an **API key**.
-4. Fill both into `js/config.js` (`BR_GOOGLE_CLIENT_ID`, `BR_GOOGLE_API_KEY`) and deploy. Both are public client-side identifiers, the same way `openquiz` bakes `NEXT_PUBLIC_GOOGLE_*` into its static build.
+2. Create an **OAuth 2.0 Client ID** of type *Web application*, then add:
+   - this site's origin (e.g. `https://stoptalkingishh.github.io`) under **Authorized JavaScript origins**;
+   - this page's full URL (e.g. `https://stoptalkingishh.github.io/battle-rhythm/`) under **Authorized redirect URIs**. The PKCE flow redirects back to this exact URL, so a missing redirect URI fails at sign-in with `redirect_uri_mismatch`.
+3. Create an **API key** (restricted to the Drive API and your site's referrer).
+4. Add both as repository secrets — `BR_GOOGLE_CLIENT_ID` and `BR_GOOGLE_API_KEY` (Settings → Secrets and variables → Actions). The deploy job runs `scripts/write-config.mjs` to generate `js/config.js` in the published artifact, so the values never enter git history and `scripts/check-config.mjs` keeps its guarantee that the tracked file stays empty.
+
+Both values are public browser-side identifiers, readable by anyone who views the deployed page source — the normal pattern for a browser-only OAuth client, and the same approach the `openquiz` sibling takes with `NEXT_PUBLIC_GOOGLE_*`. Without the secrets the site still deploys and runs fully offline; only the Drive button is hidden.
 
 ## Repository layout
 
@@ -56,8 +60,8 @@ To enable it:
 index.html                        App shell, nav, modals; cache-busted script tags
 css/styles.css                    All styles
 js/app.js                         Views, state, localStorage, builder/tracker logic
-js/config.js                      Google client ID + API key for Drive backup (blank = guest mode)
-js/drive.js                       Google Identity Services auth + Drive v3 storage layer (reads/writes expose modifiedTime)
+js/config.js                      Google client ID + API key (committed empty; written at deploy time)
+js/drive.js                       OAuth Authorization Code + PKCE auth, Drive v3 storage layer (reads/writes expose modifiedTime)
 js/cloud.js                       Hybrid sync: durable outbox, retry/online replay, reconcile-before-overwrite
 js/sync-core.js                   Pure merge/outbox/reconcile logic (window.BRSync); unit-tested in Node
 js/exercise-coach.js              Inline muscle-map coach figure renderer
@@ -77,6 +81,7 @@ assets/plates/ai-image-prompts.json  Master prompt store (80 prompts, source of 
 assets/plates/workout-cards.json  Manifest for card generation + plate intake
 scripts/generate-workout-cards.mjs  Regenerates SVG cards + js/data/workout-cards.js
 scripts/import-ai-plates.mjs      Local AI-plate import/validation tool
+scripts/write-config.mjs          Deploy-time writer for js/config.js (Google credentials)
 scripts/extract-atp-figures.py    Extracts public-domain figures from the ATP PDF
 scripts/generate-atp-exercises.py Regenerates js/data/exercises-atp.js
 blender/                          Source-only MakeHuman/Blender render pipeline (kept for reference)

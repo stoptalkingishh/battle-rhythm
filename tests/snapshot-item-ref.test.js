@@ -13,7 +13,7 @@
  *
  * The function lives inside js/app.js's IIFE and is not exported, so these tests
  * slice the real source out and evaluate it - the same approach as
- * tests/timer-recovery.test.js and tests/vault-wiring.test.js. The code under
+ * tests/timer-recovery.test.js. The code under
  * test is the shipped code, not a copy.
  */
 const { test } = require("node:test");

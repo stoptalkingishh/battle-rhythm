@@ -97,6 +97,27 @@ jobs:
       # rejected design), tests/ and scripts/. Uploading "." would publish all
       # of it. Verified against index.html: every local reference resolves
       # under js/, css/ or assets/ only.
+      # The Google client id and API key are public identifiers for a static
+      # site - they ship in the bundle and are readable by every visitor, which
+      # is the normal pattern for a browser-only OAuth client (and what the
+      # openquiz sibling does with NEXT_PUBLIC_GOOGLE_*). They are injected here
+      # rather than committed, so js/config.js stays empty in git and
+      # scripts/check-config.mjs keeps its guarantee.
+      #
+      # This rewrites js/config.js in the working tree, so it must run BEFORE the
+      # copy loop below, which is what carries the filled file into the artifact.
+      #
+      # Without these secrets the app still deploys and runs fully offline in
+      # guest mode; only the Drive backup button is hidden.
+      - name: Inject Google credentials
+        env:
+          BR_GOOGLE_CLIENT_ID: ${{ secrets.BR_GOOGLE_CLIENT_ID }}
+          BR_GOOGLE_API_KEY: ${{ secrets.BR_GOOGLE_API_KEY }}
+        run: |
+          node scripts/write-config.mjs \
+            --client-id "$BR_GOOGLE_CLIENT_ID" \
+            --api-key "$BR_GOOGLE_API_KEY"
+
       - name: Stage site files
         run: |
           mkdir -p _site

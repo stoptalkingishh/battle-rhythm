@@ -91,7 +91,7 @@ function mkStore() {
       programming: "4 x 20m", component: "custom", source: "custom",
       createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z"
     }],
-    /* pwHash is present in the live store and must never reach the file. */
+    /* A legacy pwHash from an older install is just another scalar here. */
     settings: { pwHash: "h1a2b3.4", unit: "lb", wakeLock: true, formula: "epley" }
   };
 }
@@ -106,7 +106,7 @@ test("buildExport emits a versioned envelope covering every collection", () => {
   ]);
   assert.deepEqual(env.counts, {
     sessions: 1, regiments: 1, trackerDays: 1, trackerEntries: 1,
-    aftResults: 1, bodyweight: 1, groups: 1, customExercises: 1, settingsKeys: 3
+    aftResults: 1, bodyweight: 1, groups: 1, customExercises: 1, settingsKeys: 4
   });
 });
 
@@ -169,19 +169,18 @@ test("import is Drive-independent: the envelope carries no sync or auth state", 
   assert.equal(text.indexOf("trackerActive"), -1);
 });
 
-test("settings never carry the master-password hash", () => {
+test("settings round-trip as scalars only, dropping nested values", () => {
   const store = mkStore();
   const env = EXP.buildExport(store, CTX);
-  assert.equal(env.collections.settings.pwHash, undefined);
-  assert.deepEqual(env.collections.settings, { unit: "lb", wakeLock: true, formula: "epley" });
-  /* A file that tries to smuggle one in is sanitised away, not obeyed. */
+  assert.deepEqual(env.collections.settings, { pwHash: "h1a2b3.4", unit: "lb", wakeLock: true, formula: "epley" });
+  /* Nested objects and arrays are dropped rather than deep-cloned, so a crafted
+   * file cannot smuggle a structure into the live store. */
   const res = EXP.parseImport(JSON.stringify({
     format: EXP.FORMAT, version: 1,
     collections: Object.assign({}, env.collections, { settings: { pwHash: "hdeadbeef.9", unit: "kg", nested: { a: 1 }, list: [1], n: 3 } })
   }), CTX);
   assert.equal(res.ok, true, res.error);
-  assert.deepEqual(res.data.collections.settings, { unit: "kg", n: 3 });
-  assert.equal(JSON.stringify(res.data).indexOf("hdeadbeef"), -1);
+  assert.deepEqual(res.data.collections.settings, { pwHash: "hdeadbeef.9", unit: "kg", n: 3 });
 });
 
 test("parseImport rejects malformed and empty input without returning data", () => {
@@ -334,13 +333,13 @@ test("junk rows inside a valid payload are sanitised away", () => {
   assert.deepEqual(c.customExercises.map((x) => x.name), ["Sled Push"]);
   assert.deepEqual(c.customExercises[0].cues, ["drive"]);
 
-  /* Settings: scalars only, never pwHash. */
-  assert.deepEqual(c.settings, { unit: "lb", n: 3 });
+  /* Settings: scalars only; nested values dropped. */
+  assert.deepEqual(c.settings, { pwHash: "h1.2", unit: "lb", n: 3 });
 
   /* The summary counts reflect what was actually restored. */
   assert.deepEqual(res.data.counts, {
     sessions: 2, regiments: 1, trackerDays: 1, trackerEntries: 1,
-    aftResults: 1, bodyweight: 1, groups: 2, customExercises: 1, settingsKeys: 2
+    aftResults: 1, bodyweight: 1, groups: 2, customExercises: 1, settingsKeys: 3
   });
 });
 
@@ -383,7 +382,7 @@ test("without a context the module still sanitizes and still round-trips", () =>
   const env = EXP.buildExport(mkStore());
   assert.equal(env.collections.sessions.length, 1);
   assert.equal(env.collections.sessions[0].phases.activity.items[0].label, "Deadlift");
-  assert.equal(env.collections.settings.pwHash, undefined);
+  assert.equal(env.collections.settings.unit, "lb");
   const res = EXP.parseImport(JSON.stringify(env));
   assert.equal(res.ok, true, res.error);
   assert.deepEqual(res.data.collections, env.collections);

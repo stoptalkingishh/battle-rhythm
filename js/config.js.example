@@ -1,18 +1,26 @@
 "use strict";
 /* Google Drive backup configuration — TEMPLATE.
  *
- * Copy this file to js/config.js and fill in the two values to enable storing
- * workouts in your own Google Drive. js/config.js is tracked in git, so leave
- * the values blank in the tracked copy; CI (scripts/check-config.mjs) fails the
- * build if either one is populated. The deployed site then runs in guest mode:
- * everything lives in localStorage and no sign-in UI is offered.
+ * TEMPLATE. In normal use you do not fill this in by hand: js/config.js is
+ * tracked in git and both values are committed empty, and the deploy job runs
+ * scripts/write-config.mjs to write a populated copy into the published
+ * artifact using the BR_GOOGLE_CLIENT_ID / BR_GOOGLE_API_KEY repository
+ * secrets. CI (scripts/check-config.mjs) fails the build if the tracked
+ * js/config.js is ever populated.
+ *
+ * Fill it in locally only to test Drive backup on localhost. The deployed site
+ * without the secrets runs in guest mode: everything lives in localStorage and
+ * no sign-in UI is offered.
  *
  *   BR_GOOGLE_CLIENT_ID
  *     OAuth 2.0 Client ID of type "Web application", from
  *     https://console.cloud.google.com/apis/credentials
  *     The client must list this site's origin (e.g.
- *     https://stoptalkingishh.github.io) under "Authorized JavaScript origins",
- *     or Google will reject the sign-in.
+ *     https://stoptalkingishh.github.io) under "Authorized JavaScript origins"
+ *     AND this page's full URL (e.g.
+ *     https://stoptalkingishh.github.io/battle-rhythm/) under "Authorized
+ *     redirect URIs". Sign-in uses the Authorization Code flow with PKCE, so a
+ *     missing redirect URI fails with redirect_uri_mismatch.
  *     Shape: 1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
  *
  *   BR_GOOGLE_API_KEY

@@ -37,7 +37,8 @@
       `assets/plates/AI-ASSET-INTAKE.md` and has recorded provenance.
 - [ ] This PR is one concern. No unrelated visual rewrites or doctrine-data
       changes bundled in.
-- [ ] No Google client id or API key is in `js/config.js`.
+- [ ] No Google client id or API key is in `js/config.js`. It is written at deploy
+      time by `scripts/write-config.mjs` from repo secrets.
 
 ## New cache-buster version
 
