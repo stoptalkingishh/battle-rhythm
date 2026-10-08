@@ -21,9 +21,7 @@
     br_groups: "groups.json",
     br_aft_results: "aft-results.json",
     br_bodyweight: "bodyweight.json",
-    br_routines: "routines.json",
     br_week: "week.json",
-    br_exweights: "exweights.json",
     br_custom_exercises: "custom-exercises.json"
   };
 
