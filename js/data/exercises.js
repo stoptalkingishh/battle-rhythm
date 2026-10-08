@@ -489,7 +489,7 @@ window.BR_EXERCISES = [
     programming: "Hold to standard (max hold for test); 2-3 x 45-90 sec",
     safety: "Stop if hips sag or back aches",
     source: "QUOTE: AFT event",
-    aft: []
+    aft: ["PLK"]
   },
   {
     id: "m4-v-up",
