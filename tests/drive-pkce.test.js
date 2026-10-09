@@ -204,30 +204,31 @@ test("a page with no OAuth query params does nothing", async () => {
  * was only ever used by the gapi discovery bootstrap, and when Google's
  * referrer restriction blocked that fetch the app reported "signed out" for a
  * user Google had already authenticated. */
-test("isDriveConfigured needs the client id and the token proxy, not an API key", () => {
+test("isDriveConfigured needs the client id and nothing else", () => {
   assert.equal(loadDrive().sandbox.window.BRDrive.isDriveConfigured(), true);
 
-  /* The API key is gone entirely - Drive v3 rejects API keys, so requiring one
-   * (as this used to) gated sign-in behind a credential no Drive call can use. */
+  /* Neither of these is required to offer sign-in any more. The API key is gone
+   * entirely (Drive v3 rejects API keys), and the proxy is what upgrades sign-in
+   * from session-length to durable - not a precondition for it. */
   assert.equal(
     loadDrive({ apiKey: "" }).sandbox.window.BRDrive.isDriveConfigured(),
     true,
     "a build with no API key must still sign in"
   );
-
+  assert.equal(
+    loadDrive({ tokenProxy: "" }).sandbox.window.BRDrive.isDriveConfigured(),
+    true,
+    "a build with no proxy must still sign in, via Google Identity Services"
+  );
   assert.equal(
     loadDrive({ clientId: "" }).sandbox.window.BRDrive.isDriveConfigured(),
     false,
     "no client id means no sign-in at all"
   );
 
-  /* Without the proxy the code exchange cannot succeed, so offering the button
-   * would just produce an error the user cannot act on. */
-  assert.equal(
-    loadDrive({ tokenProxy: "" }).sandbox.window.BRDrive.isDriveConfigured(),
-    false,
-    "no token proxy means no sign-in"
-  );
+  /* Which mode the app is in, so the difference is observable rather than implied. */
+  assert.equal(loadDrive().sandbox.window.BRDrive.usesDurableSignIn(), true);
+  assert.equal(loadDrive({ tokenProxy: "" }).sandbox.window.BRDrive.usesDurableSignIn(), false);
 });
 
 test("signOut clears the stored refresh token", async () => {

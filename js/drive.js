@@ -20,12 +20,24 @@
  * session was reported as signed out even though the OAuth exchange had
  * succeeded.
  *
- * Sign-in is the Authorization Code flow with PKCE, but the code is exchanged
- * by an Apps Script proxy (scripts/drive-token-proxy.gs) named by
- * BR_DRIVE_TOKEN_PROXY, not by this page: Google's token endpoint accepts only
- * client_secret_post / client_secret_basic, so a browser cannot complete the
- * exchange at all without handing the secret to a server. The secret lives in
- * the proxy's Script Properties; it is never in this repo or this bundle.
+ * TWO SIGN-IN MODES, chosen by config, because Google leaves no third option:
+ *
+ *   durable (BR_DRIVE_TOKEN_PROXY set) - Authorization Code + PKCE, with the
+ *     code exchanged by an Apps Script proxy that holds the client secret. Google
+ *     returns a refresh token, so the login outlives the access token and the
+ *     browser session. This is the only way to stay signed in.
+ *
+ *   session (no proxy - the default) - Google Identity Services token client.
+ *     Works with the client id alone and no secret, but returns NO refresh
+ *     token: the access token lasts ~1 hour and is re-minted silently from the
+ *     user's Google session while that session lives, after which one click
+ *     signs in again.
+ *
+ * Why not PKCE alone: Google's token endpoint advertises only client_secret_post
+ * and client_secret_basic (no "none"), so a page that authenticates with PKCE
+ * alone is refused with "client_secret is missing" - before the code is even
+ * examined. Verified against both this project's OAuth client and the openquiz
+ * sibling's; the flow cannot be completed from a browser without a server.
  *
  * Exposes window.BRDrive. Synchronous page code keeps working: reads and
  * writes are Promise-based and cloud.js bridges them to the app's storage.
@@ -39,6 +51,7 @@
   var FOLDER_NAME = "Battle Rhythm";
 
   var AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
+  var GIS_SRC = "https://accounts.google.com/gsi/client";
   /* The token exchange goes to our Apps Script proxy, not to Google directly.
    * Google's discovery document advertises only client_secret_post and
    * client_secret_basic (no "none"), so a request from this page is rejected
@@ -58,6 +71,9 @@
    * This is a public client with no server, so there is no client secret and
    * PKCE supplies the protection a secret otherwise would. */
   var REFRESH_KEY = "brdrive:refresh_token";
+  /* Public profile fields of the last sign-in, so a returning browser knows a
+   * silent attempt is worth making. Never treated as proof of a session. */
+  var ACCOUNT_KEY = "brdrive:account";
   var VERIFIER_PREFIX = "brdrive:pkce_verifier:";
   var STATE_PREFIX = "brdrive:pkce_state:";
 
@@ -70,11 +86,17 @@
    * disappear, leaving the user signed out with no explanation at all. */
   var lastSignInError = null;
 
-  /* Two public identifiers and nothing else. No API key: Drive v3 rejects API
-   * keys outright, so all a key did here was gate sign-in behind a credential
-   * no Drive call ever uses. No client secret either - it cannot live in a page
-   * that anyone can read; the proxy holds it. */
+  /* One public identifier is enough to offer sign-in: the client id. No API key
+   * (Drive v3 rejects API keys outright, so a key only ever gated sign-in behind
+   * a credential no Drive call uses) and no client secret (it cannot live in a
+   * page anyone can read; the proxy holds it). */
   function isDriveConfigured() {
+    return Boolean(CLIENT_ID);
+  }
+
+  /* The proxy makes the login durable. Without it we fall back to the GIS token
+   * client, which cannot outlive its hour. */
+  function useDurableSignIn() {
     return Boolean(CLIENT_ID && TOKEN_PROXY);
   }
 
@@ -337,7 +359,15 @@
   function accessToken() {
     if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
     if (currentToken && Date.now() < expiresAt - 60000) return Promise.resolve(currentToken);
-    return refreshAccessToken();
+    if (useDurableSignIn()) return refreshAccessToken();
+    /* Session mode has no refresh token: mint a new one silently. This is the
+     * path that stops working about an hour in when the Google session is gone,
+     * which is why durable mode exists. */
+    if (!accountHint()) return Promise.resolve(null);
+    return requestToken(false).catch(function (err) {
+      lastSignInError = (err && err.message) || "Your Google session ended - sign in again";
+      return null;
+    });
   }
 
   /* Decode the id_token Google returns alongside the access token. It contains
@@ -386,20 +416,128 @@
     }).then(function (info) { return toDriveUser(info); });
   }
 
-  /* Redirects away to Google. The promise never settles in the normal case:
-   * the page navigates, and completeSignInFromRedirect finishes the job on
-   * return. Callers treat the navigation itself as success. */
+  /* ---------------- Session sign-in: Google Identity Services ----------------
+   *
+   * The token client needs no secret and no redirect, so it works with the
+   * client id alone - which is the whole reason it is here. What it cannot do is
+   * give a refresh token: the access token is valid for about an hour, and after
+   * that the app must ask Google again (silently while the user's Google session
+   * lives, otherwise with one click). */
+  var gisLoading = null;
+
+  function loadGis() {
+    if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+      return Promise.resolve();
+    }
+    if (gisLoading) return gisLoading;
+    gisLoading = new Promise(function (resolve, reject) {
+      if (typeof document === "undefined") { reject(new Error("Not in browser")); return; }
+      var s = document.createElement("script");
+      s.src = GIS_SRC;
+      s.async = true;
+      s.defer = true;
+      s.onload = function () { resolve(); };
+      s.onerror = function () {
+        gisLoading = null;
+        reject(new Error("Could not load Google Identity Services. Check the connection and try again."));
+      };
+      document.head.appendChild(s);
+    });
+    return gisLoading;
+  }
+
+  /* interactive=false asks for a token with no visible UI. It still fails when
+   * the user has to be involved (signed out of Google, revoked access, or a
+   * popup blocker), and that failure is what the caller reports. */
+  function requestToken(interactive) {
+    return loadGis().then(function () {
+      return new Promise(function (resolve, reject) {
+        var client = window.google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPE,
+          callback: function (resp) {
+            if (!resp || resp.error) {
+              reject(new Error((resp && resp.error_description) || (resp && resp.error) || "Sign-in failed"));
+              return;
+            }
+            currentToken = resp.access_token;
+            expiresAt = Date.now() + (Number(resp.expires_in) || 3600) * 1000;
+            resolve(currentToken);
+          },
+          error_callback: function (err) {
+            /* type "popup_closed" / "popup_failed_to_open" / "unknown" - the
+             * user cancelled, or the browser refused the window. */
+            var msg = (err && err.message) || (err && err.type) || "Sign-in was cancelled";
+            reject(new Error(msg === "popup_closed" ? "Sign-in was cancelled" : msg));
+          }
+        });
+        client.requestAccessToken({ prompt: interactive ? "consent" : "" });
+      });
+    });
+  }
+
+  /* Whether this browser has signed in before. Used only to decide whether a
+   * silent attempt is worth making: trying it for a first-time visitor invites
+   * a blocked popup for no reason. */
+  function rememberAccount(user) {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(ACCOUNT_KEY, JSON.stringify({
+        id: user.id, name: user.name, email: user.email, picture: user.picture
+      }));
+    } catch (e) {}
+  }
+  function accountHint() {
+    if (typeof window === "undefined") return null;
+    try {
+      var raw = window.localStorage.getItem(ACCOUNT_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  function profileOf(token) {
+    return fetchProfile(token).then(function (user) {
+      currentUser = user;
+      lastSignInError = null;
+      rememberAccount(user);
+      return user;
+    }).catch(function (err) {
+      lastSignInError = "Could not read the Google profile" + (err && err.message ? ": " + err.message : "");
+      return null;
+    });
+  }
+
+  /* Sign in with no UI. Returns null (and records why) when Google needs the
+   * user, so the caller can offer the button instead of guessing. */
+  function restoreSessionMode() {
+    if (!accountHint()) return Promise.resolve(null);
+    return requestToken(false).then(function (token) {
+      return token ? profileOf(token) : null;
+    }).catch(function (err) {
+      lastSignInError = (err && err.message) || "Sign-in is needed again";
+      return null;
+    });
+  }
+
+  /* Offer sign-in. In durable mode this navigates away to Google and the
+   * promise normally never settles - the document is replaced, and
+   * completeSignInFromRedirect finishes the job on return. */
   function signInToDrive() {
     if (!isDriveConfigured()) return Promise.reject(new Error("Google sign-in is not configured on this build."));
     if (typeof window === "undefined") return Promise.reject(new Error("Not in browser"));
-    return beginSignIn(true);
+    if (useDurableSignIn()) return beginSignIn(true);
+    return requestToken(true).then(function (token) {
+      if (!token) throw new Error("Google did not return an access token.");
+      return profileOf(token);
+    });
   }
 
   /* Resolve the signed-in user. Deliberately does NOT call the Drive API: a
-   * completed OAuth exchange is enough to be signed in, and gating this on a
-   * Drive request is what let a blocked API key look like a failed sign-in. */
+   * working sign-in is enough to be signed in, and gating this on a Drive
+   * request is what let a blocked API key look like a failed sign-in. */
   function restoreDriveSession() {
     if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
+    if (!useDurableSignIn()) return restoreSessionMode();
     return completeSignInFromRedirect().catch(function (err) {
       console.error("Drive sign-in callback failed:", err);
       lastSignInError = (err && err.message) || "Sign-in failed";
@@ -408,14 +546,7 @@
       return (token ? Promise.resolve(token) : accessToken());
     }).then(function (token) {
       if (!token) return null;
-      return fetchProfile(token).then(function (user) {
-        currentUser = user;
-        lastSignInError = null;
-        return user;
-      }).catch(function (err) {
-        lastSignInError = "Could not read the Google profile" + (err && err.message ? ": " + err.message : "");
-        return null;
-      });
+      return profileOf(token);
     });
   }
 
@@ -424,6 +555,7 @@
     /* Clearing the refresh token is what actually ends the session locally.
      * The access token is short-lived and Google will expire it on its own. */
     try { window.localStorage.removeItem(REFRESH_KEY); } catch (e) {}
+    try { window.localStorage.removeItem(ACCOUNT_KEY); } catch (e) {}
     currentToken = null;
     currentUser = null;
     lastIdToken = null;
@@ -577,6 +709,7 @@
     restoreDriveSession: restoreDriveSession,
     getDriveUser: getDriveUser,
     getLastSignInError: getLastSignInError,
+    usesDurableSignIn: useDurableSignIn,
     readDriveFile: readDriveFile,
     writeDriveFile: writeDriveFile
   };
