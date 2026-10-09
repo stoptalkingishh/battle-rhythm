@@ -78,6 +78,9 @@
     { global: "BR_FILTERS", module: "js/data/filters.js", required: true },
     { global: "BR_SESSION_TEXT", module: "js/data/session-text.js", required: true },
     { global: "BR_DATA_EXPORT", module: "js/data/data-export.js", required: false },
+    /* Copy for the Drive section of Settings. Optional: app.js falls back to its
+     * own literal if it is missing, so a 404 degrades wording, not function. */
+    { global: "BR_DRIVE_STATUS", module: "js/data/drive-status.js", required: false },
     /* Localization (#20). BR_I18N is the lookup itself and is read in app.js
      * only through a `|| null` guard that degrades to the key string, so a
      * miss renders raw keys rather than blank copy - optional on purpose. The

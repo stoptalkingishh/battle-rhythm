@@ -38,7 +38,7 @@ function fakeSessionStorage() {
 
 /* Run drive.js in a vm with a stubbed window. Returns the storage so a test
  * can plant or inspect PKCE state. */
-function loadDrive() {
+function loadDrive(config = {}) {
   const session = fakeSessionStorage();
   const local = fakeSessionStorage();
   const sandbox = {
@@ -58,8 +58,9 @@ function loadDrive() {
     sessionStorage: session,
   };
   sandbox.window = sandbox;
-  sandbox.window.BR_GOOGLE_CLIENT_ID = "test-client.apps.googleusercontent.com";
-  sandbox.window.BR_GOOGLE_API_KEY = "AIzaTest";
+  sandbox.window.BR_GOOGLE_CLIENT_ID =
+    "clientId" in config ? config.clientId : "test-client.apps.googleusercontent.com";
+  sandbox.window.BR_GOOGLE_API_KEY = "apiKey" in config ? config.apiKey : "AIzaTest";
   vm.createContext(sandbox);
   vm.runInContext(SOURCE, sandbox);
   return { sandbox, session, local };
@@ -192,16 +193,29 @@ test("a page with no OAuth query params does nothing", async () => {
   });
 });
 
-test("isDriveConfigured needs both values and reflects config.js", () => {
-  const both = loadDrive();
-  assert.equal(both.sandbox.window.BRDrive.isDriveConfigured(), true);
+/* The client id is the only required value. Requiring an API key here is what
+ * broke sign-in in production: Drive v3 rejects API keys outright, so the key
+ * was only ever used by the gapi discovery bootstrap, and when Google's
+ * referrer restriction blocked that fetch the app reported "signed out" for a
+ * user Google had already authenticated. */
+test("isDriveConfigured needs the client id and no longer an API key", () => {
+  const configured = loadDrive();
+  assert.equal(configured.sandbox.window.BRDrive.isDriveConfigured(), true);
 
-  const noKey = loadDrive();
+  const noKey = loadDrive({ apiKey: "" });
   noKey.sandbox.window.BR_GOOGLE_API_KEY = "";
-  /* drive.js captured API_KEY at evaluation time, so re-running with the value
-   * absent is the honest way to model an unconfigured build. */
-  const sandbox2 = { ...noKey.sandbox };
-  assert.ok(sandbox2.window.BRDrive, "BRDrive missing");
+  assert.equal(
+    noKey.sandbox.window.BRDrive.isDriveConfigured(),
+    true,
+    "a build with a client id but no API key must still be able to sign in"
+  );
+
+  const noClientId = loadDrive({ clientId: "" });
+  assert.equal(
+    noClientId.sandbox.window.BRDrive.isDriveConfigured(),
+    false,
+    "no client id means no sign-in at all"
+  );
 });
 
 test("signOut clears the stored refresh token", async () => {
@@ -223,4 +237,100 @@ test("the refresh token lives under a namespaced key, not a bare token", () => {
    * short-lived credential in localStorage for no benefit, since the refresh
    * token can mint a new one. */
   assert.ok(!/localSet\([^)]*access[_-]?token/i.test(src), "access token must not be persisted");
+});
+
+/* ---------------------------------------------------------------------------
+ * Drive transport. The bug this guards: the file layer used to route every
+ * call through gapi.client, which needed an API key and a discovery-document
+ * fetch. A blocked key made a signed-in user look signed out. Drive v3 takes
+ * an OAuth bearer token and nothing else, so the guard asserts the bearer
+ * header is present and that no request carries an API key.
+ * ------------------------------------------------------------------------- */
+
+function jsonResponse(body, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: () => Promise.resolve(JSON.stringify(body)),
+    json: () => Promise.resolve(body),
+    clone() { return this; }
+  };
+}
+
+/* Answer the token endpoint, then Drive, recording every request. */
+function loadDriveWithDriveStub() {
+  const calls = [];
+  const loaded = loadDrive();
+  loaded.local.setItem("brdrive:refresh_token", "refresh-1");
+  loaded.sandbox.fetch = (url, init) => {
+    calls.push({ url: String(url), method: (init && init.method) || "GET", headers: (init && init.headers) || {}, body: (init && init.body) || "" });
+    const u = String(url);
+    if (u.startsWith("https://oauth2.googleapis.com/token")) {
+      return Promise.resolve(jsonResponse({ access_token: "access-1", expires_in: 3600 }));
+    }
+    if (u.startsWith("https://www.googleapis.com/drive/v3/files?")) {
+      if (u.includes("application%2Fvnd.google-apps.folder")) {
+        return Promise.resolve(jsonResponse({ files: [{ id: "folder-1", name: "Battle Rhythm" }] }));
+      }
+      return Promise.resolve(jsonResponse({ files: [{ id: "file-1" }] }));
+    }
+    if (u.includes("alt=media")) {
+      return Promise.resolve(jsonResponse([{ id: "s1", name: "session" }]));
+    }
+    if (u.includes("fields=id%2CmodifiedTime")) {
+      return Promise.resolve(jsonResponse({ id: "file-1", modifiedTime: "2026-01-02T03:04:05.000Z" }));
+    }
+    return Promise.resolve(jsonResponse({ error: { message: "unexpected " + u } }, 500));
+  };
+  return { sandbox: loaded.sandbox, local: loaded.local, calls };
+}
+
+test("Drive reads use an OAuth bearer token and never an API key", async () => {
+  const { sandbox, calls } = loadDriveWithDriveStub();
+  const res = await sandbox.window.BRDrive.readDriveFile("sessions.json");
+
+  /* The vm's arrays AND their objects are a different realm, so deepStrictEqual
+   * compares prototypes and fails on identical content. Compare the plain JSON. */
+  assert.deepEqual(JSON.parse(JSON.stringify(res.data)), [{ id: "s1", name: "session" }],
+    "the file content did not come back");
+  assert.equal(res.modifiedTime, "2026-01-02T03:04:05.000Z", "metadata mtime was not carried through");
+
+  const driveCalls = calls.filter((c) => c.url.startsWith("https://www.googleapis.com/drive"));
+  assert.ok(driveCalls.length >= 2, "expected folder lookup + file read, got " + driveCalls.length);
+  driveCalls.forEach((c) => {
+    assert.match(c.headers.Authorization || "", /^Bearer access-1$/, "missing bearer token on " + c.url);
+    assert.doesNotMatch(c.url, /[?&]key=/, "Drive v3 rejects API keys: " + c.url);
+    assert.doesNotMatch(c.url, /discovery\/v1\/apis/, "the gapi discovery bootstrap must be gone: " + c.url);
+  });
+});
+
+test("a Drive write creates the file and confirms the new modifiedTime", async () => {
+  const { sandbox, calls } = loadDriveWithDriveStub();
+  sandbox.fetch = (url, init) => {
+    calls.push({ url: String(url), method: (init && init.method) || "GET", headers: (init && init.headers) || {}, body: (init && init.body) || "" });
+    const u = String(url);
+    if (u.startsWith("https://oauth2.googleapis.com/token")) {
+      return Promise.resolve(jsonResponse({ access_token: "access-1", expires_in: 3600 }));
+    }
+    if (u.includes("/upload/drive/")) {
+      return Promise.resolve(jsonResponse({ id: "file-1" }));
+    }
+    if (u.startsWith("https://www.googleapis.com/drive/v3/files?")) {
+      if (u.includes("application%2Fvnd.google-apps.folder")) {
+        return Promise.resolve(jsonResponse({ files: [{ id: "folder-1" }] }));
+      }
+      if ((init && init.method) === "POST") {
+        return Promise.resolve(jsonResponse({ id: "file-1" }));
+      }
+      return Promise.resolve(jsonResponse({ files: [] }));
+    }
+    if (u.includes("fields=id%2CmodifiedTime")) {
+      return Promise.resolve(jsonResponse({ id: "file-1", modifiedTime: "2026-02-02T00:00:00.000Z" }));
+    }
+    return Promise.resolve(jsonResponse({ error: { message: "unexpected " + u } }, 500));
+  };
+
+  const res = await sandbox.window.BRDrive.writeDriveFile("sessions.json", [{ id: "s1" }]);
+  assert.equal(res.ok, true, "a confirmed upload must report ok");
+  assert.equal(res.modifiedTime, "2026-02-02T00:00:00.000Z", "the new mtime must be reported back");
 });

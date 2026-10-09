@@ -8,18 +8,27 @@
  * Google session cookie.
  *
  * Scope is limited to drive.file (only files this app creates). When the
- * Google keys are not configured (see js/config.js), everything falls back to
- * localStorage in guest mode — data-layer callers don't need to change.
+ * Google client id is not configured (see js/config.js), everything falls back
+ * to localStorage in guest mode - data-layer callers don't need to change.
+ *
+ * The Drive REST API is called with fetch + an OAuth bearer token. There is no
+ * client library and no API key: Drive v3 does not accept API keys at all
+ * ("API keys are not supported by this API") and the gapi client library's
+ * discovery-document bootstrap needed one, so requiring a key made sign-in
+ * depend on a credential that buys nothing here. The previous version called
+ * gapi.client.init({apiKey}) first, and when Google blocked that call the whole
+ * session was reported as signed out even though the OAuth exchange had
+ * succeeded.
  *
  * Exposes window.BRDrive. Synchronous page code keeps working: reads and
  * writes are Promise-based and cloud.js bridges them to the app's storage.
  */
 (function () {
   var CLIENT_ID = window.BR_GOOGLE_CLIENT_ID || "";
-  var API_KEY = window.BR_GOOGLE_API_KEY || "";
 
   var SCOPE = "openid email profile https://www.googleapis.com/auth/drive.file";
-  var DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest";
+  var DRIVE_API = "https://www.googleapis.com/drive/v3";
+  var DRIVE_UPLOAD = "https://www.googleapis.com/upload/drive/v3";
   var FOLDER_NAME = "Battle Rhythm";
 
   var AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -27,7 +36,7 @@
 
   /* OAuth 2.0 Authorization Code flow with PKCE (RFC 7636).
    *
-   * The previous implementation used the GIS initTokenClient, which is the
+   * The original implementation used the GIS initTokenClient, which is the
    * implicit flow: about a one-hour access token and NO refresh token. Renewing
    * it leaned on Google's browser session cookie, so Drive sync stopped after
    * roughly an hour and looked to the user like being signed out. With the code
@@ -40,56 +49,107 @@
   var VERIFIER_PREFIX = "brdrive:pkce_verifier:";
   var STATE_PREFIX = "brdrive:pkce_state:";
 
-  var initialized = false;
   var currentToken = null;
   var currentUser = null;
-  var driveReady = null;
   var lastIdToken = null;
   var expiresAt = 0;
+  /* Why the last sign-in attempt did not produce a session. Kept so the UI can
+   * say it out loud: a rejected callback used to be console.error'd and then
+   * disappear, leaving the user signed out with no explanation at all. */
+  var lastSignInError = null;
 
+  /* The API key is deliberately NOT required. Drive v3 rejects API keys (it
+   * wants an OAuth bearer token), so all a key did here was gate sign-in behind
+   * a credential that no Drive call ever uses. */
   function isDriveConfigured() {
-    return Boolean(CLIENT_ID && API_KEY);
+    return Boolean(CLIENT_ID);
   }
 
-  function loadScript(src) {
-    return new Promise(function (resolve, reject) {
-      if (typeof document === "undefined") { reject(new Error("Not in browser")); return; }
-      if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
-      var s = document.createElement("script");
-      s.src = src;
-      s.async = true;
-      s.onload = function () { resolve(); };
-      s.onerror = function () { reject(new Error("Failed to load " + src)); };
-      document.head.appendChild(s);
+  function localGet(key) {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem(key); } catch (e) { return null; }
+  }
+
+  function localSet(key, value) {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem(key, value); } catch (e) {}
+  }
+
+  /* ---------------- Drive REST (bearer token only) ---------------- */
+
+  /* One place that talks to Drive. Resolves to the parsed JSON body, or null
+   * when there is no usable access token (callers treat null as "unavailable",
+   * never as success). Rejects with Google's own message on a non-2xx so the
+   * reason can reach the UI instead of being a bare status code. */
+  function driveFetch(url, init) {
+    return accessToken().then(function (token) {
+      if (!token) return null;
+      var opts = init || {};
+      var headers = {};
+      var given = opts.headers || {};
+      for (var i in given) {
+        if (Object.prototype.hasOwnProperty.call(given, i)) headers[i] = given[i];
+      }
+      headers.Authorization = "Bearer " + token;
+      opts.headers = headers;
+      return fetch(url, opts).then(function (res) {
+        return res.text().then(function (text) {
+          var json = null;
+          if (text) { try { json = JSON.parse(text); } catch (e) { json = null; } }
+          if (!res.ok) {
+            var msg = (json && json.error && json.error.message) ||
+              ("Drive request failed (" + res.status + ")");
+            var err = new Error(msg);
+            err.status = res.status;
+            throw err;
+          }
+          return json;
+        });
+      });
     });
   }
 
-  /* Only the Drive API client library is loaded now. The GIS script is gone: the
-   * PKCE flow talks to Google's endpoints with plain fetch. */
-  function initGapi() {
-    if (!initialized) {
-      initialized = true;
-      driveReady = (async function () {
-        try {
-          await loadScript("https://apis.google.com/js/api.js");
-          await new Promise(function (resolve, reject) {
-            window.gapi.load("client", {
-              callback: resolve,
-              onerror: function () { reject(new Error("gapi client failed")); }
-            });
-          });
-          await window.gapi.client.init({ apiKey: API_KEY, discoveryDocs: [DISCOVERY_DOC] });
-          return true;
-        } catch (err) {
-          initialized = false;
-          driveReady = null;
-          console.error("Drive init failed:", err);
-          return false;
-        }
-      })();
-    }
-    return driveReady;
+  function queryString(params) {
+    return new URLSearchParams(params).toString();
   }
+
+  function listFiles(q, fields) {
+    return driveFetch(DRIVE_API + "/files?" + queryString({
+      q: q,
+      fields: fields || "files(id,name)",
+      pageSize: "1"
+    }));
+  }
+
+  function createFile(resource, fields) {
+    return driveFetch(DRIVE_API + "/files?" + queryString({ fields: fields || "id" }), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(resource)
+    });
+  }
+
+  function fileMetadata(fileId) {
+    return driveFetch(DRIVE_API + "/files/" + encodeURIComponent(fileId) + "?" +
+      queryString({ fields: "id,modifiedTime" }));
+  }
+
+  /* alt=media returns the file's raw content, which is our JSON document. */
+  function readMedia(fileId) {
+    return driveFetch(DRIVE_API + "/files/" + encodeURIComponent(fileId) + "?" +
+      queryString({ alt: "media" }));
+  }
+
+  function uploadMedia(fileId, data) {
+    return driveFetch(DRIVE_UPLOAD + "/files/" + encodeURIComponent(fileId) + "?" +
+      queryString({ uploadType: "media" }), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json; charset=UTF-8" },
+      body: JSON.stringify(data)
+    });
+  }
+
+  /* ---------------- PKCE ---------------- */
 
   function base64UrlEncode(bytes) {
     var binary = "";
@@ -238,7 +298,6 @@
     ]).then(function (tokens) {
       currentToken = tokens.access_token;
       expiresAt = Date.now() + (Number(tokens.expires_in) || 3600) * 1000;
-      if (window.gapi && window.gapi.client) window.gapi.client.setToken({ access_token: currentToken });
       return currentToken;
     }).catch(function (err) {
       /* invalid_grant means the refresh token was revoked or expired: the user
@@ -305,17 +364,6 @@
     }).then(function (info) { return toDriveUser(info); });
   }
 
-  function getDriveToken() {
-    return accessToken().then(function (token) {
-      if (!token) return null;
-      return initGapi().then(function (ok) {
-        if (!ok) return null;
-        window.gapi.client.setToken({ access_token: token });
-        return token;
-      });
-    });
-  }
-
   /* Redirects away to Google. The promise never settles in the normal case:
    * the page navigates, and completeSignInFromRedirect finishes the job on
    * return. Callers treat the navigation itself as success. */
@@ -325,21 +373,26 @@
     return beginSignIn(true);
   }
 
+  /* Resolve the signed-in user. Deliberately does NOT call the Drive API: a
+   * completed OAuth exchange is enough to be signed in, and gating this on a
+   * Drive request is what let a blocked API key look like a failed sign-in. */
   function restoreDriveSession() {
     if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(null);
     return completeSignInFromRedirect().catch(function (err) {
       console.error("Drive sign-in callback failed:", err);
+      lastSignInError = (err && err.message) || "Sign-in failed";
       return null;
     }).then(function (token) {
       return (token ? Promise.resolve(token) : accessToken());
     }).then(function (token) {
       if (!token) return null;
-      return getDriveToken().then(function (live) {
-        if (!live) return null;
-        return fetchProfile(live).then(function (user) {
-          currentUser = user;
-          return user;
-        }).catch(function () { return null; });
+      return fetchProfile(token).then(function (user) {
+        currentUser = user;
+        lastSignInError = null;
+        return user;
+      }).catch(function (err) {
+        lastSignInError = "Could not read the Google profile" + (err && err.message ? ": " + err.message : "");
+        return null;
       });
     });
   }
@@ -353,49 +406,38 @@
     currentUser = null;
     lastIdToken = null;
     expiresAt = 0;
+    lastSignInError = null;
     return Promise.resolve();
   }
 
   function getDriveUser() { return currentUser; }
+  function getLastSignInError() { return lastSignInError; }
 
   /* ---------------- Drive file storage ---------------- */
 
-  function localGet(key) {
-    if (typeof window === "undefined") return null;
-    try { return window.localStorage.getItem(key); } catch (e) { return null; }
-  }
-
-  function localSet(key, value) {
-    if (typeof window === "undefined") return;
-    try { window.localStorage.setItem(key, value); } catch (e) {}
-  }
-
   function ensureFolder() {
-    return getDriveToken().then(function (token) {
+    return accessToken().then(function (token) {
       if (!token) return null;
       var folderKey = "brdrive:folder_" + (currentUser ? currentUser.id : "");
       var cached = localGet(folderKey);
       if (cached) return cached;
-      return window.gapi.client.drive.files.list({
-        q: "name = '" + FOLDER_NAME + "' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
-        fields: "files(id, name)",
-        pageSize: 1
-      }).then(function (found) {
-        var existing = found && found.result && found.result.files && found.result.files[0];
+      return listFiles(
+        "name = '" + FOLDER_NAME + "' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+        "files(id, name)"
+      ).then(function (found) {
+        var existing = found && found.files && found.files[0];
         if (existing && existing.id) {
           localSet(folderKey, existing.id);
           return existing.id;
         }
-        return window.gapi.client.drive.files.create({
-          resource: { name: FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" },
-          fields: "id"
-        }).then(function (created) {
-          if (created && created.result && created.result.id) {
-            localSet(folderKey, created.result.id);
-            return created.result.id;
-          }
-          return null;
-        });
+        return createFile({ name: FOLDER_NAME, mimeType: "application/vnd.google-apps.folder" }, "id")
+          .then(function (created) {
+            if (created && created.id) {
+              localSet(folderKey, created.id);
+              return created.id;
+            }
+            return null;
+          });
       }).catch(function (err) {
         console.error("Drive ensureFolder failed:", err);
         return null;
@@ -404,17 +446,14 @@
   }
 
   function findFileId(folderId, name) {
-    return window.gapi.client.drive.files.list({
-      q: "'" + folderId + "' in parents and name = '" + name + "' and trashed = false",
-      fields: "files(id, name)",
-      pageSize: 1
-    }).then(function (res) {
-      var f = res && res.result && res.result.files && res.result.files[0];
-      return { id: (f && f.id) || null, available: true };
-    }).catch(function (err) {
-      console.error("Drive file lookup failed:", err);
-      return { id: null, available: false };
-    });
+    return listFiles("'" + folderId + "' in parents and name = '" + name + "' and trashed = false")
+      .then(function (res) {
+        var f = res && res.files && res.files[0];
+        return { id: (f && f.id) || null, available: true };
+      }).catch(function (err) {
+        console.error("Drive file lookup failed:", err);
+        return { id: null, available: false };
+      });
   }
 
   /* Serialize Drive writes so concurrent saves can't overwrite each other. */
@@ -434,16 +473,13 @@
   /* Fetch a file's metadata (id + modifiedTime). The alt:media content request
    * does not carry metadata, so reads follow it up with a cheap metadata call. */
   function fetchMetadata(fileId) {
-    return window.gapi.client.drive.files
-      .get({ fileId: fileId, fields: "id,modifiedTime" })
-      .then(function (res) {
-        var m = (res && res.result) || {};
-        return { id: m.id || fileId, modifiedTime: m.modifiedTime || "" };
-      })
-      .catch(function (err) {
-        console.error("Drive metadata fetch failed:", err);
-        return { id: fileId, modifiedTime: "", available: false };
-      });
+    return fileMetadata(fileId).then(function (m) {
+      m = m || {};
+      return { id: m.id || fileId, modifiedTime: m.modifiedTime || "" };
+    }).catch(function (err) {
+      console.error("Drive metadata fetch failed:", err);
+      return { id: fileId, modifiedTime: "", available: false };
+    });
   }
 
   /* Read a Drive file. Resolves to { data, modifiedTime, id }. When the file,
@@ -451,7 +487,7 @@
    * treat data == null as "no remote file"). */
   function readDriveFile(fileName) {
     if (!isDriveConfigured() || typeof window === "undefined") return Promise.resolve(emptyRead(false));
-    return getDriveToken().then(function (token) {
+    return accessToken().then(function (token) {
       if (!token) return emptyRead(false);
       return ensureFolder().then(function (folderId) {
         if (!folderId) return emptyRead(false);
@@ -459,13 +495,7 @@
           if (!found.available) return emptyRead(false);
           var fileId = found.id;
           if (!fileId) return emptyRead();
-          return window.gapi.client.request({
-            path: "/drive/v3/files/" + fileId,
-            method: "GET",
-            params: { alt: "media" }
-          }).then(function (res) {
-            var text = typeof res.body === "string" ? res.body : JSON.stringify(res.result || res);
-            var data = JSON.parse(text);
+          return readMedia(fileId).then(function (data) {
             return fetchMetadata(fileId).then(function (meta) {
               return { data: data, modifiedTime: meta.modifiedTime, id: meta.id, available: meta.available !== false };
             });
@@ -487,38 +517,27 @@
     }
     var key = (currentUser ? currentUser.id : "") + ":" + fileName;
     return queuedWrite(key, function () {
-      return getDriveToken().then(function (token) {
+      return accessToken().then(function (token) {
         if (!token) return { ok: false, modifiedTime: "" };
         return ensureFolder().then(function (folderId) {
           if (!folderId) return { ok: false, modifiedTime: "" };
           return findFileId(folderId, fileName).then(function (found) {
             if (!found.available) return { ok: false, modifiedTime: "" };
             var fileId = found.id;
-            function upload(id) {
-              return window.gapi.client.request({
-                path: "/upload/drive/v3/files/" + id,
-                method: "PATCH",
-                params: { uploadType: "media" },
-                headers: { "Content-Type": "application/json; charset=UTF-8" },
-                body: JSON.stringify(data)
-              });
-            }
             function afterUpload(id) {
               return fetchMetadata(id).then(function (meta) {
                 return { ok: Boolean(meta.available !== false && meta.modifiedTime), modifiedTime: meta.modifiedTime || "", id: meta.id };
               });
             }
             if (fileId) {
-              return upload(fileId).then(function () { return afterUpload(fileId); });
+              return uploadMedia(fileId, data).then(function () { return afterUpload(fileId); });
             }
-            return window.gapi.client.drive.files.create({
-              resource: { name: fileName, parents: [folderId], mimeType: "application/json" },
-              fields: "id"
-            }).then(function (created) {
-              var newFileId = created && created.result && created.result.id;
-              if (!newFileId) return { ok: false, modifiedTime: "" };
-              return upload(newFileId).then(function () { return afterUpload(newFileId); });
-            });
+            return createFile({ name: fileName, parents: [folderId], mimeType: "application/json" }, "id")
+              .then(function (created) {
+                var newFileId = created && created.id;
+                if (!newFileId) return { ok: false, modifiedTime: "" };
+                return uploadMedia(newFileId, data).then(function () { return afterUpload(newFileId); });
+              });
           }).catch(function (err) {
             console.error("Drive write failed:", err);
             return { ok: false, modifiedTime: "" };
@@ -535,6 +554,7 @@
     signOutFromDrive: signOutFromDrive,
     restoreDriveSession: restoreDriveSession,
     getDriveUser: getDriveUser,
+    getLastSignInError: getLastSignInError,
     readDriveFile: readDriveFile,
     writeDriveFile: writeDriveFile
   };

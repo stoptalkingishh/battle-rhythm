@@ -79,6 +79,18 @@
     };
   }
 
+  /* Carry the Drive layer's own reason for a sign-in that did not produce a
+   * session, so the UI can show it. Without this a rejected callback (or a
+   * revoked refresh token) renders as a plain "signed out" with no cause. */
+  function signInReason() {
+    try {
+      if (window.BRDrive && window.BRDrive.getLastSignInError) {
+        return window.BRDrive.getLastSignInError() || "";
+      }
+    } catch (e) {}
+    return "";
+  }
+
   function pendingCount() { return BRSync.pendingCount(readOutbox()); }
   function hasPending() { return pendingCount() > 0; }
 
@@ -243,16 +255,19 @@
     }
     return window.BRDrive.restoreDriveSession().then(function (user) {
       if (user) {
+        lastError = "";
         return syncNow().then(function () {
           if (hasPending()) { status = "pending"; } else { status = "ready"; }
           emit(true);
           return user;
         });
       }
+      lastError = signInReason();
       status = "guest";
       emit(true);
       return null;
-    }).catch(function () {
+    }).catch(function (err) {
+      lastError = (err && err.message) || signInReason() || "Sign-in failed";
       status = "guest";
       emit(true);
       return null;
