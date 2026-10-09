@@ -36,6 +36,7 @@
   var TEXT = window.BR_SESSION_TEXT || null;
   var CAPABILITIES = window.BR_CAPABILITIES || null;
   var DATA = window.BR_DATA_EXPORT || null;
+  var DRIVE_STATUS = window.BR_DRIVE_STATUS || null;
   var REGANA = window.BR_REGIMENT_ANALYTICS || null;
   var I18N = window.BR_I18N || null;
   /* -- localization (#20) ------------------------------------------------
@@ -833,20 +834,41 @@
   }
 
   /* ---- Google Drive backup section (Settings modal) ---- */
+
+  /* The reason a sign-in or a sync did not take, shown next to the button that
+   * would fix it. Empty text hides the node rather than leaving a blank line. */
+  function renderDriveError(text) {
+    var el = $("#drive-error");
+    if (!el) return;
+    el.textContent = text || "";
+    if (text) el.classList.remove("hidden");
+    else el.classList.add("hidden");
+  }
+
   function renderDriveSection() {
     var statusEl = $("#drive-status");
     var areaEl = $("#drive-auth-area");
     if (!statusEl || !areaEl) return;
     var cloud = window.BRCloud;
-    if (!cloud || !window.BRDrive || !window.BRDrive.isDriveConfigured()) {
-      statusEl.textContent = "Not configured on this build. Add Google API keys in js/config.js to back up workouts to your Drive.";
-      areaEl.innerHTML = "";
-      return;
+    var configured = Boolean(cloud && window.BRDrive && window.BRDrive.isDriveConfigured());
+    var st = configured ? cloud.getStatus() : "off";
+    var user = configured ? cloud.user() : null;
+    var errText = "";
+    if (configured && cloud.getLastError) {
+      try { errText = cloud.getLastError() || ""; } catch (e) { errText = ""; }
     }
-    var st = cloud.getStatus();
-    var user = cloud.user();
-    if (st === "syncing") {
-      statusEl.textContent = "Syncing with Google Drive…";
+    /* The wording - including why a sign-in did not take - comes from the pure
+     * module so it is testable; the DOM only renders what it returns. */
+    var view = DRIVE_STATUS
+      ? DRIVE_STATUS.describe({ configured: configured, status: st, user: user, lastError: errText })
+      : { auth: !configured ? "none" : (st === "syncing" ? "none" : (user ? "account" : "signin")),
+          statusText: !configured ? "Backups are off."
+            : (st === "syncing" ? "Syncing with Google Drive…"
+              : "Sign in to back up your workouts to your own Google Drive."),
+          errorText: errText };
+    statusEl.textContent = view.statusText;
+    renderDriveError(view.errorText);
+    if (view.auth === "none") {
       areaEl.innerHTML = "";
       return;
     }
@@ -900,7 +922,6 @@
       });
       areaEl.appendChild(signOutBtn);
     } else {
-      statusEl.textContent = "Sign in to back up your workouts to your own Google Drive in a private “Battle Rhythm” folder.";
       var signInBtn = document.createElement("button");
       signInBtn.className = "btn btn-gold btn-sm";
       signInBtn.textContent = "Continue with Google";
@@ -910,7 +931,8 @@
         cloud.signIn().then(function () {
           renderDriveSection();
         }).catch(function (err) {
-          statusEl.textContent = (err && err.message) ? err.message : "Sign-in failed. Try again.";
+          renderDriveError(((DRIVE_STATUS && DRIVE_STATUS.SIGN_IN_PROBLEM_PREFIX) || "Could not complete sign-in: ") +
+            ((err && err.message) ? err.message : "sign-in failed"));
           renderDriveSection();
         });
       });
