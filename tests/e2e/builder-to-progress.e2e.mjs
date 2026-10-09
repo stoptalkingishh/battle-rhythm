@@ -354,4 +354,53 @@ describe('Builder -> Tracker -> Progress (browser E2E)', { skip: unavailable ? '
     assert.ok(options.includes(DEADLIFT.id), 'persisted log did not repopulate Progress after reload');
     assert.deepEqual(page.pageErrors, [], `uncaught page errors: ${page.pageErrors.join(' | ')}`);
   });
+
+  /* The Manage Groups modal is the one surface whose opener builds DOM, so a
+   * dangling call inside it throws before the modal is shown and the feature
+   * dies silently — the load-time assertions above cannot see that class of
+   * bug. Drive it end to end: open, pick a tag, add a group, and require the
+   * group to persist AND the page to stay exception-free. */
+  it('opens Manage Groups and adds a group without an uncaught exception', async () => {
+    /* resetGroupForm() builds its chips from the tags of saved sessions, so a
+     * tagged session has to exist or the picker is legitimately empty. */
+    await page.run(`
+      const sessions = JSON.parse(localStorage.getItem('br_sessions') || '[]');
+      if (!sessions.some(s => (s.tags || []).includes('E2E-Tag'))) {
+        sessions.push({ id: 'e2e-group-fixture', name: 'E2E Tag Fixture', tags: ['E2E-Tag'], phases: {} });
+        localStorage.setItem('br_sessions', JSON.stringify(sessions));
+      }
+    `);
+    await page.goto(`${site.origin}/index.html#builder`, { ready: readyFor('builder') });
+
+    await page.run('document.querySelector("#manage-groups-btn").click();');
+    await page.waitFor('!document.querySelector("#groups-modal").classList.contains("hidden")',
+      { label: 'the Manage Groups modal opened' });
+
+    const chips = await page.evaluate(`
+      Array.from(document.querySelectorAll('#group-tag-picker .chip')).map(c => c.getAttribute('data-tag'))
+    `);
+    assert.ok(chips.includes('E2E-Tag'),
+      `the tag picker did not render the saved session's tag: ${JSON.stringify(chips)}`);
+
+    await page.run(`
+      const name = document.querySelector('#group-name');
+      name.value = 'E2E Group';
+      name.dispatchEvent(new Event('input', { bubbles: true }));
+      const chip = Array.from(document.querySelectorAll('#group-tag-picker .chip'))
+        .find(c => c.getAttribute('data-tag') === 'E2E-Tag');
+      chip.click();
+      document.querySelector('#group-add').click();
+    `);
+    /* #group-add calls resetGroupForm() itself, so this also re-exercises the
+     * path that used to throw. */
+    await page.waitFor(`
+      Array.from(document.querySelectorAll('#groups-list *')).some(n => n.textContent === 'E2E Group')
+    `, { label: 'the new group is listed under Existing groups' });
+
+    const stored = await page.evaluate(`
+      (JSON.parse(localStorage.getItem('br_groups') || '[]').find(g => g.name === 'E2E Group') || null)
+    `);
+    assert.deepEqual(stored && stored.tags, ['E2E-Tag'], 'the group was not persisted with its tag');
+    assert.deepEqual(page.pageErrors, [], `uncaught page errors: ${page.pageErrors.join(' | ')}`);
+  });
 });
