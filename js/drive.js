@@ -446,15 +446,28 @@
     return gisLoading;
   }
 
+  function isPopupProblem(err) {
+    var text = String((err && err.message) || (err && err.type) || "");
+    return /popup/i.test(text);
+  }
+
   /* interactive=false asks for a token with no visible UI. It still fails when
    * the user has to be involved (signed out of Google, revoked access, or a
-   * popup blocker), and that failure is what the caller reports. */
-  function requestToken(interactive) {
+   * popup blocker), and that failure is what the caller reports.
+   *
+   * uxMode is carried explicitly because a popup is not always available: inside
+   * an embedded webview (the Hermes desktop preview pane, an in-app browser) the
+   * window is refused and GIS reports "Failed to open popup window". In redirect
+   * mode GIS navigates to Google and back to this page instead, and the callback
+   * runs on return. Only an interactive sign-in may fall back that way - a
+   * silent attempt must never navigate the user away mid-session. */
+  function requestToken(interactive, uxMode) {
     return loadGis().then(function () {
       return new Promise(function (resolve, reject) {
         var client = window.google.accounts.oauth2.initTokenClient({
           client_id: CLIENT_ID,
           scope: SCOPE,
+          ux_mode: uxMode || "popup",
           callback: function (resp) {
             if (!resp || resp.error) {
               reject(new Error((resp && resp.error_description) || (resp && resp.error) || "Sign-in failed"));
@@ -468,11 +481,24 @@
             /* type "popup_closed" / "popup_failed_to_open" / "unknown" - the
              * user cancelled, or the browser refused the window. */
             var msg = (err && err.message) || (err && err.type) || "Sign-in was cancelled";
-            reject(new Error(msg === "popup_closed" ? "Sign-in was cancelled" : msg));
+            var error = new Error(msg === "popup_closed" ? "Sign-in was cancelled" : msg);
+            error.popupProblem = isPopupProblem(err);
+            error.errorType = (err && err.type) || "";
+            reject(error);
           }
         });
         client.requestAccessToken({ prompt: interactive ? "consent" : "" });
       });
+    });
+  }
+
+  /* A popup that the browser refused is not a dead end: redirect mode does the
+   * same job with a navigation. Cancelled popups (popup_closed) are the user's
+   * answer and are NOT retried - that would ambush them with a page change. */
+  function requestTokenWithFallback(interactive) {
+    return requestToken(interactive, "popup").catch(function (err) {
+      if (!interactive || !err || !err.popupProblem || err.errorType === "popup_closed") throw err;
+      return requestToken(true, "redirect");
     });
   }
 
@@ -526,7 +552,7 @@
     if (!isDriveConfigured()) return Promise.reject(new Error("Google sign-in is not configured on this build."));
     if (typeof window === "undefined") return Promise.reject(new Error("Not in browser"));
     if (useDurableSignIn()) return beginSignIn(true);
-    return requestToken(true).then(function (token) {
+    return requestTokenWithFallback(true).then(function (token) {
       if (!token) throw new Error("Google did not return an access token.");
       return profileOf(token);
     });
