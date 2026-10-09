@@ -171,61 +171,33 @@ test("Drive calls carry the GIS access token as a bearer", async () => {
   drive.forEach((c) => assert.match(c.headers.Authorization || "", /^Bearer access-gis$/));
 });
 
-/* Embedded webviews (the desktop preview pane, in-app browsers) refuse the
- * popup GIS opens by default, and the app must not be dead there: redirect mode
- * does the same job with a navigation. */
-test("a popup the browser refused falls back to redirect mode", async () => {
-  const modes = [];
-  const { sandbox } = loadDrive((config) => {
-    modes.push(config.ux_mode);
-    if (config.ux_mode === "popup") config.error_callback({ type: "popup_failed_to_open", message: "Failed to open popup window" });
-    else config.callback({ access_token: "access-redirect", expires_in: 3600 });
-  });
-
-  const user = await sandbox.window.BRDrive.signInToDrive();
-  assert.deepEqual(modes, ["popup", "redirect"], "the popup failure was not retried as a redirect");
-  assert.equal(user && user.email, "soldier@example.com", "the redirect sign-in did not complete");
-});
-
-test("a cancelled popup is the user's answer and is not retried", async () => {
-  const modes = [];
-  const { sandbox } = loadDrive((config) => {
-    modes.push(config.ux_mode);
-    config.error_callback({ type: "popup_closed" });
-  });
-  await assert.rejects(() => sandbox.window.BRDrive.signInToDrive(), /cancel/i);
-  assert.deepEqual(modes, ["popup"], "a cancelled sign-in must not navigate the user away");
-});
-
-test("a silent attempt never falls back to a navigation", async () => {
-  const modes = [];
-  const { sandbox } = loadDrive((config) => {
-    modes.push(config.ux_mode);
-    config.error_callback({ type: "popup_failed_to_open", message: "Failed to open popup window" });
-  }, { hint: { email: "soldier@example.com" } });
-
-  const user = await sandbox.window.BRDrive.restoreDriveSession();
-  assert.equal(user, null);
-  assert.deepEqual(modes, ["popup"], "a background restore must never navigate away mid-session");
-  assert.match(String(sandbox.window.BRDrive.getLastSignInError()), /popup/i);
-});
-
-test("the default user experience is still a popup, not a navigation", async () => {
-  const modes = [];
-  const { sandbox } = loadDrive((config) => { modes.push(config.ux_mode); config.callback({ access_token: "t", expires_in: 3600 }); });
+/* GIS's token client is popup-only: `ux_mode` belongs to initCodeClient (the
+ * code flow), so there is no redirect fallback here and passing ux_mode would
+ * be silently ignored. Verified against the API reference and by observation -
+ * a "redirect" retry still opened a popup and still failed. If this ever
+ * changes, these tests should be rewritten rather than the code silently
+ * carrying a config that does nothing. */
+test("the token client is not given a ux_mode it cannot honour", async () => {
+  const { sandbox } = loadDrive(TOKEN_OK);
   await sandbox.window.BRDrive.signInToDrive();
-  assert.deepEqual(modes, ["popup"], "redirect mode navigates away and should only be the fallback");
+  assert.equal(sandbox.__clientConfig.ux_mode, undefined,
+    "initTokenClient has no ux_mode; only initCodeClient does");
 });
 
-/* Only a popup problem justifies the navigation. Anything else - a bad origin,
- * a blocked iframe, a network failure - must be reported as-is, because a
- * redirect would not fix it and would move the user off the page for nothing. */
-test("a non-popup failure is reported, not retried as a navigation", async () => {
-  const modes = [];
-  const { sandbox } = loadDrive((config) => {
-    modes.push(config.ux_mode);
-    config.error_callback({ type: "unknown", message: "idpiframe_initialization_failed" });
-  });
-  await assert.rejects(() => sandbox.window.BRDrive.signInToDrive(), /idpiframe/);
-  assert.deepEqual(modes, ["popup"], "a non-popup failure must not trigger a redirect");
+test("a blocked popup produces the one instruction the user can act on", async () => {
+  const { sandbox } = loadDrive((config) => config.error_callback({ type: "popup_failed_to_open" }),
+    { hint: { email: "soldier@example.com" } });
+  await assert.rejects(() => sandbox.window.BRDrive.signInToDrive(), /Allow pop-ups/i);
+
+  /* and the same reason reaches the panel when it happens on restore */
+  const restore = loadDrive((config) => config.error_callback({ type: "popup_failed_to_open" }),
+    { hint: { email: "soldier@example.com" } });
+  const user = await restore.sandbox.window.BRDrive.restoreDriveSession();
+  assert.equal(user, null);
+  assert.match(String(restore.sandbox.window.BRDrive.getLastSignInError()), /pop-ups/i);
+});
+
+test("a cancelled popup says so plainly", async () => {
+  const { sandbox } = loadDrive((config) => config.error_callback({ type: "popup_closed" }));
+  await assert.rejects(() => sandbox.window.BRDrive.signInToDrive(), /cancelled/i);
 });
