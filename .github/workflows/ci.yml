@@ -97,12 +97,16 @@ jobs:
       # rejected design), tests/ and scripts/. Uploading "." would publish all
       # of it. Verified against index.html: every local reference resolves
       # under js/, css/ or assets/ only.
-      # The Google client id and API key are public identifiers for a static
-      # site - they ship in the bundle and are readable by every visitor, which
-      # is the normal pattern for a browser-only OAuth client (and what the
-      # openquiz sibling does with NEXT_PUBLIC_GOOGLE_*). They are injected here
-      # rather than committed, so js/config.js stays empty in git and
-      # scripts/check-config.mjs keeps its guarantee.
+      # The Google client id and the token-proxy URL are public identifiers for
+      # a static site - they ship in the bundle and are readable by every
+      # visitor, which is the normal pattern for a browser-only OAuth client.
+      # They are injected here rather than committed, so js/config.js stays
+      # empty in git and scripts/check-config.mjs keeps its guarantee.
+      #
+      # The OAuth client SECRET is not here and must never be: it lives in the
+      # Apps Script token proxy (scripts/drive-token-proxy.gs), because Google
+      # refuses a secret-less code exchange and a secret in a static bundle is
+      # readable by anyone.
       #
       # This rewrites js/config.js in the working tree, so it must run BEFORE the
       # copy loop below, which is what carries the filled file into the artifact.
@@ -112,11 +116,11 @@ jobs:
       - name: Inject Google credentials
         env:
           BR_GOOGLE_CLIENT_ID: ${{ secrets.BR_GOOGLE_CLIENT_ID }}
-          BR_GOOGLE_API_KEY: ${{ secrets.BR_GOOGLE_API_KEY }}
+          BR_DRIVE_TOKEN_PROXY: ${{ vars.BR_DRIVE_TOKEN_PROXY || secrets.BR_DRIVE_TOKEN_PROXY }}
         run: |
           node scripts/write-config.mjs \
             --client-id "$BR_GOOGLE_CLIENT_ID" \
-            --api-key "$BR_GOOGLE_API_KEY"
+            --token-proxy "$BR_DRIVE_TOKEN_PROXY"
 
       - name: Stage site files
         run: |

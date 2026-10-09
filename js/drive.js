@@ -20,6 +20,13 @@
  * session was reported as signed out even though the OAuth exchange had
  * succeeded.
  *
+ * Sign-in is the Authorization Code flow with PKCE, but the code is exchanged
+ * by an Apps Script proxy (scripts/drive-token-proxy.gs) named by
+ * BR_DRIVE_TOKEN_PROXY, not by this page: Google's token endpoint accepts only
+ * client_secret_post / client_secret_basic, so a browser cannot complete the
+ * exchange at all without handing the secret to a server. The secret lives in
+ * the proxy's Script Properties; it is never in this repo or this bundle.
+ *
  * Exposes window.BRDrive. Synchronous page code keeps working: reads and
  * writes are Promise-based and cloud.js bridges them to the app's storage.
  */
@@ -32,7 +39,12 @@
   var FOLDER_NAME = "Battle Rhythm";
 
   var AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
-  var TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+  /* The token exchange goes to our Apps Script proxy, not to Google directly.
+   * Google's discovery document advertises only client_secret_post and
+   * client_secret_basic (no "none"), so a request from this page is rejected
+   * with 401 invalid_client "client_secret is missing" - the secret has to be
+   * added server-side. See scripts/drive-token-proxy.gs. */
+  var TOKEN_PROXY = window.BR_DRIVE_TOKEN_PROXY || "";
 
   /* OAuth 2.0 Authorization Code flow with PKCE (RFC 7636).
    *
@@ -58,11 +70,12 @@
    * disappear, leaving the user signed out with no explanation at all. */
   var lastSignInError = null;
 
-  /* The API key is deliberately NOT required. Drive v3 rejects API keys (it
-   * wants an OAuth bearer token), so all a key did here was gate sign-in behind
-   * a credential that no Drive call ever uses. */
+  /* Two public identifiers and nothing else. No API key: Drive v3 rejects API
+   * keys outright, so all a key did here was gate sign-in behind a credential
+   * no Drive call ever uses. No client secret either - it cannot live in a page
+   * that anyone can read; the proxy holds it. */
   function isDriveConfigured() {
-    return Boolean(CLIENT_ID);
+    return Boolean(CLIENT_ID && TOKEN_PROXY);
   }
 
   function localGet(key) {
@@ -228,29 +241,39 @@
     return issued ? verifier : null;
   }
 
-  function postToken(body) {
-    return fetch(TOKEN_ENDPOINT, {
+  /* Send a grant to the proxy and return Google's answer. The proxy replies with
+   * Google's own body, so a refusal arrives as error/error_description and the
+   * reason reaches the Settings panel instead of a bare status code.
+   *
+   * text/plain keeps this a CORS "simple request": Apps Script Web Apps answer
+   * a POST but do not implement a preflight, so an application/json content
+   * type would be blocked before the request was ever sent. */
+  function postToken(params) {
+    return fetch(TOKEN_PROXY, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: body.join("&")
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(params)
     }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (json) {
-        if (!res.ok) {
-          throw new Error(json.error_description || json.error || ("token request failed (" + res.status + ")"));
+      return res.text().then(function (text) {
+        var json = null;
+        try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+        if (!json) {
+          throw new Error("The sign-in proxy did not answer with JSON (HTTP " + res.status + "). " +
+            "Check that the Web App deployment is live and shared with anyone.");
         }
+        if (json.error) throw new Error(json.error_description || json.error);
         return json;
       });
     });
   }
 
   function exchangeCode(code, verifier) {
-    return postToken([
-      "client_id=" + encodeURIComponent(CLIENT_ID),
-      "code=" + encodeURIComponent(code),
-      "code_verifier=" + encodeURIComponent(verifier),
-      "grant_type=authorization_code",
-      "redirect_uri=" + encodeURIComponent(redirectUri())
-    ]).then(function (tokens) {
+    return postToken({
+      grant: "authorization_code",
+      code: code,
+      code_verifier: verifier,
+      redirect_uri: redirectUri()
+    }).then(function (tokens) {
       /* Google only issues a refresh token on the first grant. Without one the
        * app is back to hourly re-auth, so treat its absence as a failure the
        * user can act on rather than silently degrading. */
@@ -291,11 +314,10 @@
   function refreshAccessToken() {
     var stored = localGet(REFRESH_KEY);
     if (!stored) return Promise.resolve(null);
-    return postToken([
-      "client_id=" + encodeURIComponent(CLIENT_ID),
-      "refresh_token=" + encodeURIComponent(stored),
-      "grant_type=refresh_token"
-    ]).then(function (tokens) {
+    return postToken({
+      grant: "refresh_token",
+      refresh_token: stored
+    }).then(function (tokens) {
       currentToken = tokens.access_token;
       expiresAt = Date.now() + (Number(tokens.expires_in) || 3600) * 1000;
       return currentToken;

@@ -23,6 +23,11 @@ const { webcrypto } = require("node:crypto");
 
 const SOURCE = fs.readFileSync(path.join(__dirname, "..", "js", "drive.js"), "utf8");
 
+/* The proxy the sandbox advertises as BR_DRIVE_TOKEN_PROXY. Every token
+ * exchange must go here: Google's endpoint accepts only client_secret_post /
+ * client_secret_basic, so a direct call from the page cannot work. */
+const PROXY = "https://script.google.com/macros/s/TESTPROXY/exec";
+
 /* Minimal sessionStorage. Real semantics matter here: setItem/getItem/removeItem
  * on a plain object is enough, and it is what makes the delete-before-read
  * ordering bug observable. */
@@ -60,7 +65,8 @@ function loadDrive(config = {}) {
   sandbox.window = sandbox;
   sandbox.window.BR_GOOGLE_CLIENT_ID =
     "clientId" in config ? config.clientId : "test-client.apps.googleusercontent.com";
-  sandbox.window.BR_GOOGLE_API_KEY = "apiKey" in config ? config.apiKey : "AIzaTest";
+  sandbox.window.BR_DRIVE_TOKEN_PROXY =
+    "tokenProxy" in config ? config.tokenProxy : "https://script.google.com/macros/s/TESTPROXY/exec";
   vm.createContext(sandbox);
   vm.runInContext(SOURCE, sandbox);
   return { sandbox, session, local };
@@ -198,23 +204,29 @@ test("a page with no OAuth query params does nothing", async () => {
  * was only ever used by the gapi discovery bootstrap, and when Google's
  * referrer restriction blocked that fetch the app reported "signed out" for a
  * user Google had already authenticated. */
-test("isDriveConfigured needs the client id and no longer an API key", () => {
-  const configured = loadDrive();
-  assert.equal(configured.sandbox.window.BRDrive.isDriveConfigured(), true);
+test("isDriveConfigured needs the client id and the token proxy, not an API key", () => {
+  assert.equal(loadDrive().sandbox.window.BRDrive.isDriveConfigured(), true);
 
-  const noKey = loadDrive({ apiKey: "" });
-  noKey.sandbox.window.BR_GOOGLE_API_KEY = "";
+  /* The API key is gone entirely - Drive v3 rejects API keys, so requiring one
+   * (as this used to) gated sign-in behind a credential no Drive call can use. */
   assert.equal(
-    noKey.sandbox.window.BRDrive.isDriveConfigured(),
+    loadDrive({ apiKey: "" }).sandbox.window.BRDrive.isDriveConfigured(),
     true,
-    "a build with a client id but no API key must still be able to sign in"
+    "a build with no API key must still sign in"
   );
 
-  const noClientId = loadDrive({ clientId: "" });
   assert.equal(
-    noClientId.sandbox.window.BRDrive.isDriveConfigured(),
+    loadDrive({ clientId: "" }).sandbox.window.BRDrive.isDriveConfigured(),
     false,
     "no client id means no sign-in at all"
+  );
+
+  /* Without the proxy the code exchange cannot succeed, so offering the button
+   * would just produce an error the user cannot act on. */
+  assert.equal(
+    loadDrive({ tokenProxy: "" }).sandbox.window.BRDrive.isDriveConfigured(),
+    false,
+    "no token proxy means no sign-in"
   );
 });
 
@@ -265,7 +277,7 @@ function loadDriveWithDriveStub() {
   loaded.sandbox.fetch = (url, init) => {
     calls.push({ url: String(url), method: (init && init.method) || "GET", headers: (init && init.headers) || {}, body: (init && init.body) || "" });
     const u = String(url);
-    if (u.startsWith("https://oauth2.googleapis.com/token")) {
+    if (u === PROXY) {
       return Promise.resolve(jsonResponse({ access_token: "access-1", expires_in: 3600 }));
     }
     if (u.startsWith("https://www.googleapis.com/drive/v3/files?")) {
@@ -293,6 +305,13 @@ test("Drive reads use an OAuth bearer token and never an API key", async () => {
    * compares prototypes and fails on identical content. Compare the plain JSON. */
   assert.deepEqual(JSON.parse(JSON.stringify(res.data)), [{ id: "s1", name: "session" }],
     "the file content did not come back");
+
+  const tokenCalls = calls.filter((c) => c.url === PROXY);
+  assert.equal(tokenCalls.length, 1, "expected exactly one refresh exchange, got " + tokenCalls.length);
+  const sent = JSON.parse(tokenCalls[0].body);
+  assert.equal(sent.grant, "refresh_token");
+  assert.equal(sent.refresh_token, "refresh-1");
+  assert.equal(sent.client_secret, undefined, "the browser must never send a client secret");
   assert.equal(res.modifiedTime, "2026-01-02T03:04:05.000Z", "metadata mtime was not carried through");
 
   const driveCalls = calls.filter((c) => c.url.startsWith("https://www.googleapis.com/drive"));
@@ -309,7 +328,7 @@ test("a Drive write creates the file and confirms the new modifiedTime", async (
   sandbox.fetch = (url, init) => {
     calls.push({ url: String(url), method: (init && init.method) || "GET", headers: (init && init.headers) || {}, body: (init && init.body) || "" });
     const u = String(url);
-    if (u.startsWith("https://oauth2.googleapis.com/token")) {
+    if (u === PROXY) {
       return Promise.resolve(jsonResponse({ access_token: "access-1", expires_in: 3600 }));
     }
     if (u.includes("/upload/drive/")) {
@@ -333,4 +352,58 @@ test("a Drive write creates the file and confirms the new modifiedTime", async (
   const res = await sandbox.window.BRDrive.writeDriveFile("sessions.json", [{ id: "s1" }]);
   assert.equal(res.ok, true, "a confirmed upload must report ok");
   assert.equal(res.modifiedTime, "2026-02-02T00:00:00.000Z", "the new mtime must be reported back");
+});
+
+/* THE chain that produced the silent signed-out state in production: the
+ * proxy refuses the exchange, restoreDriveSession absorbs it, and the user sees
+ * "Continue with Google" with no explanation. */
+test("a refused token exchange surfaces Google's own reason", async () => {
+  const { sandbox, session } = loadDrive();
+  const { state } = await captureAuthUrl(sandbox, session);
+  sandbox.fetch = (url) => {
+    if (String(url) === PROXY) {
+      return Promise.resolve(jsonResponse({ error: "invalid_client", error_description: "client_secret is missing" }, 401));
+    }
+    return Promise.resolve(jsonResponse({}, 500));
+  };
+  sandbox.location.search = "?code=test-code&state=" + encodeURIComponent(state);
+
+  await assert.rejects(
+    () => sandbox.window.BRDrive.completeSignInFromRedirect(),
+    (err) => {
+      assert.match(String(err && err.message), /client_secret is missing/,
+        "the proxy's (Google's) reason must survive to the caller");
+      return true;
+    }
+  );
+});
+
+test("a failed callback is remembered so the UI can say why", async () => {
+  const { sandbox, session } = loadDrive();
+  const { state } = await captureAuthUrl(sandbox, session);
+  sandbox.fetch = (url) => {
+    if (String(url) === PROXY) {
+      return Promise.resolve(jsonResponse({ error: "access_denied", error_description: "User denied" }, 403));
+    }
+    return Promise.resolve(jsonResponse({}, 500));
+  };
+  sandbox.location.search = "?code=test-code&state=" + encodeURIComponent(state);
+
+  const user = await sandbox.window.BRDrive.restoreDriveSession();
+  assert.equal(user, null, "a refused exchange is not a session");
+  assert.match(
+    String(sandbox.window.BRDrive.getLastSignInError()),
+    /User denied/,
+    "the reason must be retrievable, not just console.error'd"
+  );
+});
+
+test("no client secret is ever sent from the browser", () => {
+  /* The secret lives in the Apps Script proxy. A page cannot keep one, and
+   * Google's token endpoint would not accept this client without it - which is
+   * exactly why the exchange is server-side. */
+  const code = SOURCE.split("\n").filter((l) => !/^\s*(\*|\/\*|\/\/)/.test(l)).join("\n");
+  assert.doesNotMatch(code, /client_secret/, "a client secret appeared in executable code");
+  assert.match(SOURCE, /BR_DRIVE_TOKEN_PROXY/, "the proxy URL is not read from config");
+  assert.match(SOURCE, /JSON\.stringify\(params\)/, "token params must be sent as a JSON body");
 });
