@@ -446,28 +446,32 @@
     return gisLoading;
   }
 
-  function isPopupProblem(err) {
-    var text = String((err && err.message) || (err && err.type) || "");
-    return /popup/i.test(text);
+  /* Google Identity Services' token client is POPUP-ONLY. `ux_mode` is a
+   * property of initCodeClient (the code flow), not initTokenClient - so there
+   * is no redirect fallback to reach for here, and passing ux_mode is silently
+   * ignored (verified: the retry still opened a popup and still failed). An
+   * environment that blocks popups therefore cannot complete a session-mode
+   * sign-in at all; durable mode, which is redirect-based, is the answer there.
+   *
+   * The error types come from GIS: popup_failed_to_open, popup_closed, unknown. */
+  function popupFailureMessage(err) {
+    var type = (err && err.type) || "";
+    if (type === "popup_closed") return "Sign-in was cancelled.";
+    if (type === "popup_failed_to_open") {
+      return "Your browser blocked the sign-in window. Allow pop-ups for this site and try again.";
+    }
+    return (err && err.message) || "Sign-in could not be started.";
   }
 
   /* interactive=false asks for a token with no visible UI. It still fails when
    * the user has to be involved (signed out of Google, revoked access, or a
-   * popup blocker), and that failure is what the caller reports.
-   *
-   * uxMode is carried explicitly because a popup is not always available: inside
-   * an embedded webview (the Hermes desktop preview pane, an in-app browser) the
-   * window is refused and GIS reports "Failed to open popup window". In redirect
-   * mode GIS navigates to Google and back to this page instead, and the callback
-   * runs on return. Only an interactive sign-in may fall back that way - a
-   * silent attempt must never navigate the user away mid-session. */
-  function requestToken(interactive, uxMode) {
+   * blocked popup), and that failure is what the caller reports. */
+  function requestToken(interactive) {
     return loadGis().then(function () {
       return new Promise(function (resolve, reject) {
         var client = window.google.accounts.oauth2.initTokenClient({
           client_id: CLIENT_ID,
           scope: SCOPE,
-          ux_mode: uxMode || "popup",
           callback: function (resp) {
             if (!resp || resp.error) {
               reject(new Error((resp && resp.error_description) || (resp && resp.error) || "Sign-in failed"));
@@ -478,27 +482,11 @@
             resolve(currentToken);
           },
           error_callback: function (err) {
-            /* type "popup_closed" / "popup_failed_to_open" / "unknown" - the
-             * user cancelled, or the browser refused the window. */
-            var msg = (err && err.message) || (err && err.type) || "Sign-in was cancelled";
-            var error = new Error(msg === "popup_closed" ? "Sign-in was cancelled" : msg);
-            error.popupProblem = isPopupProblem(err);
-            error.errorType = (err && err.type) || "";
-            reject(error);
+            reject(new Error(popupFailureMessage(err)));
           }
         });
         client.requestAccessToken({ prompt: interactive ? "consent" : "" });
       });
-    });
-  }
-
-  /* A popup that the browser refused is not a dead end: redirect mode does the
-   * same job with a navigation. Cancelled popups (popup_closed) are the user's
-   * answer and are NOT retried - that would ambush them with a page change. */
-  function requestTokenWithFallback(interactive) {
-    return requestToken(interactive, "popup").catch(function (err) {
-      if (!interactive || !err || !err.popupProblem || err.errorType === "popup_closed") throw err;
-      return requestToken(true, "redirect");
     });
   }
 
@@ -552,7 +540,7 @@
     if (!isDriveConfigured()) return Promise.reject(new Error("Google sign-in is not configured on this build."));
     if (typeof window === "undefined") return Promise.reject(new Error("Not in browser"));
     if (useDurableSignIn()) return beginSignIn(true);
-    return requestTokenWithFallback(true).then(function (token) {
+    return requestToken(true).then(function (token) {
       if (!token) throw new Error("Google did not return an access token.");
       return profileOf(token);
     });
