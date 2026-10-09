@@ -965,7 +965,6 @@
   }
   function resetGroupForm() {
     $("#group-name").value = "";
-    var cfg = getSettings();
     var chips = el("div", {});
     allTags().forEach(function (t) {
       chips.appendChild(el("button", { class: "chip", "data-tag": t, "aria-pressed": "false", text: t, onclick: function () { this.classList.toggle("active"); this.setAttribute("aria-pressed", this.classList.contains("active")); } }));
@@ -983,7 +982,7 @@
     groups.forEach(function (g) {
       host.appendChild(rowEl(
         el("span", { text: "G", style: "font-family:var(--font-display);font-size:1.1rem;" }),
-        el("span", { text: g.name }),
+        g.name,
         (g.tags || []).join(", "),
         [
           el("button", { class: "btn btn-ghost btn-sm", text: "Select", onclick: function () {
