@@ -23,12 +23,15 @@
     root.BR_DRIVE_STATUS = factory();
   }
 })(typeof self !== "undefined" ? self : this, function () {
-  /* Only a client id is required at runtime; the API key is gone on purpose.
-   * Drive v3 rejects API keys, so the key used to gate sign-in behind a
-   * credential no Drive call ever used. */
+  /* Two public values are required at runtime: the OAuth client id and the URL
+   * of the token proxy that holds the client secret. The API key is gone - Drive
+   * v3 rejects API keys, so it only ever gated sign-in behind a credential no
+   * Drive call uses. The copy names js/config.js because that is where a
+   * developer looks and where the deploy job injects both values. */
   var NOT_CONFIGURED =
-    "Backups are off: this build has no Google client id in js/config.js. " +
-    "Everything still works, but it stays on this device.";
+    "Backups are off: this build has no Google Drive credentials in js/config.js " +
+    "(a client id and the token proxy URL). Everything still works, but it stays " +
+    "on this device.";
 
   var SYNCING = "Syncing with Google Drive\u2026";
 

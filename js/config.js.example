@@ -1,41 +1,36 @@
 "use strict";
-/* Google Drive backup configuration — TEMPLATE.
+/* Google Drive backup configuration - TEMPLATE.
  *
- * TEMPLATE. In normal use you do not fill this in by hand: js/config.js is
- * tracked in git and both values are committed empty, and the deploy job runs
- * scripts/write-config.mjs to write a populated copy into the published
- * artifact using the BR_GOOGLE_CLIENT_ID / BR_GOOGLE_API_KEY repository
- * secrets. CI (scripts/check-config.mjs) fails the build if the tracked
- * js/config.js is ever populated.
- *
- * Fill it in locally only to test Drive backup on localhost. The deployed site
- * without the secrets runs in guest mode: everything lives in localStorage and
- * no sign-in UI is offered.
+ * TEMPLATE. You do not normally fill this in by hand: js/config.js is tracked
+ * with both values empty, and the deploy job runs scripts/write-config.mjs to
+ * write a populated copy into the published artifact using the
+ * BR_GOOGLE_CLIENT_ID repository secret and the BR_DRIVE_TOKEN_PROXY
+ * repository variable. scripts/check-config.mjs fails the build if the tracked
+ * js/config.js becomes populated.
  *
  *   BR_GOOGLE_CLIENT_ID
  *     OAuth 2.0 Client ID of type "Web application", from
  *     https://console.cloud.google.com/apis/credentials
- *     The client must list this site's origin (e.g.
- *     https://stoptalkingishh.github.io) under "Authorized JavaScript origins"
- *     AND this page's full URL (e.g.
- *     https://stoptalkingishh.github.io/battle-rhythm/) under "Authorized
- *     redirect URIs". Sign-in uses the Authorization Code flow with PKCE, so a
- *     missing redirect URI fails with redirect_uri_mismatch.
+ *     Must list this site's origin (https://stoptalkingishh.github.io) under
+ *     "Authorized JavaScript origins" AND this page's full URL
+ *     (https://stoptalkingishh.github.io/battle-rhythm/) under "Authorized
+ *     redirect URIs". Sign-in redirects back here with an authorization code,
+ *     so a missing redirect URI fails with redirect_uri_mismatch.
  *     Shape: 1234567890-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com
  *
- *   BR_GOOGLE_API_KEY
- *     API key from the same console, created with the Google Drive API enabled.
- *     Restrict it to the Drive API and to this site's referrer.
- *     Shape: AIzaSyAbCdEfGhIjKlMnOpQrStUvWxYz1234567
+ *   BR_DRIVE_TOKEN_PROXY
+ *     The /exec URL of the Apps Script token proxy in
+ *     scripts/drive-token-proxy.gs, deployed as a Web App. It holds the OAuth
+ *     client SECRET (in Script Properties) and performs the code-for-token
+ *     exchange and the refresh exchange, because Google refuses a secret-less
+ *     token request: its discovery document advertises only
+ *     client_secret_post and client_secret_basic.
+ *     Shape: https://script.google.com/macros/s/AKfy.../exec
  *
- * Both are public client-side identifiers: they are embedded in the page and
- * readable by anyone who views source. That is expected and is the same model
- * openquiz uses with its NEXT_PUBLIC_GOOGLE_* values. The OAuth client id is
- * not a secret, and the API key is only a rate-limit and quota control rather
- * than an access control — restrict it by API and referrer, do not rely on it
- * to keep data private. Access itself is granted by the signed-in user, and
- * the Drive scope requested is drive.file, which only reaches files this app
- * creates.
+ * Both are public identifiers that ship in the page; the client id is not a
+ * secret and the proxy URL is only an address. The Drive scope requested is
+ * drive.file, which reaches only files this app creates, and access is granted
+ * by the signed-in user. Never put the client secret in this file.
  */
 window.BR_GOOGLE_CLIENT_ID = "";
-window.BR_GOOGLE_API_KEY = "";
+window.BR_DRIVE_TOKEN_PROXY = "";

@@ -1,21 +1,24 @@
 "use strict";
 /* Google Drive backup configuration.
  *
- * Both values are public client-side identifiers (the same kind openquiz bakes
- * into its static build). They are NOT committed: set the repository secrets
- * BR_GOOGLE_CLIENT_ID and BR_GOOGLE_API_KEY, and the deploy job runs
- * scripts/write-config.mjs to generate this file in the published artifact.
- * That keeps credentials out of git history while
- * scripts/check-config.mjs enforces that this tracked copy stays empty.
+ * These are NOT committed: the deploy job runs scripts/write-config.mjs with
+ * the repository's BR_GOOGLE_CLIENT_ID secret and BR_DRIVE_TOKEN_PROXY
+ * variable to generate this file in the published artifact, and
+ * scripts/check-config.mjs fails CI if the tracked copy is ever populated.
  *
- * With either missing, the app runs fully offline in guest mode and everything
- * stays in localStorage — no sign-in UI is offered. There is no client secret:
- * this is a browser-only app with no server, and sign-in uses the
- * Authorization Code flow with PKCE instead.
+ * Both values are public, browser-side identifiers. There is deliberately NO
+ * client secret here: Google's token endpoint accepts only client_secret_post
+ * or client_secret_basic (no "none"), so a browser cannot exchange an
+ * authorization code at all. The secret lives in the Apps Script token proxy
+ * (scripts/drive-token-proxy.gs) and never enters this repo, the bundle, or a
+ * visitor's devtools. BR_DRIVE_TOKEN_PROXY is that proxy's /exec URL.
+ *
+ * With either value missing the app runs fully offline in guest mode and
+ * offers no sign-in UI.
  *
  * The OAuth client must list this site's origin under Authorized JavaScript
  * origins AND this page's URL under Authorized redirect URIs, because sign-in
  * redirects back here with an authorization code.
  */
 window.BR_GOOGLE_CLIENT_ID = "";
-window.BR_GOOGLE_API_KEY = "";
+window.BR_DRIVE_TOKEN_PROXY = "";

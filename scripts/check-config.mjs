@@ -2,7 +2,7 @@
 /**
  * Guard against committing a populated js/config.js.
  *
- * Both BR_GOOGLE_CLIENT_ID and BR_GOOGLE_API_KEY are public client-side
+ * Both BR_GOOGLE_CLIENT_ID and BR_DRIVE_TOKEN_PROXY are public client-side
  * identifiers by design — they ship to every browser and are visible in
  * devtools. This is the same model openquiz uses with its NEXT_PUBLIC_*
  * values, and it is not a secret-rotation control.
@@ -26,7 +26,7 @@ if (!fs.existsSync(configPath)) {
 }
 
 const source = fs.readFileSync(configPath, 'utf8');
-const guarded = ['BR_GOOGLE_CLIENT_ID', 'BR_GOOGLE_API_KEY'];
+const guarded = ['BR_GOOGLE_CLIENT_ID', 'BR_DRIVE_TOKEN_PROXY'];
 const populated = [];
 
 for (const name of guarded) {

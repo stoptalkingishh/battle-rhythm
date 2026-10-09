@@ -1,17 +1,21 @@
 #!/usr/bin/env node
 /**
- * Write js/config.js with the Google credentials supplied by the deploy job.
+ * Write js/config.js with the values supplied by the deploy job.
  *
  * The repo tracks js/config.js with both values empty, and
  * scripts/check-config.mjs fails CI if that ever stops being true. So the
- * credentials are injected into the staged copy at deploy time instead of
- * being committed: git never sees them, and the deployed bundle does.
+ * values are injected into the staged copy at deploy time instead of being
+ * committed: git never sees them, and the deployed bundle does.
  *
- * Both values are public browser-side identifiers, not secrets. A static
- * OAuth client has no server and therefore no client secret; the client id
- * and a referrer-restricted API key are readable by anyone who views the page
- * source, by design. What the injection buys is that they stay out of git
- * history, not secrecy.
+ * Both are public browser-side identifiers: the client id is not a secret, and
+ * the token-proxy URL is only an address. What the injection buys is that they
+ * stay out of git history, not secrecy.
+ *
+ * There is deliberately no API key any more. Drive v3 rejects API keys ("API
+ * keys are not supported by this API"), so the key was only ever needed by the
+ * removed gapi discovery bootstrap - and its referrer restriction is what broke
+ * sign-in. The client secret is not here either: it lives in the Apps Script
+ * token proxy, which is the one place a secret can be kept out of the page.
  *
  * Missing or blank values are written as empty strings. That is not an error:
  * the app runs fully offline in guest mode and simply hides the Drive button.
@@ -42,7 +46,7 @@ function jsString(value) {
 }
 
 const clientId = readFlag('client-id')
-const apiKey = readFlag('api-key')
+const tokenProxy = readFlag('token-proxy')
 
 const banner = `/* Google Drive backup configuration.
  *
@@ -50,10 +54,10 @@ const banner = `/* Google Drive backup configuration.
  * The committed version of this file keeps both values empty so that
  * scripts/check-config.mjs can guarantee no credentials enter git history.
  *
- * Both values are public client-side identifiers, the same kind the openquiz
- * sibling bakes into its static build via NEXT_PUBLIC_GOOGLE_*. There is no
- * client secret: this is a browser-only app with no server, and PKCE replaces
- * the protection a secret would provide.
+ * Both values are public, browser-side identifiers. The OAuth client secret is
+ * NOT here: Google's token endpoint accepts only client_secret_post or
+ * client_secret_basic, so the code exchange is performed by the Apps Script
+ * token proxy (scripts/drive-token-proxy.gs) named by BR_DRIVE_TOKEN_PROXY.
  *
  * The OAuth client must list this site's origin under Authorized JavaScript
  * origins, and this page's URL under Authorized redirect URIs, because sign-in
@@ -62,17 +66,17 @@ const banner = `/* Google Drive backup configuration.
 
 const body = `${banner}
 window.BR_GOOGLE_CLIENT_ID = ${jsString(clientId)};
-window.BR_GOOGLE_API_KEY = ${jsString(apiKey)};
+window.BR_DRIVE_TOKEN_PROXY = ${jsString(tokenProxy)};
 `
 
 fs.writeFileSync(target, body, 'utf8')
 
-if (clientId && apiKey) {
-  console.log('js/config.js: client id and API key injected; Drive backup enabled.')
+if (clientId && tokenProxy) {
+  console.log('js/config.js: client id and token proxy injected; Drive backup enabled.')
 } else {
-  const missing = [!clientId && 'client id', !apiKey && 'API key'].filter(Boolean).join(' and ')
+  const missing = [!clientId && 'client id', !tokenProxy && 'token proxy'].filter(Boolean).join(' and ')
   console.log(
-    `js/config.js: written with empty ${missing} (BR_GOOGLE_CLIENT_ID / BR_GOOGLE_API_KEY secrets not set). ` +
-      'The site will deploy and run in offline guest mode.'
+    `js/config.js: written with empty ${missing} (BR_GOOGLE_CLIENT_ID secret / ` +
+      'BR_DRIVE_TOKEN_PROXY variable not set). The site will deploy and run in offline guest mode.'
   )
 }
